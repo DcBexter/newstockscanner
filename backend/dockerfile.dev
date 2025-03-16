@@ -1,0 +1,30 @@
+# syntax=docker/dockerfile:1.4
+
+FROM python:3.13.2-slim
+
+WORKDIR /app
+
+# Install dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    curl && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install Rust for pydantic
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+# Install Python dependencies
+COPY ./requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Note: The actual application code will be mounted as a volume
+# in docker-compose.dev.yml to enable hot reloading
+
+# Set Python path to include the app directory
+ENV PYTHONPATH=/app
+
+# Default command (will be overridden by docker-compose)
+CMD ["python", "-m", "uvicorn", "backend.api_service.app:app", "--host", "0.0.0.0", "--port", "8000", "--reload"] 

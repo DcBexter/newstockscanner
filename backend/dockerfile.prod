@@ -1,0 +1,56 @@
+# syntax=docker/dockerfile:1.4
+
+# Stage 1: Build dependencies
+FROM python:3.13.2-slim AS builder
+
+WORKDIR /app
+
+# Install build dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    curl && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install Rust for pydantic
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+# Install Python dependencies
+COPY ./requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Stage 2: Runtime
+FROM python:3.13.2-slim
+
+# Create a non-root user first
+RUN useradd -m appuser
+
+# Install runtime dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    libpq5 && \
+    rm -rf /var/lib/apt/lists/*
+
+# Set up the application directory
+WORKDIR /app
+RUN chown appuser:appuser /app
+
+# Copy installed packages from builder
+COPY --from=builder --chown=appuser:appuser /usr/local/lib/python3.13/site-packages /usr/local/lib/python3.13/site-packages
+COPY --from=builder --chown=appuser:appuser /usr/local/bin /usr/local/bin
+
+# Copy application code
+COPY --chown=appuser:appuser . /app/backend
+
+# Add package for proper importing
+RUN echo "# Package initialization" > /app/backend/__init__.py
+
+# Switch to non-root user
+USER appuser
+
+# Set Python path to include the app directory
+ENV PYTHONPATH=/app
+
+# Command will be specified in docker-compose 

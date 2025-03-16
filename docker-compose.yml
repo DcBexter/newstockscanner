@@ -1,0 +1,96 @@
+services:
+  # Database: PostgreSQL database for storing stock listings
+  db:
+    image: postgres:17.4-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-backend}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 1s
+      timeout: 1s
+      retries: 50
+    command: postgres -c shared_buffers=256MB -c max_connections=200
+
+  # Frontend: Web interface for users to view and interact with the data
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: dockerfile.prod
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+    depends_on:
+      - api_service
+
+  # API Service: Provides REST API endpoints for the frontend
+  api_service:
+    build:
+      context: ./backend
+      dockerfile: dockerfile.prod
+    command: uvicorn backend.api_service.app:app --host 0.0.0.0 --port 8000
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-backend}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
+      - DEBUG=${DEBUG:-False}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+
+  # Notification Service: Handles sending notifications
+  notification_service:
+    build:
+      context: ./backend
+      dockerfile: dockerfile.prod
+    command: uvicorn backend.notification_service.app:app --host 0.0.0.0 --port 8001
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-backend}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8001:8001"
+
+  # Scraper Service: Periodically scrapes websites for new stock listings
+  scraper_service:
+    build:
+      context: ./backend
+      dockerfile: dockerfile.prod
+    command: python -m backend.scraper_service.main
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-backend}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
+      - SCRAPING_INTERVAL_MINUTES=${SCRAPING_INTERVAL_MINUTES:-60}
+      - NOTIFICATION_SERVICE_URL=http://notification_service:8001
+      - RUN_API=true
+      - RUN_SCHEDULER=true
+    ports:
+      - "8002:8002"
+    depends_on:
+      db:
+        condition: service_healthy
+      api_service:
+        condition: service_started
+      notification_service:
+        condition: service_started
+
+volumes:
+  postgres_data:
+
+x-dev-frontend-volumes: &dev-frontend-volumes
+  - ./frontend:/app
+  - /app/node_modules
+
+x-production-frontend-volumes: &production-frontend-volumes
+  [] 
