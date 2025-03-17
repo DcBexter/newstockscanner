@@ -1,11 +1,10 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Box, Container, Paper, Typography, Button, IconButton, Tooltip, useTheme, PaletteMode, Snackbar, Alert, Badge, Menu, MenuItem, Divider, Stack, Grid } from '@mui/material';
-import { LightMode, DarkMode, Refresh, Notifications, ArrowDropDown, VisibilityOff, Visibility } from '@mui/icons-material';
+import { Box, Container, Paper, Typography, Button, IconButton, Tooltip, useTheme, PaletteMode, Snackbar, Alert, Badge, Stack } from '@mui/material';
+import { LightMode, DarkMode, Refresh, Notifications, VisibilityOff, Visibility } from '@mui/icons-material';
 import { api } from '../api/client';
 import ListingsTable from './ListingsTable';
 import StatisticsChart from './StatisticsChart';
 import ExchangeFilter from './ExchangeFilter';
-import DateRangeFilter from './DateRangeFilter';
 import MonthPagination from './MonthPagination';
 import type { Listing, Exchange, Statistics } from '../api/client';
 
@@ -35,7 +34,6 @@ export default function Dashboard({ toggleColorMode, currentTheme }: DashboardPr
   const [newListingsCount, setNewListingsCount] = useState<number>(0);
   const previousListingsRef = useRef<number>(0);
   const pollingIntervalRef = useRef<number | null>(null);
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   const theme = useTheme();
 
@@ -69,7 +67,7 @@ export default function Dashboard({ toggleColorMode, currentTheme }: DashboardPr
   // Function to fetch listings only for notification purposes
   const fetchListingsForNotification = async () => {
     try {
-      const params: any = { days };
+      const params: Record<string, string | number> = { days };
       if (selectedExchange) {
         params.exchange_code = selectedExchange;
       }
@@ -151,7 +149,7 @@ export default function Dashboard({ toggleColorMode, currentTheme }: DashboardPr
     const fetchListings = async () => {
       setIsLoadingListings(true);
       try {
-        const params: any = {};
+        const params: Record<string, string | number> = {};
         
         // Use either date range or days depending on mode
         if (isPaginationMode && startDate && endDate) {
@@ -214,7 +212,7 @@ export default function Dashboard({ toggleColorMode, currentTheme }: DashboardPr
       await api.triggerScrape('HKEX');
       
       // Create params for refreshing data after scan
-      const params: any = { days };
+      const params: Record<string, string | number> = { days };
       if (selectedExchange) {
         params.exchange_code = selectedExchange;
       }
@@ -295,7 +293,7 @@ export default function Dashboard({ toggleColorMode, currentTheme }: DashboardPr
       await api.triggerScrape('NASDAQ');
       
       // Create params for refreshing data after scan
-      const params: any = { days };
+      const params: Record<string, string | number> = { days };
       if (selectedExchange) {
         params.exchange_code = selectedExchange;
       }
@@ -334,7 +332,7 @@ export default function Dashboard({ toggleColorMode, currentTheme }: DashboardPr
       await api.triggerScrape('NYSE');
       
       // Create params for refreshing data after scan
-      const params: any = { days };
+      const params: Record<string, string | number> = { days };
       if (selectedExchange) {
         params.exchange_code = selectedExchange;
       }
