@@ -2,10 +2,9 @@ from abc import ABC, abstractmethod
 from typing import Optional, Any, Dict
 import aiohttp
 import asyncio
-from datetime import datetime
 
 from backend.config.settings import get_settings
-from backend.core.exceptions import HTTPError, ScraperError
+from backend.core.exceptions import HTTPError
 from backend.core.models import ScrapingResult
 from backend.config.logging import get_logger
 
@@ -31,7 +30,6 @@ class BaseScraper(ABC):
                 self._session = None
             except Exception as e:
                 self.logger.error(f"Error closing client session: {str(e)}")
-                # Don't re-raise to ensure the session closure attempt doesn't fail the whole operation
 
     @property
     def session(self) -> aiohttp.ClientSession:
@@ -49,10 +47,7 @@ class BaseScraper(ABC):
         timeout: Optional[int] = None
     ) -> str:
         """Make an HTTP request with retry logic."""
-        
-        default_headers = {
-            "User-Agent": self.settings.USER_AGENT
-        }
+        default_headers = {"User-Agent": self.settings.USER_AGENT}
         if headers:
             default_headers.update(headers)
 
@@ -82,39 +77,16 @@ class BaseScraper(ABC):
 
     @abstractmethod
     async def scrape(self) -> ScrapingResult:
-        """Implement the scraping logic in derived classes.
-        
-        This method should handle the actual data collection process.
-        Returns:
-            ScrapingResult: Result object containing status and scraped data.
-        """
+        """Implement the scraping logic in derived classes."""
         pass
 
     @abstractmethod
     def parse(self, content: str) -> Any:
-        """Implement the parsing logic in derived classes.
-        
-        This method should transform raw content into structured data.
-        Args:
-            content: Raw content to parse (usually HTML or JSON)
-        Returns:
-            Parsed data in the appropriate format for the scraper
-        """
+        """Implement the parsing logic in derived classes."""
         pass
 
     async def run_scraping_task(self) -> ScrapingResult:
-        """Run the complete scraping process with error handling.
-        
-        This method orchestrates the entire scraping workflow:
-        1. Initialize the session
-        2. Call the scrape method
-        3. Handle any errors
-        4. Clean up resources
-        
-        Returns:
-            ScrapingResult: Complete result of the scraping operation
-        """
-        result = None
+        """Run the complete scraping process with error handling."""
         try:
             async with self:
                 result = await self.scrape()
@@ -124,23 +96,14 @@ class BaseScraper(ABC):
                     self.logger.warning(f"Scraping completed with issues: {result.message}")
                 return result
         except Exception as e:
-            # Log only the exception type and message, not the full stack trace
             error_msg = f"Scraping failed: {type(e).__name__}: {str(e)}"
             self.logger.error(error_msg)
-            # Only log the full stack trace at debug level
             self.logger.debug("Detailed error:", exc_info=True)
-            
-            return ScrapingResult(
-                success=False,
-                message=error_msg,
-                data=[]
-            )
+            return ScrapingResult(success=False, message=error_msg, data=[])
         finally:
-            # Additional safety check to ensure session is closed
             if hasattr(self, '_session') and self._session is not None:
                 try:
                     await self._session.close()
                     self._session = None
-                    self.logger.debug("Session closed in run_scraping_task finally block")
                 except Exception as close_err:
                     self.logger.error(f"Error closing session in finally block: {str(close_err)}") 
