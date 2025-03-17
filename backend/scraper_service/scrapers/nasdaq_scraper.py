@@ -91,10 +91,40 @@ class NasdaqScraper(BaseScraper):
             # Fallback: If we can't get the data from the API or parse it, try to scrape the HTML page
             self.logger.warning("API extraction failed, falling back to HTML scraping")
             
-            # Execute the scraping directly
-            result = await self.run_scraping_task()
+            # REMOVED RECURSIVE CALL: Instead of calling run_scraping_task, we'll directly scrape the HTML
+            try:
+                content = await self._make_request(
+                    self.url,
+                    headers={
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+                    },
+                    timeout=60
+                )
+                
+                self.logger.debug("Successfully retrieved NASDAQ IPO HTML page")
+                listings = self.parse(content)
+                
+                if listings:
+                    self.logger.info(f"Successfully parsed {len(listings)} IPO listings from NASDAQ HTML")
+                    return ScrapingResult(
+                        success=True,
+                        message=f"Successfully scraped {len(listings)} listings from NASDAQ HTML",
+                        data=listings
+                    )
+                else:
+                    return ScrapingResult(
+                        success=False,
+                        message="No listings found in NASDAQ HTML",
+                        data=[]
+                    )
+            except Exception as html_err:
+                self.logger.error(f"HTML scraping fallback also failed: {type(html_err).__name__}")
+                return ScrapingResult(
+                    success=False,
+                    message=f"All scraping methods failed for NASDAQ",
+                    data=[]
+                )
             
-            return result
         except Exception as e:
             # For truly unexpected errors, log a simple message without the stack trace in normal log
             error_msg = f"Failed to scrape NASDAQ: {type(e).__name__}"
@@ -414,22 +444,35 @@ class NasdaqScraper(BaseScraper):
     
     async def get_filtered_listings(self, filter_type: str = 'all') -> pd.DataFrame:
         """Get listings with optional filtering."""
-        result = await self.execute()
-        if not result.success:
+        try:
+            # Directly use scrape method instead of execute to avoid context management issues
+            content = await self._make_request(
+                self.api_url,
+                headers={
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+                },
+                timeout=60
+            )
+            
+            listings = self.parse_api_data(content)
+            
+            df = pd.DataFrame([vars(listing) for listing in listings])
+            if df.empty:
+                return df
+
+            filters = {
+                'upcoming': df['status'] == 'Upcoming IPO',
+                'priced': df['status'] == 'Trading',
+                'nasdaq_only': df['exchange_code'] == 'NASDAQ',
+                'nyse_only': df['exchange_code'] == 'NYSE',
+                'all': slice(None)
+            }
+            return df[filters.get(filter_type, slice(None))].copy()
+        except Exception as e:
+            self.logger.error(f"Error in get_filtered_listings: {str(e)}")
             return pd.DataFrame()
-
-        df = pd.DataFrame([vars(listing) for listing in result.data])
-        if df.empty:
-            return df
-
-        filters = {
-            'upcoming': df['status'] == 'Upcoming IPO',
-            'priced': df['status'] == 'Trading',
-            'nasdaq_only': df['exchange_code'] == 'NASDAQ',
-            'nyse_only': df['exchange_code'] == 'NYSE',
-            'all': slice(None)
-        }
-        return df[filters.get(filter_type, slice(None))].copy()
 
     # Convenience methods
     async def get_upcoming_ipos(self) -> pd.DataFrame:

@@ -144,20 +144,31 @@ class HKEXScraper(BaseScraper):
 
     async def get_filtered_listings(self, filter_type: str = 'all') -> pd.DataFrame:
         """Get listings with optional filtering."""
-        result = await self.run_scraping_task()
-        if not result.success:
+        try:
+            # Directly use scrape method instead of run_scraping_task to avoid recursive context management
+            content = await self._make_request(
+                self.url,
+                headers={
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+                },
+                timeout=60
+            )
+            
+            listings = self.parse(content)
+            
+            df = pd.DataFrame([vars(listing) for listing in listings])
+            if df.empty:
+                return df
+
+            filters = {
+                'new': df['status'] == 'New Listing',
+                'rights': df['name'].str.contains('RTS', na=False),
+                'all': slice(None)
+            }
+            return df[filters.get(filter_type, slice(None))].copy()
+        except Exception as e:
+            self.logger.error(f"Error in get_filtered_listings: {str(e)}")
             return pd.DataFrame()
-
-        df = pd.DataFrame([vars(listing) for listing in result.data])
-        if df.empty:
-            return df
-
-        filters = {
-            'new': df['status'] == 'New Listing',
-            'rights': df['name'].str.contains('RTS', na=False),
-            'all': slice(None)
-        }
-        return df[filters.get(filter_type, slice(None))].copy()
 
     # Convenience methods
     async def get_new_listings(self) -> pd.DataFrame:

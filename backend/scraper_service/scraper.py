@@ -46,14 +46,37 @@ class StockScanner:
         else:
             scrapers_to_run = self.scraper_classes
 
+        # Run scrapers sequentially to ensure proper logging
         for name, scraper_class in scrapers_to_run.items():
             for attempt in range(self.MAX_RETRIES):
                 try:
                     logger.info(f"Running {name} scraper (attempt {attempt + 1}/{self.MAX_RETRIES})...")
                     
                     # Create a new scraper instance within the async context
-                    async with scraper_class() as scraper:
-                        result = await scraper.run_scraping_task()
+                    # Use a dedicated async with block to ensure proper cleanup
+                    result = None
+                    try:
+                        # Create a fresh scraper instance for each attempt
+                        async with scraper_class() as scraper:
+                            result = await scraper.scrape()  # Call scrape directly, not run_scraping_task
+                            await asyncio.sleep(0.1)  # Small delay to ensure logs are flushed properly
+                    except Exception as session_err:
+                        logger.error(f"Error managing session for {name}: {str(session_err)}")
+                        if attempt < self.MAX_RETRIES - 1:
+                            logger.warning(f"Session error for {name}. Retrying in {self.RETRY_DELAY} seconds...")
+                            await asyncio.sleep(self.RETRY_DELAY)
+                            continue
+                        logger.error(f"Session error for {name}. Max retries exceeded.")
+                        break
+                    
+                    # Extra check to ensure we have a valid result
+                    if not result:
+                        logger.error(f"No result returned from {name} scraper")
+                        if attempt < self.MAX_RETRIES - 1:
+                            logger.warning(f"Retrying {name} scraper in {self.RETRY_DELAY} seconds...")
+                            await asyncio.sleep(self.RETRY_DELAY)
+                            continue
+                        break
                     
                     if not result.success:
                         error_msg = f"Failed to scan listings with {name}: {result.message}"

@@ -26,7 +26,12 @@ class BaseScraper(ABC):
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         if self._session:
-            await self._session.close()
+            try:
+                await self._session.close()
+                self._session = None
+            except Exception as e:
+                self.logger.error(f"Error closing client session: {str(e)}")
+                # Don't re-raise to ensure the session closure attempt doesn't fail the whole operation
 
     @property
     def session(self) -> aiohttp.ClientSession:
@@ -109,6 +114,7 @@ class BaseScraper(ABC):
         Returns:
             ScrapingResult: Complete result of the scraping operation
         """
+        result = None
         try:
             async with self:
                 result = await self.scrape()
@@ -128,4 +134,13 @@ class BaseScraper(ABC):
                 success=False,
                 message=error_msg,
                 data=[]
-            ) 
+            )
+        finally:
+            # Additional safety check to ensure session is closed
+            if hasattr(self, '_session') and self._session is not None:
+                try:
+                    await self._session.close()
+                    self._session = None
+                    self.logger.debug("Session closed in run_scraping_task finally block")
+                except Exception as close_err:
+                    self.logger.error(f"Error closing session in finally block: {str(close_err)}") 
