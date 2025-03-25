@@ -14,8 +14,8 @@ The application consists of four main components:
 ```
 /
 ├── backend/                # Backend services
-│   ├── dockerfile.dev      # Backend Docker configuration for development
-│   ├── dockerfile.prod     # Backend Docker configuration for production
+│   ├── Dockerfile.dev      # Backend Docker configuration for development
+│   ├── Dockerfile.prod     # Backend Docker configuration for production
 │   ├── requirements.txt    # Python dependencies
 │   ├── database/           # Database related files
 │   │   └── init.sql        # Database initialization script
@@ -40,8 +40,8 @@ The application consists of four main components:
 │       └── app.py          # FastAPI application
 │
 ├── frontend/              # Frontend application
-│   ├── dockerfile.dev     # Frontend Docker configuration for development
-│   ├── dockerfile.prod    # Frontend Docker configuration for production
+│   ├── Dockerfile.dev     # Frontend Docker configuration for development
+│   ├── Dockerfile.prod    # Frontend Docker configuration for production
 │   ├── nginx/             # Nginx configuration
 │   │   └── nginx.conf     # Nginx configuration file
 │   ├── public/            # Static assets
