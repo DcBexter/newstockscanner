@@ -23,7 +23,7 @@ def start_scheduler():
     logger.info("Starting scheduler...")
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    
+
     try:
         loop.run_until_complete(start_continuous_scanning_loop())
     except Exception as e:
@@ -34,12 +34,16 @@ def start_scheduler():
 def process_unnotified_listings():
     """Process any unnotified listings and send notifications."""
     logger.info("Checking for unnotified listings...")
-    stock_scanner = StockScanner()
-    
+
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:
-        unnotified_count = loop.run_until_complete(stock_scanner.check_and_notify_unnotified())
+        # Use StockScanner as a context manager to ensure proper resource cleanup
+        async def run_with_context():
+            async with StockScanner() as stock_scanner:
+                return await stock_scanner.check_and_notify_unnotified()
+
+        unnotified_count = loop.run_until_complete(run_with_context())
         if unnotified_count > 0:
             logger.info(f"Sent notifications for {unnotified_count} previously unnotified listings")
         else:
