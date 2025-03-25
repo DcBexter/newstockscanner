@@ -87,10 +87,3 @@ services:
 
 volumes:
   postgres_data:
-
-x-dev-frontend-volumes: &dev-frontend-volumes
-  - ./frontend:/app
-  - /app/node_modules
-
-x-production-frontend-volumes: &production-frontend-volumes
-  [] 
