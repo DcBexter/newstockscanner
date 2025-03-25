@@ -22,7 +22,7 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: dockerfile.dev
+      dockerfile: Dockerfile.dev
     ports:
       - "5173:5173"
     depends_on:
@@ -41,7 +41,7 @@ services:
   api_service:
     build:
       context: ./backend
-      dockerfile: dockerfile.dev
+      dockerfile: Dockerfile.dev
     command: uvicorn backend.api_service.app:app --host 0.0.0.0 --port 8000 --reload
     environment:
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-backend}
@@ -60,7 +60,7 @@ services:
   notification_service:
     build:
       context: ./backend
-      dockerfile: dockerfile.dev
+      dockerfile: Dockerfile.dev
     command: uvicorn backend.notification_service.app:app --host 0.0.0.0 --port 8001 --reload
     environment:
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-backend}
@@ -78,7 +78,7 @@ services:
   scraper_service:
     build:
       context: ./backend
-      dockerfile: dockerfile.dev
+      dockerfile: Dockerfile.dev
     command: python -m backend.scraper_service.main
     environment:
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-backend}
