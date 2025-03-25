@@ -52,11 +52,8 @@ The application consists of four main components:
 │
 ├── docker-compose.yml     # Docker Compose configuration for production
 ├── docker-compose.dev.yml # Docker Compose configuration for development
-├── docker-compose.test.yml # Docker Compose configuration for testing
 ├── start-dev.bat          # Script to start the application in development mode
 ├── start-prod.bat         # Script to start the application in production mode
-├── run-tests.bat          # Script to run tests on Windows
-├── run-tests.sh           # Script to run tests on Unix-like systems
 └── .env                   # Environment variables
 ```
 
@@ -96,24 +93,6 @@ docker-compose up --build  # On any platform
 
 The production frontend will be available at `http://localhost:80`.
 
-### Test Environment
-The test environment is designed for running automated tests:
-- Separate PostgreSQL database for testing
-- Mock environment variables for external services
-- Volume mounts for accessing test files
-- Pytest configuration for running tests
-
-To run the tests:
-```bash
-./run-tests.bat  # On Windows
-# or
-./run-tests.sh   # On Unix-like systems
-# or
-docker-compose -f docker-compose.test.yml up --build  # On any platform
-```
-
-The tests will run in the Docker container and the results will be displayed in the console.
-
 ## Progress Tracking
 
 - [x] Initial directory structure created
@@ -124,7 +103,3 @@ The tests will run in the Docker container and the results will be displayed in 
 - [x] Docker configuration updated and moved to appropriate directories
 - [x] Development and production environments configured
 - [ ] Application running successfully
-
-## Code Quality
-
-We are committed to maintaining high code quality standards in this project. Please refer to the [Clean Code Implementation Plan](CLEAN_CODE_PLAN.md) for details on our approach to improving code quality and the guidelines to follow when contributing to this project.
