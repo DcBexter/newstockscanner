@@ -9,7 +9,6 @@ from backend.scraper_service.scrapers.frankfurt_scraper import FrankfurtScraper
 from backend.api_service.services import ListingService
 from backend.config.logging import setup_logging
 from backend.scraper_service.services import DatabaseService, DatabaseHelper, NotificationService
-from backend.core.models import ListingBase
 
 logger = logging.getLogger(__name__)
 
