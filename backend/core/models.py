@@ -24,8 +24,7 @@ class Listing(ListingBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 class ExchangeBase(BaseModel):
     """Base model for exchanges."""
@@ -43,8 +42,7 @@ class Exchange(ExchangeBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 class NotificationMessage(BaseModel):
     """Model for notification messages."""

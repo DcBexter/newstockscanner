@@ -1,5 +1,5 @@
 from typing import Optional
-from pydantic_settings import BaseSettings
+from pydantic_settings import SettingsConfigDict, BaseSettings
 from functools import lru_cache
 import os
 from dotenv import load_dotenv
@@ -8,6 +8,9 @@ load_dotenv()
 
 class Settings(BaseSettings):
     """Application settings with environment variable support."""
+    
+    # Debug mode
+    DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
     
     # Database
     DATABASE_URL: str = os.getenv(
@@ -37,10 +40,7 @@ class Settings(BaseSettings):
     # Logging
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
     LOG_FORMAT: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
 
 @lru_cache()
 def get_settings() -> Settings:

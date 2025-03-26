@@ -1,11 +1,13 @@
-from typing import AsyncGenerator, Dict, Optional
-import asyncio
+import logging
 import threading
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, AsyncEngine
-from sqlalchemy.orm import sessionmaker
+from typing import AsyncGenerator, Dict, Optional
+
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, AsyncEngine, async_sessionmaker
 
 from backend.config.settings import get_settings
 from backend.database.models import Base
+
+logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
@@ -17,29 +19,29 @@ _engines: Dict[int, AsyncEngine] = {}
 def get_engine() -> AsyncEngine:
     """Get or create an engine for the current thread."""
     thread_id = threading.get_ident()
-    
+
     # Check if we already have an engine for this thread
     with _engines_lock:
         if thread_id not in _engines:
             # Create a new engine for this thread
             _engines[thread_id] = create_async_engine(
                 settings.DATABASE_URL,
-                echo=False,
-                future=True,
+                pool_size=3,
+                max_overflow=5,
+                pool_timeout=30,
                 pool_pre_ping=True,
-                # Use smaller pool size for thread-specific engines
-                pool_size=5,
-                max_overflow=10
+                pool_use_lifo=True,
+                echo=settings.DEBUG
             )
-    
+
     return _engines[thread_id]
 
-def get_session_factory(engine: Optional[AsyncEngine] = None) -> sessionmaker:
+def get_session_factory(engine: Optional[AsyncEngine] = None) -> async_sessionmaker:
     """Get a session factory for the given engine or current thread."""
     if engine is None:
         engine = get_engine()
-    
-    return sessionmaker(
+
+    return async_sessionmaker(
         engine,
         class_=AsyncSession,
         expire_on_commit=False,
@@ -51,16 +53,16 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """Dependency for getting async database sessions."""
     # Get the session factory for the current thread
     session_factory = get_session_factory()
-    
-    async with session_factory() as session:
-        try:
+
+    session = session_factory()
+    try:
+        async with session:
             yield session
-            await session.commit()
-        except Exception:
-            await session.rollback()
-            raise
-        finally:
-            await session.close()
+    except Exception:
+        await session.rollback()
+        raise
+    finally:
+        await session.close()
 
 async def init_db() -> None:
     """Initialize database tables."""
@@ -73,5 +75,20 @@ async def close_db() -> None:
     # Close all engines
     with _engines_lock:
         for engine in _engines.values():
-            await engine.dispose()
+            try:
+                # First try to dispose of the engine's connection pool
+                await engine.dispose()
+            except RuntimeError as e:
+                # If the event loop is closed, try to close connections directly
+                try:
+                    pool = engine.pool
+                    if pool is not None:
+                        for conn in pool._refs:  # type: ignore
+                            try:
+                                await conn.close()
+                            except Exception:
+                                pass
+                except Exception as e:
+                    logger.error(f"Error closing connections: {e}", exc_info=True)
+        # Clear the engines dictionary
         _engines.clear() 

@@ -1,55 +1,33 @@
 """Database service for the scraper service."""
 
 import logging
-from typing import List, Dict, Any
+from contextlib import AsyncExitStack
+from typing import Callable, Any, Awaitable, TypeVar
+from typing import List, Dict
 
-from backend.database.session import get_db
-from backend.core.models import ListingCreate
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from backend.api_service.services import ListingService
+from backend.core.models import ListingCreate
+from backend.database.session import get_session_factory
 
 logger = logging.getLogger(__name__)
 
+T = TypeVar('T')
+
 class DatabaseHelper:
-    """Helper for managing database connections and transactions."""
-    
     @staticmethod
-    async def execute_db_operation(operation_func):
-        """Execute a database operation with proper connection handling.
-        
-        Args:
-            operation_func: An async function that takes a database connection and performs operations
-            
-        Returns:
-            The result of the operation function
-        """
-        db = None
-        db_gen = None
-        
-        try:
-            # Get a fresh database connection
-            db_gen = get_db()
-            db = await anext(db_gen)
-            
-            # Execute the operation
-            return await operation_func(db)
-        except Exception as e:
-            # Log the error and re-raise
-            logger.error(f"Database operation error: {str(e)}")
-            raise
-        finally:
-            # Always properly close the database connection
-            if db:
-                try:
-                    await db.close()
-                except Exception as e:
-                    logger.debug(f"Error closing database connection: {str(e)}")
-            
-            # Close the database generator
-            if db_gen:
-                try:
-                    await db_gen.aclose()
-                except Exception as e:
-                    logger.debug(f"Error closing database generator: {str(e)}")
+    async def execute_db_operation(operation: Callable[[AsyncSession], Awaitable[T]]) -> T:
+        """Execute a database operation with proper session management."""
+        session_factory = get_session_factory()
+        async with session_factory() as session:
+            try:
+                result = await operation(session)
+                await session.commit()
+                return result
+            except Exception as e:
+                await session.rollback()
+                raise e
 
 class DatabaseService:
     """Service for database operations related to stock listings."""
@@ -58,7 +36,8 @@ class DatabaseService:
         self.MAX_RETRIES = 3
         self.RETRY_DELAY = 5  # seconds
     
-    async def save_listings(self, listings: List[Dict[str, Any]]) -> Dict[str, Any]:
+    @staticmethod
+    async def save_listings(listings: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Save listings to the database using the ListingService."""
         if not listings:
             logger.info("No listings to save")

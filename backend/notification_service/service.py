@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.core.models import NotificationMessage
 from backend.database.models import NotificationLog
 from backend.notification_service.notifiers.base import BaseNotifier
-from backend.notification_service.notifiers import TelegramNotifier
+from backend.notification_service.notifiers.telegram import TelegramNotifier
 from backend.core.exceptions import NotifierError, DatabaseError
 
 class NotificationService:
@@ -34,10 +34,10 @@ class NotificationService:
 
             notifier = self._get_notifier(notifier_type)
             log = await self._create_log(message, notifier_type)
-            
+
             success = await notifier.send(message)
             await self._update_log(log, success)
-            
+
             return success
         except Exception as e:
             await self._handle_error(message, notifier_type, str(e))
@@ -54,11 +54,11 @@ class NotificationService:
                 await self._initialize_notifiers()
 
             notifier = self._get_notifier(notifier_type)
-            
+
             # Check if the notifier has a specialized method for listings
             if hasattr(notifier, 'notify_new_listings'):
                 return await notifier.notify_new_listings(listings)
-            
+
             # Fallback to generic notification
             message = NotificationMessage(
                 title="New Stock Listings",
@@ -66,7 +66,7 @@ class NotificationService:
                 metadata={"listings_count": len(listings)}
             )
             return await self.send(message, notifier_type)
-            
+
         except Exception as e:
             raise NotifierError(f"Failed to send new listings notification: {str(e)}")
 
@@ -79,16 +79,16 @@ class NotificationService:
         """Get notification logs with optional filters."""
         try:
             query = select(NotificationLog)
-            
+
             if status:
                 query = query.where(NotificationLog.status == status)
             if days:
                 # Convert UTC datetime to naive datetime for database comparison
                 since = datetime.now(UTC).replace(tzinfo=None) - timedelta(days=days)
                 query = query.where(NotificationLog.created_at >= since)
-                
+
             query = query.order_by(NotificationLog.created_at.desc()).limit(limit)
-            
+
             result = await self.db.execute(query)
             return list(result.scalars().all())
         except Exception as e:
@@ -101,9 +101,9 @@ class NotificationService:
             telegram = TelegramNotifier()
             await telegram.initialize()
             self._notifiers["telegram"] = telegram
-            
+
             # Add more notifiers here as needed
-            
+
             self._initialized = True
         except Exception as e:
             raise NotifierError(f"Failed to initialize notification service: {str(e)}")
