@@ -22,7 +22,7 @@ import logging
 
 from backend.database.session import get_db, init_db, close_db
 from backend.config.settings import get_settings
-from backend.config.logging import setup_logging, set_request_id
+from backend.config.log_config import setup_logging, set_request_id
 from backend.core.exceptions import StockScannerError
 from backend.api_service.routes import router
 
