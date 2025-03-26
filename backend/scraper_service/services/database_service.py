@@ -2,7 +2,7 @@
 
 import logging
 from typing import Callable, Any, Awaitable, TypeVar
-from typing import List, Dict, Optional
+from typing import List, Dict
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
