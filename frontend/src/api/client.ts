@@ -1,43 +1,6 @@
 import axios from 'axios';
-import { API_URL, CACHE_SETTINGS, API_ENDPOINTS } from '../config/api.config';
 
-/**
- * API Client for the Stock Scanner Application
- * 
- * Note on naming conventions:
- * - The backend API uses snake_case for all field names and parameters
- * - The frontend uses camelCase for variables and functions
- * - For API communication, we maintain snake_case in interfaces and parameters
- *   that directly interact with the API to match the backend convention
- * - This approach avoids the need for conversion between naming conventions
- *   but requires careful attention when working with API data
- */
-
-// Simple cache implementation
-interface CacheEntry<T> {
-  data: T;
-  timestamp: number;
-  params?: string;
-}
-
-const cache: Record<string, CacheEntry<unknown>> = {};
-// Use cache TTL from configuration
-const CACHE_TTL = CACHE_SETTINGS.TTL;
-
-// Helper to get cache key
-const getCacheKey = (endpoint: string, params?: Record<string, unknown>): string => {
-  const paramsString = params ? JSON.stringify(params) : '';
-  return `${endpoint}:${paramsString}`;
-};
-
-// Helper to check if cache is valid
-const isCacheValid = (cacheKey: string): boolean => {
-  const entry = cache[cacheKey];
-  if (!entry) return false;
-
-  const now = Date.now();
-  return now - entry.timestamp < CACHE_TTL;
-};
+const API_URL = '/api/v1';
 
 export interface Listing {
   id: number;
@@ -85,75 +48,25 @@ export const api = {
     days?: number;
     start_date?: string;
     end_date?: string;
-  }): Promise<Listing[]> => {
-    const cacheKey = getCacheKey(API_ENDPOINTS.LISTINGS, params);
-
-    // Check cache first
-    if (isCacheValid(cacheKey)) {
-      console.log('Using cached listings data');
-      return cache[cacheKey].data as Listing[];
-    }
-
-    // If not in cache or expired, make the API call
-    const { data } = await axios.get<PaginatedListings>(`${API_URL}/${API_ENDPOINTS.LISTINGS}/`, { params });
-
-    // Store in cache
-    cache[cacheKey] = {
-      data: data.items,
-      timestamp: Date.now(),
-      params: JSON.stringify(params)
-    } as CacheEntry<Listing[]>;
-
+  }) => {
+    const { data } = await axios.get<PaginatedListings>(`${API_URL}/listings/`, { params });
     return data.items;
   },
 
-  getExchanges: async (): Promise<Exchange[]> => {
-    const cacheKey = getCacheKey(API_ENDPOINTS.EXCHANGES);
-
-    // Check cache first
-    if (isCacheValid(cacheKey)) {
-      console.log('Using cached exchanges data');
-      return cache[cacheKey].data as Exchange[];
-    }
-
-    // If not in cache or expired, make the API call
-    const { data } = await axios.get<Exchange[]>(`${API_URL}/${API_ENDPOINTS.EXCHANGES}/`);
-
-    // Store in cache
-    cache[cacheKey] = {
-      data,
-      timestamp: Date.now()
-    } as CacheEntry<Exchange[]>;
-
+  getExchanges: async () => {
+    const { data } = await axios.get<Exchange[]>(`${API_URL}/exchanges/`);
     return data;
   },
 
-  getStatistics: async (days: number = 30): Promise<Statistics> => {
-    const cacheKey = getCacheKey(API_ENDPOINTS.STATISTICS, { days });
-
-    // Check cache first
-    if (isCacheValid(cacheKey)) {
-      console.log('Using cached statistics data');
-      return cache[cacheKey].data as Statistics;
-    }
-
-    // If not in cache or expired, make the API call
-    const { data } = await axios.get<Statistics>(`${API_URL}/${API_ENDPOINTS.STATISTICS}/`, {
+  getStatistics: async (days: number = 30) => {
+    const { data } = await axios.get<Statistics>(`${API_URL}/statistics/`, {
       params: { days },
     });
-
-    // Store in cache
-    cache[cacheKey] = {
-      data,
-      timestamp: Date.now(),
-      params: JSON.stringify({ days })
-    } as CacheEntry<Statistics>;
-
     return data;
   },
 
-  triggerScrape: async (exchange?: string): Promise<unknown> => {
-    const { data } = await axios.post(`${API_URL}/${API_ENDPOINTS.SCRAPE}/`, null, {
+  triggerScrape: async (exchange?: string) => {
+    const { data } = await axios.post(`${API_URL}/scrape/`, null, {
       params: exchange ? { exchange } : undefined
     });
     return data;

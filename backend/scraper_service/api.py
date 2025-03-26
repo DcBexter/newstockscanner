@@ -31,6 +31,42 @@ except ImportError:
     logger.warning("Prometheus client not installed. Metrics collection is disabled.")
     logger.warning("To enable metrics, install prometheus-client: pip install prometheus-client")
 
+    # Define dummy metrics and setup_metrics when prometheus_client is not available
+    def setup_metrics(app):
+        """Dummy setup_metrics function when prometheus_client is not available."""
+        pass
+
+    class DummyMetrics:
+        """Dummy metrics class when prometheus_client is not available."""
+        def counter(self, name, description='', labels=None):
+            return self
+
+        def histogram(self, name, description='', labels=None, buckets=None):
+            return self
+
+        def gauge(self, name, description='', labels=None):
+            return self
+
+        def labels(self, *args, **kwargs):
+            return self
+
+        def inc(self, value=1):
+            pass
+
+        def dec(self, value=1):
+            pass
+
+        def observe(self, value):
+            pass
+
+        def set_to_current_time(self):
+            pass
+
+        def set(self, value):
+            pass
+
+    metrics = DummyMetrics()
+
 # Create FastAPI app
 app = FastAPI(title="Stock Scanner API")
 
@@ -183,7 +219,7 @@ async def scan(
             # Each scanner instance gets its own database connections
             scanner = StockScanner()
             # Run the scan with the provided exchange filter
-            result = await scanner.run(exchange_filter=exchange_filter)
+            result = await scanner.scan_and_process_exchanges(exchange_filter=exchange_filter)
 
             # Record success metrics if enabled
             if METRICS_ENABLED and result:

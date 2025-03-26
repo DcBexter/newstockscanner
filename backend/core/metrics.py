@@ -72,7 +72,21 @@ class Metrics:
             Counter: The Counter metric.
         """
         if name not in self._counters:
-            self._counters[name] = Counter(name, description, labels or [])
+            try:
+                self._counters[name] = Counter(name, description, labels or [])
+            except ValueError as e:
+                # If the metric already exists in the registry, try to get it
+                if f"Duplicated timeseries in CollectorRegistry" in str(e):
+                    # For existing metrics, we can use the existing metric from the registry
+                    from prometheus_client import REGISTRY
+                    for metric in REGISTRY.collect():
+                        if metric.name == name:
+                            # Found the existing metric, use it
+                            self._counters[name] = Counter(name, description, labels or [], registry=None)
+                            break
+                else:
+                    # Re-raise if it's a different error
+                    raise
         return self._counters[name]
 
     def histogram(self, name: str, description: str = '', labels: Optional[list] = None, 
@@ -90,7 +104,29 @@ class Metrics:
             Histogram: The Histogram metric.
         """
         if name not in self._histograms:
-            self._histograms[name] = Histogram(name, description, labels or [], buckets=buckets)
+            try:
+                if buckets is not None:
+                    self._histograms[name] = Histogram(name, description, labels or [], buckets=buckets)
+                else:
+                    self._histograms[name] = Histogram(name, description, labels or [])
+            except ValueError as e:
+                # If the metric already exists in the registry, try to get it
+                if f"Duplicated timeseries in CollectorRegistry" in str(e):
+                    # For existing metrics, we can use the existing metric from the registry
+                    from prometheus_client import REGISTRY
+                    for metric in REGISTRY.collect():
+                        if metric.name == name:
+                            # Found the existing metric, use it
+                            if buckets is not None:
+                                self._histograms[name] = Histogram(name, description, labels or [], 
+                                                                 buckets=buckets, registry=None)
+                            else:
+                                self._histograms[name] = Histogram(name, description, labels or [], 
+                                                                 registry=None)
+                            break
+                else:
+                    # Re-raise if it's a different error
+                    raise
         return self._histograms[name]
 
     def gauge(self, name: str, description: str = '', labels: Optional[list] = None) -> Gauge:
@@ -106,7 +142,21 @@ class Metrics:
             Gauge: The Gauge metric.
         """
         if name not in self._gauges:
-            self._gauges[name] = Gauge(name, description, labels or [])
+            try:
+                self._gauges[name] = Gauge(name, description, labels or [])
+            except ValueError as e:
+                # If the metric already exists in the registry, try to get it
+                if f"Duplicated timeseries in CollectorRegistry: {{'{name}'}}" in str(e):
+                    # For process_start_time_seconds, we can use the existing metric from the registry
+                    from prometheus_client import REGISTRY
+                    for metric in REGISTRY.collect():
+                        if metric.name == name:
+                            # Found the existing metric, use it
+                            self._gauges[name] = Gauge(name, description, labels or [], registry=None)
+                            break
+                else:
+                    # Re-raise if it's a different error
+                    raise
         return self._gauges[name]
 
     def summary(self, name: str, description: str = '', labels: Optional[list] = None) -> Summary:
@@ -122,7 +172,21 @@ class Metrics:
             Summary: The Summary metric.
         """
         if name not in self._summaries:
-            self._summaries[name] = Summary(name, description, labels or [])
+            try:
+                self._summaries[name] = Summary(name, description, labels or [])
+            except ValueError as e:
+                # If the metric already exists in the registry, try to get it
+                if f"Duplicated timeseries in CollectorRegistry" in str(e):
+                    # For existing metrics, we can use the existing metric from the registry
+                    from prometheus_client import REGISTRY
+                    for metric in REGISTRY.collect():
+                        if metric.name == name:
+                            # Found the existing metric, use it
+                            self._summaries[name] = Summary(name, description, labels or [], registry=None)
+                            break
+                else:
+                    # Re-raise if it's a different error
+                    raise
         return self._summaries[name]
 
     def generate_latest(self) -> bytes:

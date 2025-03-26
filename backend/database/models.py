@@ -8,11 +8,11 @@ Base = declarative_base()
 
 class TimestampMixin:
     """Mixin for adding created_at and updated_at timestamps."""
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now(timezone.utc), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, 
-        default=datetime.now(timezone.utc),
-        onupdate=datetime.now(timezone.utc),
+        default=datetime.now,
+        onupdate=datetime.now,
         nullable=False
     )
 
