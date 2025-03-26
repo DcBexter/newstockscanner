@@ -65,7 +65,10 @@ export default function Dashboard({ toggleColorMode, currentTheme }: DashboardPr
     dispatch(actions.setDays(daysValue));
   };
 
-  // Exchange codes
+  // Constants for the application
+  const NOTIFICATION_DURATION = 6000; // 6 seconds in milliseconds
+
+  // Exchange codes - these could be moved to a constants file
   const EXCHANGE_CODES = {
     HKEX: 'HKEX',
     NASDAQ: 'NASDAQ',
@@ -133,10 +136,22 @@ export default function Dashboard({ toggleColorMode, currentTheme }: DashboardPr
     }
   };
 
-  // Specific exchange scan handlers
-  const handleScan = () => handleExchangeScan(EXCHANGE_CODES.HKEX);
-  const handleNasdaqScan = () => handleExchangeScan(EXCHANGE_CODES.NASDAQ);
-  const handleNyseScan = () => handleExchangeScan(EXCHANGE_CODES.NYSE);
+  // ScanButton component to eliminate duplicate button rendering logic
+  const ScanButton = ({ exchangeCode, isSelected }: { exchangeCode: string, isSelected: boolean }) => {
+    if (!isSelected) return null;
+
+    return (
+      <Button
+        variant="contained"
+        onClick={() => handleExchangeScan(exchangeCode)}
+        disabled={isScanning}
+        startIcon={<Refresh />}
+        size="large"
+      >
+        {isScanning ? 'Scanning...' : `SCAN ${exchangeCode}`}
+      </Button>
+    );
+  };
 
   const paperStyle = {
     p: 3, 
@@ -192,48 +207,16 @@ export default function Dashboard({ toggleColorMode, currentTheme }: DashboardPr
             </IconButton>
           </Tooltip>
 
-          {isHkexSelected && (
-            <Button
-              variant="contained"
-              onClick={handleScan}
-              disabled={isScanning}
-              startIcon={<Refresh />}
-              size="large"
-            >
-              {isScanning ? 'Scanning...' : 'SCAN HKEX'}
-            </Button>
-          )}
-
-          {isNasdaqSelected && (
-            <Button
-              variant="contained"
-              onClick={handleNasdaqScan}
-              disabled={isScanning}
-              startIcon={<Refresh />}
-              size="large"
-            >
-              {isScanning ? 'Scanning...' : 'SCAN NASDAQ'}
-            </Button>
-          )}
-
-          {isNyseSelected && (
-            <Button
-              variant="contained"
-              onClick={handleNyseScan}
-              disabled={isScanning}
-              startIcon={<Refresh />}
-              size="large"
-            >
-              {isScanning ? 'Scanning...' : 'SCAN NYSE'}
-            </Button>
-          )}
+          <ScanButton exchangeCode={EXCHANGE_CODES.HKEX} isSelected={isHkexSelected} />
+          <ScanButton exchangeCode={EXCHANGE_CODES.NASDAQ} isSelected={isNasdaqSelected} />
+          <ScanButton exchangeCode={EXCHANGE_CODES.NYSE} isSelected={isNyseSelected} />
         </Box>
       </Box>
 
       {/* New Listings Notification */}
       <Snackbar 
         open={notificationOpen} 
-        autoHideDuration={6000} 
+        autoHideDuration={NOTIFICATION_DURATION} 
         onClose={handleNotificationClose}
         anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
       >
