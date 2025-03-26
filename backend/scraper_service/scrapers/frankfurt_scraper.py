@@ -1,16 +1,15 @@
-from typing import List, Dict, Any, Optional
-import logging
-import json
-import asyncio
-from bs4 import BeautifulSoup
-from datetime import datetime, timedelta
 import re
 from contextlib import suppress
+from datetime import datetime, timedelta
+from typing import List, Dict, Any, Optional
 
-from backend.scraper_service.scrapers.base import BaseScraper
+from bs4 import BeautifulSoup
+
+from backend.core.exceptions import ParsingError
 from backend.core.models import ListingBase, ScrapingResult
-from backend.core.exceptions import ParsingError, ScraperError
 from backend.core.utils import DateUtils
+from backend.scraper_service.scrapers.base import BaseScraper
+
 
 class FrankfurtScraper(BaseScraper):
     """Scraper for Frankfurt Stock Exchange (Börse Frankfurt) listings."""
