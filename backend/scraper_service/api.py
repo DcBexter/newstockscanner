@@ -285,7 +285,7 @@ async def health_check(db: AsyncSession = Depends(get_db)) -> Dict[str, Any]:
         await db.execute(text("SELECT 1"))
     except Exception as e:
         logger.error(f"Database health check failed: {str(e)}")
-        db_status = f"error: {str(e)}"
+        db_status = "error: unable to connect to the database"
 
     # Check if scrapers are available
     scrapers_status = {}
@@ -299,7 +299,7 @@ async def health_check(db: AsyncSession = Depends(get_db)) -> Dict[str, Any]:
             scrapers_status[name] = "available"
         except Exception as e:
             logger.error(f"Scraper {name} health check failed: {str(e)}")
-            scrapers_status[name] = f"error: {str(e)}"
+            scrapers_status[name] = "error: scraper unavailable"
 
     # Overall status is healthy only if all dependencies are working
     overall_status = "healthy"
