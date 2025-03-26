@@ -1,5 +1,10 @@
 """
 Routes for stock listing operations.
+
+This module defines the API routes for stock listing operations, including
+retrieving listings with filters, getting a specific listing by symbol,
+and creating new listings. It uses the ListingService to interact with
+the database.
 """
 
 from typing import List, Optional
@@ -25,37 +30,50 @@ async def get_listings(
     end_date: Optional[str] = None,
     db: AsyncSession = Depends(get_db)
 ):
-    """Get listings with optional filters.
-    
+    """
+    Get listings with optional filters.
+
+    This endpoint retrieves stock listings from the database with optional filters
+    for exchange code, status, and time period. It supports filtering by either
+    a specific date range or by the number of days from the current date.
+
     Args:
-        exchange_code: Filter by exchange code
-        status: Filter by listing status
-        days: Get listings from the last N days
-        start_date: Get listings from this date (format: YYYY-MM-DD)
-        end_date: Get listings up to this date (format: YYYY-MM-DD)
+        exchange_code (Optional[str], optional): Filter by exchange code. Defaults to None.
+        status (Optional[str], optional): Filter by listing status. Defaults to None.
+        days (Optional[int], optional): Get listings from the last N days. Defaults to 30.
+        start_date (Optional[str], optional): Get listings from this date (format: YYYY-MM-DD). Defaults to None.
+        end_date (Optional[str], optional): Get listings up to this date (format: YYYY-MM-DD). Defaults to None.
+        db (AsyncSession): The database session, injected by FastAPI.
+
+    Returns:
+        List[Listing]: A list of Listing objects matching the filters.
+
+    Raises:
+        HTTPException: If there's an error with the date format or date range,
+                      or if there's an error retrieving listings from the database.
     """
     service = ListingService(db)
     try:
         # Parse date strings if provided
         parsed_start_date = None
         parsed_end_date = None
-        
+
         if start_date:
             try:
                 parsed_start_date = datetime.strptime(start_date, "%Y-%m-%d")
             except ValueError:
                 raise HTTPException(status_code=400, detail="Invalid start_date format. Use YYYY-MM-DD")
-                
+
         if end_date:
             try:
                 parsed_end_date = datetime.strptime(end_date, "%Y-%m-%d")
             except ValueError:
                 raise HTTPException(status_code=400, detail="Invalid end_date format. Use YYYY-MM-DD")
-        
+
         # Validate date range
         if parsed_start_date and parsed_end_date and parsed_start_date > parsed_end_date:
             raise HTTPException(status_code=400, detail="start_date must be before or equal to end_date")
-        
+
         # Get database models - use date range if provided, otherwise use days
         if parsed_start_date and parsed_end_date:
             db_listings = await service.get_by_date_range(
@@ -63,7 +81,7 @@ async def get_listings(
             )
         else:
             db_listings = await service.get_filtered(exchange_code, status, days)
-        
+
         # Convert database models to Pydantic models to avoid detached session issues
         return [
             Listing(
@@ -87,12 +105,27 @@ async def get_listings(
 
 @router.get("/{symbol}", response_model=Listing)
 async def get_listing(symbol: str, db: AsyncSession = Depends(get_db)):
-    """Get listing by symbol."""
+    """
+    Get listing by symbol.
+
+    This endpoint retrieves a specific stock listing from the database by its symbol.
+
+    Args:
+        symbol (str): The symbol of the listing to retrieve.
+        db (AsyncSession): The database session, injected by FastAPI.
+
+    Returns:
+        Listing: The Listing object if found.
+
+    Raises:
+        HTTPException: If the listing is not found or if there's an error
+                      retrieving the listing from the database.
+    """
     service = ListingService(db)
     listing = await service.get_by_symbol(symbol)
     if not listing:
         raise HTTPException(status_code=404, detail="Listing not found")
-    
+
     # Convert to Pydantic model to avoid detached session issues
     return Listing(
         id=listing.id,
@@ -111,12 +144,29 @@ async def get_listing(symbol: str, db: AsyncSession = Depends(get_db)):
 
 @router.post("/", response_model=Listing)
 async def create_listing(listing: ListingCreate, db: AsyncSession = Depends(get_db)):
-    """Create a new listing."""
+    """
+    Create a new listing.
+
+    This endpoint creates a new stock listing in the database. If a listing with the
+    same symbol and exchange code already exists, it updates the existing listing
+    instead of creating a new one.
+
+    Args:
+        listing (ListingCreate): The listing data to create.
+        db (AsyncSession): The database session, injected by FastAPI.
+
+    Returns:
+        Listing: The created or updated Listing object.
+
+    Raises:
+        HTTPException: If there's an error creating or updating the listing in the database,
+                      such as if the exchange with the given code doesn't exist.
+    """
     service = ListingService(db)
     try:
         # Create in database
         db_listing = await service.create(listing)
-        
+
         # Convert to Pydantic model to avoid detached session issues
         return Listing(
             id=db_listing.id,
