@@ -1,3 +1,12 @@
+"""
+Stock Scanner module for scraping stock listings from various exchanges.
+
+This module provides functionality to scan multiple stock exchanges for new listings,
+save them to the database, and send notifications about new listings.
+It supports continuous scanning at regular intervals and includes retry mechanisms
+for handling temporary failures.
+"""
+
 import asyncio
 from typing import List, Dict, Any, Optional
 import logging
@@ -13,6 +22,18 @@ from backend.scraper_service.services import DatabaseService, DatabaseHelper, No
 logger = logging.getLogger(__name__)
 
 class StockScanner:
+    """
+    Main class for scanning stock listings from various exchanges.
+
+    This class orchestrates the process of scraping stock listings from different
+    exchanges, saving them to the database, and sending notifications about new listings.
+    It includes retry mechanisms for handling temporary failures and supports
+    filtering by exchange.
+
+    Attributes:
+        MAX_RETRIES (int): Maximum number of retry attempts for failed scraping operations.
+        RETRY_DELAY (int): Delay in seconds between retry attempts.
+    """
     MAX_RETRIES = 3
     RETRY_DELAY = 5  # seconds
 
@@ -28,17 +49,48 @@ class StockScanner:
         self.notification_service = NotificationService()
 
     async def __aenter__(self):
-        """Enter async context."""
+        """
+        Enter async context.
+
+        This method allows the StockScanner to be used as an async context manager.
+
+        Returns:
+            StockScanner: The StockScanner instance.
+        """
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        """Exit async context: properly close resources."""
+        """
+        Exit async context: properly close resources.
+
+        This method is called when exiting the async context manager.
+        Currently, there are no resources to clean up, but this method
+        allows for future resource cleanup if needed.
+
+        Args:
+            exc_type: The exception type, if an exception was raised.
+            exc_val: The exception value, if an exception was raised.
+            exc_tb: The exception traceback, if an exception was raised.
+        """
         # Currently no resources to clean up, but this method
         # allows for future resource cleanup if needed
         pass
 
     async def scan_listings(self, exchange_filter=None) -> List[Dict[str, Any]]:
-        """Scan for new listings with retries across all scrapers."""
+        """
+        Scan for new listings with retries across all scrapers.
+
+        This method runs all applicable scrapers (or a filtered subset) to collect
+        stock listings from various exchanges. It includes retry logic to handle
+        temporary failures.
+
+        Args:
+            exchange_filter (str, optional): Filter to run only a specific exchange scraper.
+                                            If None, all scrapers will be run. Defaults to None.
+
+        Returns:
+            List[Dict[str, Any]]: A list of dictionaries containing the scraped listings.
+        """
         all_listings = []
         scrapers_to_run = self._filter_scrapers(exchange_filter)
 
@@ -87,7 +139,19 @@ class StockScanner:
         return all_listings
 
     def _filter_scrapers(self, exchange_filter):
-        """Filter scrapers based on the exchange filter."""
+        """
+        Filter scrapers based on the exchange filter.
+
+        This method returns a subset of scrapers based on the exchange filter,
+        or all scrapers if no filter is provided.
+
+        Args:
+            exchange_filter (str, optional): The exchange code to filter by.
+                                           If None, all scrapers will be returned.
+
+        Returns:
+            Dict[str, type]: A dictionary mapping exchange codes to scraper classes.
+        """
         if not exchange_filter:
             return self.scraper_classes
 
@@ -98,7 +162,20 @@ class StockScanner:
         return self.scraper_classes
 
     async def save_to_database(self, listings: List[Any]) -> Dict[str, Any]:
-        """Save listings to the database using the database service."""
+        """
+        Save listings to the database using the database service.
+
+        This method processes the listings to ensure they have the correct format
+        and then saves them to the database.
+
+        Args:
+            listings (List[Any]): A list of listings to save. Each listing can be
+                                 a dictionary or an object with a model_dump method.
+
+        Returns:
+            Dict[str, Any]: A dictionary containing the results of the save operation,
+                           including counts of saved listings and new listings.
+        """
         listing_dicts = []
         for listing in listings:
             listing_dict = listing if isinstance(listing, dict) else listing.model_dump()
@@ -115,11 +192,39 @@ class StockScanner:
         return await self.db_service.save_listings(listing_dicts)
 
     async def send_notifications(self, listings: List[Dict[str, Any]]) -> bool:
-        """Send notifications for new stock listings."""
+        """
+        Send notifications for new stock listings.
+
+        This method uses the notification service to send notifications about
+        new stock listings.
+
+        Args:
+            listings (List[Dict[str, Any]]): A list of dictionaries containing
+                                           the listings to send notifications for.
+
+        Returns:
+            bool: True if notifications were sent successfully, False otherwise.
+        """
         return await self.notification_service.send_listing_notifications(listings)
 
     async def scan_and_process_exchanges(self, exchange_filter: Optional[str] = None) -> Dict[str, Any]:
-        """Scan exchanges, save listings, and send notifications."""
+        """
+        Scan exchanges, save listings, and send notifications.
+
+        This method orchestrates the entire process of scanning exchanges for new listings,
+        saving them to the database, and sending notifications. It also checks for
+        unnotified listings from previous runs.
+
+        Args:
+            exchange_filter (Optional[str], optional): Filter to run only a specific
+                                                     exchange scraper. If None, all
+                                                     scrapers will be run. Defaults to None.
+
+        Returns:
+            Dict[str, Any]: A dictionary containing the results of the operation,
+                           including counts of all listings, saved listings,
+                           new listings, and unnotified listings that were sent.
+        """
         logger_msg = f"{exchange_filter.upper()}-only scan" if exchange_filter else "multiple exchanges"
         logger.info(f"Starting stock scanner with {logger_msg}...")
 
@@ -152,7 +257,16 @@ class StockScanner:
         }
 
     async def check_and_notify_unnotified(self) -> int:
-        """Check for unnotified listings and send notifications."""
+        """
+        Check for unnotified listings and send notifications.
+
+        This method checks the database for listings that haven't been notified yet
+        and sends notifications for them. It then marks the listings as notified.
+
+        Returns:
+            int: The number of unnotified listings that were successfully notified.
+                 Returns 0 if no unnotified listings were found or if notifications failed.
+        """
         try:
             async def get_and_process_unnotified(db):
                 service = ListingService(db)
@@ -202,7 +316,16 @@ class StockScanner:
             return 0
 
 async def start_continuous_scanning_loop():
-    """Continuously runs the scanner at regular intervals."""
+    """
+    Continuously runs the scanner at regular intervals.
+
+    This function creates a StockScanner instance and runs it in a loop,
+    with a configurable delay between runs. It handles exceptions and
+    ensures proper cleanup of resources.
+
+    The interval between scans is controlled by the SCRAPING_INTERVAL_MINUTES
+    environment variable, which defaults to 60 minutes if not set.
+    """
     while True:
         try:
             # Use StockScanner as a context manager to ensure proper resource cleanup
