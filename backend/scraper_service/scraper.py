@@ -104,7 +104,8 @@ class StockScanner:
                     try:
                         async with scraper_class() as scraper:
                             # Get date range for incremental scraping
-                            if hasattr(self.settings, 'INCREMENTAL_SCRAPING_ENABLED') and self.settings.INCREMENTAL_SCRAPING_ENABLED:
+                            incremental_scraping = os.getenv('INCREMENTAL_SCRAPING_ENABLED', 'false').lower() == 'true'
+                            if incremental_scraping:
                                 start_date, end_date = scraper.get_incremental_date_range(name)
                                 logger.info(f"Using incremental scraping for {name} from {start_date} to {end_date}")
 

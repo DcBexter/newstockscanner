@@ -249,6 +249,9 @@ class ListingService:
                     if attr != "id" and hasattr(existing, attr):
                         setattr(existing, attr, value)
 
+                # Don't reset the notified flag if the listing has already been notified
+                # This prevents re-notification of listings that have already been notified
+
                 self.db.add(existing)
                 await self.db.commit()
                 await self.db.refresh(existing)

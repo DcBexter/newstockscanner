@@ -1,12 +1,12 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useMemo } from 'react';
 import { Box, Container, Paper, Typography, Button, IconButton, Tooltip, useTheme, PaletteMode, Snackbar, Alert, Badge, Stack } from '@mui/material';
 import { LightMode, DarkMode, Refresh, Notifications, VisibilityOff, Visibility } from '@mui/icons-material';
-import { api } from '../api/client';
 import ListingsTable from './ListingsTable';
 import StatisticsChart from './StatisticsChart';
 import ExchangeFilter from './ExchangeFilter';
 import MonthPagination from './MonthPagination';
-import type { Listing, Exchange, Statistics } from '../api/client';
+import { useAppContext } from '../context/AppContext';
+import { api } from '../api/client';
 
 interface DashboardProps {
   toggleColorMode: () => void;
@@ -14,229 +14,83 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ toggleColorMode, currentTheme }: DashboardProps) {
-  // State
-  const [selectedExchange, setSelectedExchange] = useState<string>('');
-  const [days, setDays] = useState<number>(30);
-  const [startDate, setStartDate] = useState<string | null>(null);
-  const [endDate, setEndDate] = useState<string | null>(null);
-  const [isPaginationMode, setIsPaginationMode] = useState<boolean>(false);
-  const [listings, setListings] = useState<Listing[]>([]);
-  const [exchanges, setExchanges] = useState<Exchange[]>([]);
-  const [statistics, setStatistics] = useState<Statistics | null>(null);
-  const [isLoadingListings, setIsLoadingListings] = useState<boolean>(true);
-  const [isScanning, setIsScanning] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-  const [showStatistics, setShowStatistics] = useState<boolean>(true);
-  
-  // Notification state
-  const [hasNewListings, setHasNewListings] = useState<boolean>(false);
-  const [notificationOpen, setNotificationOpen] = useState<boolean>(false);
-  const [newListingsCount, setNewListingsCount] = useState<number>(0);
-  const previousListingsRef = useRef<number>(0);
-  const pollingIntervalRef = useRef<number | null>(null);
-
+  const { state, dispatch, actions } = useAppContext();
   const theme = useTheme();
 
-  // Auto-refresh listings every 5 minutes to check for updates
-  useEffect(() => {
-    // Setup auto-polling for new listings
-    if (pollingIntervalRef.current) {
-      window.clearInterval(pollingIntervalRef.current);
-    }
-    
-    pollingIntervalRef.current = window.setInterval(() => {
-      // Only poll if the user has granted notification permission
-      if (Notification.permission === 'granted') {
-        fetchListingsForNotification();
-      }
-    }, 5 * 60 * 1000); // Check every 5 minutes
-    
-    // Request notification permission on component mount
-    if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
-      Notification.requestPermission();
-    }
+  // Destructure state for easier access
+  const {
+    selectedExchange,
+    days,
+    startDate,
+    endDate,
+    isPaginationMode,
+    listings,
+    exchanges,
+    statistics,
+    isLoadingListings,
+    isScanning,
+    error,
+    showStatistics,
+    hasNewListings,
+    notificationOpen,
+    newListingsCount,
+    previousListingsCount
+  } = state;
 
-    return () => {
-      if (pollingIntervalRef.current) {
-        window.clearInterval(pollingIntervalRef.current);
-        pollingIntervalRef.current = null;
-      }
-    };
-  }, []);
-
-  // Function to fetch listings only for notification purposes
-  const fetchListingsForNotification = async () => {
-    try {
-      const params: Record<string, string | number> = { days };
-      if (selectedExchange) {
-        params.exchange_code = selectedExchange;
-      }
-      
-      const listingsData = await api.getListings(params);
-      const currentCount = listingsData.length;
-      
-      // If this isn't the first check and we have more listings than before
-      if (previousListingsRef.current > 0 && currentCount > previousListingsRef.current) {
-        const newCount = currentCount - previousListingsRef.current;
-        setNewListingsCount(newCount);
-        setHasNewListings(true);
-        setNotificationOpen(true);
-        
-        // Show browser notification if allowed
-        if (Notification.permission === 'granted') {
-          new Notification('New Financial Listings', {
-            body: `${newCount} new listing${newCount > 1 ? 's' : ''} detected!`,
-            icon: '/logo.png' // Using the logo for notifications
-          });
-        }
-        
-        // Update the listings without setting loading state
-        setListings(listingsData);
-      }
-      
-      // Update ref for next comparison
-      previousListingsRef.current = currentCount;
-      
-    } catch (err) {
-      console.error('Background polling error:', err);
-    }
-  };
-
-  // Reset new listings notification when user interacts with the page
+  // Handle notification close
   const handleNotificationClose = () => {
-    setNotificationOpen(false);
+    dispatch(actions.setNotificationOpen(false));
   };
 
+  // Acknowledge new listings
   const acknowledgeNewListings = () => {
-    setHasNewListings(false);
-    setNotificationOpen(false);
+    dispatch(actions.acknowledgeNewListings());
   };
-
-  // Load exchanges
-  useEffect(() => {
-    const fetchExchanges = async () => {
-      try {
-        const exchangesData = await api.getExchanges();
-        setExchanges(exchangesData);
-      } catch (err) {
-        setError('Failed to load exchanges');
-        console.error(err);
-      }
-    };
-
-    fetchExchanges();
-  }, []);
 
   // Handle month change from the MonthPagination component
   const handleMonthChange = (start: string, end: string) => {
-    setStartDate(start);
-    setEndDate(end);
-    setIsPaginationMode(true);
-    // Clear days filter when using month pagination
-    setDays(0);
+    dispatch(actions.setDateRange(start, end));
   };
-  
+
   // Switch back to days-based filtering
   const handleSwitchToDaysMode = (daysValue: number) => {
-    setIsPaginationMode(false);
-    setStartDate(null);
-    setEndDate(null);
-    setDays(daysValue);
+    dispatch(actions.setDays(daysValue));
   };
 
-  // Load listings when filters change
-  useEffect(() => {
-    const fetchListings = async () => {
-      setIsLoadingListings(true);
-      try {
-        const params: Record<string, string | number> = {};
-        
-        // Use either date range or days depending on mode
-        if (isPaginationMode && startDate && endDate) {
-          params.start_date = startDate;
-          params.end_date = endDate;
-        } else {
-          params.days = days;
-        }
-        
-        if (selectedExchange) {
-          params.exchange_code = selectedExchange;
-        }
-        
-        const listingsData = await api.getListings(params);
-        
-        setListings(listingsData);
-        
-        // Store count for notification comparison
-        previousListingsRef.current = listingsData.length;
-        
-        // Reset notification state when filters change
-        setHasNewListings(false);
-      } catch (err) {
-        setError('Failed to load listings');
-        console.error(err);
-      } finally {
-        setIsLoadingListings(false);
-      }
-    };
-
-    fetchListings();
-  }, [selectedExchange, days, startDate, endDate, isPaginationMode]);
-
-  // Load statistics when days change
-  useEffect(() => {
-    const fetchStatistics = async () => {
-      try {
-        // Only fetch statistics with days parameter
-        if (!isPaginationMode) {
-          const statsData = await api.getStatistics(days);
-          setStatistics(statsData);
-        }
-      } catch (err) {
-        setError('Failed to load statistics');
-        console.error(err);
-      }
-    };
-
-    fetchStatistics();
-  }, [days, isPaginationMode]);
-
-  // Handle manual scan
+  // Handle manual scan for HKEX
   const handleScan = async () => {
     if (isScanning) return;
-    setIsScanning(true);
-    setError(null);
-    
+    dispatch(actions.setScanning(true));
+    dispatch(actions.clearError());
+
     try {
       // Call the scan API with the HKEX parameter
       await api.triggerScrape('HKEX');
-      
+
       // Create params for refreshing data after scan
       const params: Record<string, string | number> = { days };
       if (selectedExchange) {
         params.exchange_code = selectedExchange;
       }
       const listingsData = await api.getListings(params);
-      
+
       // Check if new listings were found during the scan
-      if (listingsData.length > previousListingsRef.current) {
-        const newCount = listingsData.length - previousListingsRef.current;
-        setNewListingsCount(newCount);
-        setHasNewListings(true);
+      if (listingsData.length > previousListingsCount) {
+        const newCount = listingsData.length - previousListingsCount;
+        dispatch(actions.setNewListings(true, newCount));
       }
-      
+
       // Update listings data
-      setListings(listingsData);
-      previousListingsRef.current = listingsData.length;
-      
+      dispatch(actions.setListings(listingsData));
+
       // Refresh statistics
       const statsData = await api.getStatistics(days);
-      setStatistics(statsData);
+      dispatch(actions.setStatistics(statsData));
     } catch (err) {
-      setError('Failed to trigger HKEX scan');
+      dispatch(actions.setError('Failed to trigger HKEX scan'));
       console.error(err);
     } finally {
-      setIsScanning(false);
+      dispatch(actions.setScanning(false));
     }
   };
 
@@ -247,7 +101,7 @@ export default function Dashboard({ toggleColorMode, currentTheme }: DashboardPr
       exchange.name.toLowerCase().includes('hong kong')
     );
   }, [exchanges]);
-  
+
   // Find the NASDAQ exchange
   const nasdaqExchange = useMemo(() => {
     return exchanges.find(exchange => 
@@ -255,7 +109,7 @@ export default function Dashboard({ toggleColorMode, currentTheme }: DashboardPr
       exchange.name.toLowerCase().includes('nasdaq')
     );
   }, [exchanges]);
-  
+
   // Find the NYSE exchange
   const nyseExchange = useMemo(() => {
     return exchanges.find(exchange => 
@@ -263,19 +117,19 @@ export default function Dashboard({ toggleColorMode, currentTheme }: DashboardPr
       exchange.name.toLowerCase().includes('new york')
     );
   }, [exchanges]);
-  
+
   // Check if HKEX is selected
   const isHkexSelected = useMemo(() => {
     if (!selectedExchange || !hkexExchange) return false;
     return selectedExchange === hkexExchange.code || selectedExchange === hkexExchange.id.toString();
   }, [selectedExchange, hkexExchange]);
-  
+
   // Check if NASDAQ is selected
   const isNasdaqSelected = useMemo(() => {
     if (!selectedExchange || !nasdaqExchange) return false;
     return selectedExchange === nasdaqExchange.code || selectedExchange === nasdaqExchange.id.toString();
   }, [selectedExchange, nasdaqExchange]);
-  
+
   // Check if NYSE is selected
   const isNyseSelected = useMemo(() => {
     if (!selectedExchange || !nyseExchange) return false;
@@ -285,78 +139,74 @@ export default function Dashboard({ toggleColorMode, currentTheme }: DashboardPr
   // Handle NASDAQ scan
   const handleNasdaqScan = async () => {
     if (isScanning) return;
-    setIsScanning(true);
-    setError(null);
-    
+    dispatch(actions.setScanning(true));
+    dispatch(actions.clearError());
+
     try {
       // Call the scan API with the NASDAQ parameter
       await api.triggerScrape('NASDAQ');
-      
+
       // Create params for refreshing data after scan
       const params: Record<string, string | number> = { days };
       if (selectedExchange) {
         params.exchange_code = selectedExchange;
       }
       const listingsData = await api.getListings(params);
-      
+
       // Check if new listings were found during the scan
-      if (listingsData.length > previousListingsRef.current) {
-        const newCount = listingsData.length - previousListingsRef.current;
-        setNewListingsCount(newCount);
-        setHasNewListings(true);
+      if (listingsData.length > previousListingsCount) {
+        const newCount = listingsData.length - previousListingsCount;
+        dispatch(actions.setNewListings(true, newCount));
       }
-      
+
       // Update listings data
-      setListings(listingsData);
-      previousListingsRef.current = listingsData.length;
-      
+      dispatch(actions.setListings(listingsData));
+
       // Refresh statistics
       const statsData = await api.getStatistics(days);
-      setStatistics(statsData);
+      dispatch(actions.setStatistics(statsData));
     } catch (err) {
-      setError('Failed to trigger NASDAQ scan');
+      dispatch(actions.setError('Failed to trigger NASDAQ scan'));
       console.error(err);
     } finally {
-      setIsScanning(false);
+      dispatch(actions.setScanning(false));
     }
   };
-  
+
   // Handle NYSE scan
   const handleNyseScan = async () => {
     if (isScanning) return;
-    setIsScanning(true);
-    setError(null);
-    
+    dispatch(actions.setScanning(true));
+    dispatch(actions.clearError());
+
     try {
       // Call the scan API with the NYSE parameter
       await api.triggerScrape('NYSE');
-      
+
       // Create params for refreshing data after scan
       const params: Record<string, string | number> = { days };
       if (selectedExchange) {
         params.exchange_code = selectedExchange;
       }
       const listingsData = await api.getListings(params);
-      
+
       // Check if new listings were found during the scan
-      if (listingsData.length > previousListingsRef.current) {
-        const newCount = listingsData.length - previousListingsRef.current;
-        setNewListingsCount(newCount);
-        setHasNewListings(true);
+      if (listingsData.length > previousListingsCount) {
+        const newCount = listingsData.length - previousListingsCount;
+        dispatch(actions.setNewListings(true, newCount));
       }
-      
+
       // Update listings data
-      setListings(listingsData);
-      previousListingsRef.current = listingsData.length;
-      
+      dispatch(actions.setListings(listingsData));
+
       // Refresh statistics
       const statsData = await api.getStatistics(days);
-      setStatistics(statsData);
+      dispatch(actions.setStatistics(statsData));
     } catch (err) {
-      setError('Failed to trigger NYSE scan');
+      dispatch(actions.setError('Failed to trigger NYSE scan'));
       console.error(err);
     } finally {
-      setIsScanning(false);
+      dispatch(actions.setScanning(false));
     }
   };
 
@@ -406,7 +256,7 @@ export default function Dashboard({ toggleColorMode, currentTheme }: DashboardPr
               {currentTheme === 'dark' ? <LightMode /> : <DarkMode />}
             </IconButton>
           </Tooltip>
-          
+
           {isHkexSelected && (
             <Button
               variant="contained"
@@ -418,7 +268,7 @@ export default function Dashboard({ toggleColorMode, currentTheme }: DashboardPr
               {isScanning ? 'Scanning...' : 'SCAN HKEX'}
             </Button>
           )}
-          
+
           {isNasdaqSelected && (
             <Button
               variant="contained"
@@ -430,7 +280,7 @@ export default function Dashboard({ toggleColorMode, currentTheme }: DashboardPr
               {isScanning ? 'Scanning...' : 'SCAN NASDAQ'}
             </Button>
           )}
-          
+
           {isNyseSelected && (
             <Button
               variant="contained"
@@ -476,19 +326,19 @@ export default function Dashboard({ toggleColorMode, currentTheme }: DashboardPr
               <ExchangeFilter
                 exchanges={exchanges}
                 value={selectedExchange}
-                onChange={setSelectedExchange}
+                onChange={(value) => dispatch(actions.setSelectedExchange(value))}
               />
-              
+
               <MonthPagination 
                 onMonthChange={handleMonthChange} 
                 onSwitchToDays={handleSwitchToDaysMode}
                 isPaginationMode={isPaginationMode}
               />
-              
+
               <Button
                 variant="outlined"
                 color="primary"
-                onClick={() => setShowStatistics(!showStatistics)}
+                onClick={() => dispatch(actions.toggleStatistics())}
                 sx={{ height: '56px' }}
                 startIcon={showStatistics ? <VisibilityOff /> : <Visibility />}
               >
@@ -541,7 +391,7 @@ export default function Dashboard({ toggleColorMode, currentTheme }: DashboardPr
                   : `Recent Financial Listings (Last ${days} Days)`
                 }
               </Typography>
-              
+
               <Typography variant="subtitle2" color="text.secondary">
                 {listings.length} listings found
               </Typography>

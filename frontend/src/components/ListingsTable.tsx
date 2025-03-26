@@ -47,18 +47,21 @@ export default function ListingsTable({ data, isLoading }: ListingsTableProps) {
 
   // Clean data when props change
   useEffect(() => {
-    setFilteredData(data);
+    // Ensure data is an array
+    setFilteredData(Array.isArray(data) ? data : []);
   }, [data]);
 
   // Filter data when search term changes
   useEffect(() => {
     if (!searchTerm.trim()) {
-      setFilteredData(data);
+      setFilteredData(Array.isArray(data) ? data : []);
       return;
     }
 
     const lowercasedTerm = searchTerm.toLowerCase();
-    const results = data.filter((item) => {
+    // Ensure data is an array before filtering
+    const dataArray = Array.isArray(data) ? data : [];
+    const results = dataArray.filter((item) => {
       return (
         (item.symbol && item.symbol.toLowerCase().includes(lowercasedTerm)) ||
         (item.name && item.name.toLowerCase().includes(lowercasedTerm)) ||
@@ -66,7 +69,7 @@ export default function ListingsTable({ data, isLoading }: ListingsTableProps) {
         (item.security_type && item.security_type.toLowerCase().includes(lowercasedTerm))
       );
     });
-    
+
     setFilteredData(results);
   }, [searchTerm, data]);
 
@@ -79,30 +82,32 @@ export default function ListingsTable({ data, isLoading }: ListingsTableProps) {
 
   // Sort data based on current sort settings
   const sortedData = useMemo(() => {
-    if (!sortField) return filteredData;
-    
-    return [...filteredData].sort((a, b) => {
+    if (!sortField) return filteredData || [];
+
+    // Ensure filteredData is an array before spreading
+    const dataToSort = Array.isArray(filteredData) ? filteredData : [];
+    return [...dataToSort].sort((a, b) => {
       const aValue = a[sortField];
       const bValue = b[sortField];
-      
+
       // Handle various data types
       if (typeof aValue === 'string' && typeof bValue === 'string') {
         return sortDirection === 'asc' 
           ? aValue.localeCompare(bValue) 
           : bValue.localeCompare(aValue);
       }
-      
+
       // Handle numeric values
       if (aValue !== undefined && bValue !== undefined) {
         return sortDirection === 'asc' 
           ? (aValue > bValue ? 1 : -1) 
           : (bValue > aValue ? 1 : -1);
       }
-      
+
       // Handle undefined values
       if (aValue === undefined) return sortDirection === 'asc' ? -1 : 1;
       if (bValue === undefined) return sortDirection === 'asc' ? 1 : -1;
-      
+
       // Fallback
       return 0;
     });
@@ -228,7 +233,7 @@ export default function ListingsTable({ data, isLoading }: ListingsTableProps) {
                       <Box component="span" color="primary.main" mr={1}>
                         {listing.symbol || 'N/A'}
                       </Box>
-                      
+
                       {listing.url && (
                         <Tooltip title="Company Information">
                           <IconButton
@@ -246,7 +251,7 @@ export default function ListingsTable({ data, isLoading }: ListingsTableProps) {
                           </IconButton>
                         </Tooltip>
                       )}
-                      
+
                       {listing.listing_detail_url && (
                         <Tooltip title="Listing Details">
                           <IconButton
