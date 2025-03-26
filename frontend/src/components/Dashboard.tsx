@@ -1,14 +1,12 @@
-import { Box, Container, Paper, Typography, Button, IconButton, Tooltip, useTheme, PaletteMode, Stack } from '@mui/material';
-import { LightMode, DarkMode, VisibilityOff, Visibility } from '@mui/icons-material';
+import { useMemo } from 'react';
+import { Box, Container, Paper, Typography, Button, IconButton, Tooltip, useTheme, PaletteMode, Snackbar, Alert, Badge, Stack } from '@mui/material';
+import { LightMode, DarkMode, Refresh, Notifications, VisibilityOff, Visibility } from '@mui/icons-material';
 import ListingsTable from './ListingsTable';
 import StatisticsChart from './StatisticsChart';
 import ExchangeFilter from './ExchangeFilter';
 import MonthPagination from './MonthPagination';
-import ScanButton from './ScanButton';
-import NotificationSection from './NotificationSection';
-import { useAppContext } from '../context/useAppContext';
-import { findCommonExchanges, isExchangeSelected } from '../utils/exchangeUtils';
-import { EXCHANGE_CODES } from '../constants/exchanges';
+import { useAppContext } from '../context/AppContext';
+import { api } from '../api/client';
 
 interface DashboardProps {
   toggleColorMode: () => void;
@@ -30,9 +28,24 @@ export default function Dashboard({ toggleColorMode, currentTheme }: DashboardPr
     exchanges,
     statistics,
     isLoadingListings,
+    isScanning,
     error,
-    showStatistics
+    showStatistics,
+    hasNewListings,
+    notificationOpen,
+    newListingsCount,
+    previousListingsCount
   } = state;
+
+  // Handle notification close
+  const handleNotificationClose = () => {
+    dispatch(actions.setNotificationOpen(false));
+  };
+
+  // Acknowledge new listings
+  const acknowledgeNewListings = () => {
+    dispatch(actions.acknowledgeNewListings());
+  };
 
   // Handle month change from the MonthPagination component
   const handleMonthChange = (start: string, end: string) => {
@@ -44,15 +57,158 @@ export default function Dashboard({ toggleColorMode, currentTheme }: DashboardPr
     dispatch(actions.setDays(daysValue));
   };
 
-  // Find common exchanges using utility function
-  const { hkexExchange, nasdaqExchange, nyseExchange } = findCommonExchanges(exchanges);
+  // Handle manual scan for HKEX
+  const handleScan = async () => {
+    if (isScanning) return;
+    dispatch(actions.setScanning(true));
+    dispatch(actions.clearError());
 
-  // Check if common exchanges are selected using utility function
-  const isHkexSelected = isExchangeSelected(selectedExchange, hkexExchange);
-  const isNasdaqSelected = isExchangeSelected(selectedExchange, nasdaqExchange);
-  const isNyseSelected = isExchangeSelected(selectedExchange, nyseExchange);
+    try {
+      // Call the scan API with the HKEX parameter
+      await api.triggerScrape('HKEX');
 
-  // No scan handler needed - moved to ScanButton component
+      // Create params for refreshing data after scan
+      const params: Record<string, string | number> = { days };
+      if (selectedExchange) {
+        params.exchange_code = selectedExchange;
+      }
+      const listingsData = await api.getListings(params);
+
+      // Check if new listings were found during the scan
+      if (listingsData.length > previousListingsCount) {
+        const newCount = listingsData.length - previousListingsCount;
+        dispatch(actions.setNewListings(true, newCount));
+      }
+
+      // Update listings data
+      dispatch(actions.setListings(listingsData));
+
+      // Refresh statistics
+      const statsData = await api.getStatistics(days);
+      dispatch(actions.setStatistics(statsData));
+    } catch (err) {
+      dispatch(actions.setError('Failed to trigger HKEX scan'));
+      console.error(err);
+    } finally {
+      dispatch(actions.setScanning(false));
+    }
+  };
+
+  // Find the HKEX exchange
+  const hkexExchange = useMemo(() => {
+    return exchanges.find(exchange => 
+      exchange.code === 'HKEX' || 
+      exchange.name.toLowerCase().includes('hong kong')
+    );
+  }, [exchanges]);
+
+  // Find the NASDAQ exchange
+  const nasdaqExchange = useMemo(() => {
+    return exchanges.find(exchange => 
+      exchange.code === 'NASDAQ' || 
+      exchange.name.toLowerCase().includes('nasdaq')
+    );
+  }, [exchanges]);
+
+  // Find the NYSE exchange
+  const nyseExchange = useMemo(() => {
+    return exchanges.find(exchange => 
+      exchange.code === 'NYSE' || 
+      exchange.name.toLowerCase().includes('new york')
+    );
+  }, [exchanges]);
+
+  // Check if HKEX is selected
+  const isHkexSelected = useMemo(() => {
+    if (!selectedExchange || !hkexExchange) return false;
+    return selectedExchange === hkexExchange.code || selectedExchange === hkexExchange.id.toString();
+  }, [selectedExchange, hkexExchange]);
+
+  // Check if NASDAQ is selected
+  const isNasdaqSelected = useMemo(() => {
+    if (!selectedExchange || !nasdaqExchange) return false;
+    return selectedExchange === nasdaqExchange.code || selectedExchange === nasdaqExchange.id.toString();
+  }, [selectedExchange, nasdaqExchange]);
+
+  // Check if NYSE is selected
+  const isNyseSelected = useMemo(() => {
+    if (!selectedExchange || !nyseExchange) return false;
+    return selectedExchange === nyseExchange.code || selectedExchange === nyseExchange.id.toString();
+  }, [selectedExchange, nyseExchange]);
+
+  // Handle NASDAQ scan
+  const handleNasdaqScan = async () => {
+    if (isScanning) return;
+    dispatch(actions.setScanning(true));
+    dispatch(actions.clearError());
+
+    try {
+      // Call the scan API with the NASDAQ parameter
+      await api.triggerScrape('NASDAQ');
+
+      // Create params for refreshing data after scan
+      const params: Record<string, string | number> = { days };
+      if (selectedExchange) {
+        params.exchange_code = selectedExchange;
+      }
+      const listingsData = await api.getListings(params);
+
+      // Check if new listings were found during the scan
+      if (listingsData.length > previousListingsCount) {
+        const newCount = listingsData.length - previousListingsCount;
+        dispatch(actions.setNewListings(true, newCount));
+      }
+
+      // Update listings data
+      dispatch(actions.setListings(listingsData));
+
+      // Refresh statistics
+      const statsData = await api.getStatistics(days);
+      dispatch(actions.setStatistics(statsData));
+    } catch (err) {
+      dispatch(actions.setError('Failed to trigger NASDAQ scan'));
+      console.error(err);
+    } finally {
+      dispatch(actions.setScanning(false));
+    }
+  };
+
+  // Handle NYSE scan
+  const handleNyseScan = async () => {
+    if (isScanning) return;
+    dispatch(actions.setScanning(true));
+    dispatch(actions.clearError());
+
+    try {
+      // Call the scan API with the NYSE parameter
+      await api.triggerScrape('NYSE');
+
+      // Create params for refreshing data after scan
+      const params: Record<string, string | number> = { days };
+      if (selectedExchange) {
+        params.exchange_code = selectedExchange;
+      }
+      const listingsData = await api.getListings(params);
+
+      // Check if new listings were found during the scan
+      if (listingsData.length > previousListingsCount) {
+        const newCount = listingsData.length - previousListingsCount;
+        dispatch(actions.setNewListings(true, newCount));
+      }
+
+      // Update listings data
+      dispatch(actions.setListings(listingsData));
+
+      // Refresh statistics
+      const statsData = await api.getStatistics(days);
+      dispatch(actions.setStatistics(statsData));
+    } catch (err) {
+      dispatch(actions.setError('Failed to trigger NYSE scan'));
+      console.error(err);
+    } finally {
+      dispatch(actions.setScanning(false));
+    }
+  };
 
   const paperStyle = {
     p: 3, 
@@ -86,21 +242,75 @@ export default function Dashboard({ toggleColorMode, currentTheme }: DashboardPr
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-          <NotificationSection />
-
+          {hasNewListings && (
+            <Tooltip title={`${newListingsCount} new listing${newListingsCount > 1 ? 's' : ''} detected`}>
+              <Badge badgeContent={newListingsCount} color="error" overlap="circular">
+                <IconButton color="primary" onClick={acknowledgeNewListings}>
+                  <Notifications />
+                </IconButton>
+              </Badge>
+            </Tooltip>
+          )}
           <Tooltip title={`Switch to ${currentTheme === 'dark' ? 'light' : 'dark'} mode`}>
             <IconButton onClick={toggleColorMode} color="primary">
               {currentTheme === 'dark' ? <LightMode /> : <DarkMode />}
             </IconButton>
           </Tooltip>
 
-          <ScanButton exchangeCode={EXCHANGE_CODES.HKEX} isSelected={isHkexSelected} />
-          <ScanButton exchangeCode={EXCHANGE_CODES.NASDAQ} isSelected={isNasdaqSelected} />
-          <ScanButton exchangeCode={EXCHANGE_CODES.NYSE} isSelected={isNyseSelected} />
+          {isHkexSelected && (
+            <Button
+              variant="contained"
+              onClick={handleScan}
+              disabled={isScanning}
+              startIcon={<Refresh />}
+              size="large"
+            >
+              {isScanning ? 'Scanning...' : 'SCAN HKEX'}
+            </Button>
+          )}
+
+          {isNasdaqSelected && (
+            <Button
+              variant="contained"
+              onClick={handleNasdaqScan}
+              disabled={isScanning}
+              startIcon={<Refresh />}
+              size="large"
+            >
+              {isScanning ? 'Scanning...' : 'SCAN NASDAQ'}
+            </Button>
+          )}
+
+          {isNyseSelected && (
+            <Button
+              variant="contained"
+              onClick={handleNyseScan}
+              disabled={isScanning}
+              startIcon={<Refresh />}
+              size="large"
+            >
+              {isScanning ? 'Scanning...' : 'SCAN NYSE'}
+            </Button>
+          )}
         </Box>
       </Box>
 
-      {/* Notification handling moved to NotificationSection component */}
+      {/* New Listings Notification */}
+      <Snackbar 
+        open={notificationOpen} 
+        autoHideDuration={6000} 
+        onClose={handleNotificationClose}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <Alert 
+          onClose={handleNotificationClose} 
+          severity="success" 
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          {newListingsCount} new listing{newListingsCount > 1 ? 's' : ''} detected!
+        </Alert>
+      </Snackbar>
 
       {error && (
         <Paper sx={{ p: 2, mb: 3, bgcolor: 'error.light', color: 'error.contrastText' }}>

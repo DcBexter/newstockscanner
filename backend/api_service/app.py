@@ -35,6 +35,36 @@ except ImportError:
     logging.warning("Prometheus client not installed. Metrics collection is disabled.")
     logging.warning("To enable metrics, install prometheus-client: pip install prometheus-client")
 
+    # Define dummy metrics and setup_metrics when prometheus_client is not available
+    def setup_metrics(app):
+        """Dummy setup_metrics function when prometheus_client is not available."""
+        pass
+
+    class DummyMetrics:
+        """Dummy metrics class when prometheus_client is not available."""
+        def counter(self, name, description='', labels=None):
+            return self
+
+        def histogram(self, name, description='', labels=None, buckets=None):
+            return self
+
+        def gauge(self, name, description='', labels=None):
+            return self
+
+        def labels(self, *args, **kwargs):
+            return self
+
+        def inc(self, value=1):
+            pass
+
+        def dec(self, value=1):
+            pass
+
+        def observe(self, value):
+            pass
+
+    metrics = DummyMetrics()
+
 class RequestIDMiddleware(BaseHTTPMiddleware):
     """Middleware to set a unique request ID for each request."""
 
