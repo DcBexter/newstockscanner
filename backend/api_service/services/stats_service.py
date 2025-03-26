@@ -5,6 +5,7 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.core.exceptions import DatabaseQueryError
+from backend.core.cache import cache
 from backend.database.models import StockListing, Exchange
 
 
@@ -19,8 +20,32 @@ class StatsService:
         days: int = 30,
         exchange_code: Optional[str] = None
     ) -> Dict[str, Any]:
-        """Get listing statistics for the specified period."""
+        """
+        Get listing statistics for the specified period.
+
+        This method retrieves statistics about stock listings for the specified period.
+        Results are cached for 5 minutes to improve performance.
+
+        Args:
+            days (int, optional): Number of days to include in the statistics. Defaults to 30.
+            exchange_code (Optional[str], optional): Filter by exchange code. Defaults to None.
+
+        Returns:
+            Dict[str, Any]: A dictionary containing the statistics.
+
+        Raises:
+            DatabaseQueryError: If there's an error retrieving statistics from the database.
+        """
         try:
+            # Generate a cache key based on the parameters
+            cache_key = f"stats:listing_stats:{days}:{exchange_code or 'all'}"
+
+            # Check if the result is in the cache
+            cached_result = cache.get(cache_key)
+            if cached_result is not None:
+                return cached_result
+
+            # If not in cache, compute the result
             since = datetime.now(UTC) - timedelta(days=days)
 
             # Get all the stats components
@@ -29,7 +54,7 @@ class StatsService:
             exchange_stats = await self._get_exchange_stats(since, exchange_code)
 
             # Format response to match frontend expectations
-            return {
+            result = {
                 "total": summary_stats["total"],
                 "total_all_time": summary_stats["total_all_time"],
                 "statuses": summary_stats["statuses"],
@@ -37,6 +62,11 @@ class StatsService:
                 "daily_stats": daily_counts,  # Renamed from daily_counts to daily_stats
                 "exchange_stats": exchange_stats  # This is now a direct array matching frontend expectations
             }
+
+            # Cache the result for 5 minutes (300 seconds)
+            cache.set(cache_key, result, expire=300)
+
+            return result
         except Exception as e:
             raise DatabaseQueryError(f"Failed to get statistics: {str(e)}") from e
 

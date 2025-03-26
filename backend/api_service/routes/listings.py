@@ -14,7 +14,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.api_service.services import ListingService
-from backend.core.models import Listing, ListingCreate
+from backend.core.models import Listing, ListingCreate, PaginatedListings
 from backend.database.session import get_db
 
 router = APIRouter(
@@ -22,21 +22,24 @@ router = APIRouter(
     tags=["listings"],
 )
 
-@router.get("/", response_model=List[Listing])
+@router.get("/", response_model=PaginatedListings)
 async def get_listings(
     exchange_code: Optional[str] = None,
     status: Optional[str] = None,
     days: Optional[int] = 30,
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 100,
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Get listings with optional filters.
+    Get listings with optional filters and pagination.
 
     This endpoint retrieves stock listings from the database with optional filters
     for exchange code, status, and time period. It supports filtering by either
     a specific date range or by the number of days from the current date.
+    It also supports pagination and returns the total count of matching records.
 
     Args:
         exchange_code (Optional[str], optional): Filter by exchange code. Defaults to None.
@@ -44,10 +47,12 @@ async def get_listings(
         days (Optional[int], optional): Get listings from the last N days. Defaults to 30.
         start_date (Optional[str], optional): Get listings from this date (format: YYYY-MM-DD). Defaults to None.
         end_date (Optional[str], optional): Get listings up to this date (format: YYYY-MM-DD). Defaults to None.
+        skip (int, optional): Number of records to skip. Defaults to 0.
+        limit (int, optional): Maximum number of records to return. Defaults to 100.
         db (AsyncSession): The database session, injected by FastAPI.
 
     Returns:
-        List[Listing]: A list of Listing objects matching the filters.
+        PaginatedListings: An object containing the paginated listings and total count.
 
     Raises:
         HTTPException: If there's an error with the date format or date range,
@@ -75,16 +80,28 @@ async def get_listings(
         if parsed_start_date and parsed_end_date and parsed_start_date > parsed_end_date:
             raise HTTPException(status_code=400, detail="start_date must be before or equal to end_date")
 
-        # Get database models - use date range if provided, otherwise use days
+        # Validate pagination parameters
+        if skip < 0:
+            raise HTTPException(status_code=400, detail="skip must be a non-negative integer")
+        if limit < 1:
+            raise HTTPException(status_code=400, detail="limit must be a positive integer")
+        if limit > 1000:
+            raise HTTPException(status_code=400, detail="limit must not exceed 1000")
+
+        # Get database models and total count - use date range if provided, otherwise use days
         if parsed_start_date and parsed_end_date:
             db_listings = await service.get_by_date_range(
+                exchange_code, status, parsed_start_date, parsed_end_date, skip, limit
+            )
+            total = await service.get_by_date_range_count(
                 exchange_code, status, parsed_start_date, parsed_end_date
             )
         else:
-            db_listings = await service.get_filtered(exchange_code, status, days)
+            db_listings = await service.get_filtered(exchange_code, status, days, skip, limit)
+            total = await service.get_filtered_count(exchange_code, status, days)
 
         # Convert database models to Pydantic models to avoid detached session issues
-        return [
+        items = [
             Listing(
                 id=listing.id,
                 name=listing.name,
@@ -101,6 +118,14 @@ async def get_listings(
             )
             for listing in db_listings
         ]
+
+        # Return paginated response
+        return PaginatedListings(
+            items=items,
+            total=total,
+            skip=skip,
+            limit=limit
+        )
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
