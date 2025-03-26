@@ -8,7 +8,7 @@ the database.
 """
 
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Tuple
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,6 +17,64 @@ from backend.api_service.services import ListingService
 from backend.core.models import Listing, ListingCreate, PaginatedListings
 from backend.database.session import get_db
 from backend.database.models import StockListing
+
+# Constants
+MAX_PAGINATION_LIMIT = 1000  # Maximum number of records that can be returned in a single request
+
+# Utility functions
+def parse_and_validate_dates(start_date: Optional[str], end_date: Optional[str]) -> Tuple[Optional[datetime], Optional[datetime]]:
+    """
+    Parse and validate date strings.
+
+    Args:
+        start_date (Optional[str]): Start date string in YYYY-MM-DD format
+        end_date (Optional[str]): End date string in YYYY-MM-DD format
+
+    Returns:
+        Tuple[Optional[datetime], Optional[datetime]]: Parsed start and end dates
+
+    Raises:
+        HTTPException: If date format is invalid or if start_date is after end_date
+    """
+    parsed_start_date = None
+    parsed_end_date = None
+
+    if start_date:
+        try:
+            parsed_start_date = datetime.strptime(start_date, "%Y-%m-%d")
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid start_date format. Use YYYY-MM-DD")
+
+    if end_date:
+        try:
+            parsed_end_date = datetime.strptime(end_date, "%Y-%m-%d")
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid end_date format. Use YYYY-MM-DD")
+
+    # Validate date range
+    if parsed_start_date and parsed_end_date and parsed_start_date > parsed_end_date:
+        raise HTTPException(status_code=400, detail="start_date must be before or equal to end_date")
+
+    return parsed_start_date, parsed_end_date
+
+def validate_pagination_params(skip: int, limit: int) -> None:
+    """
+    Validate pagination parameters.
+
+    Args:
+        skip (int): Number of records to skip
+        limit (int): Maximum number of records to return
+
+    Raises:
+        HTTPException: If pagination parameters are invalid
+    """
+    if skip < 0:
+        raise HTTPException(status_code=400, detail="skip must be a non-negative integer")
+    if limit < 1:
+        raise HTTPException(status_code=400, detail="limit must be a positive integer")
+    if limit > MAX_PAGINATION_LIMIT:
+        raise HTTPException(status_code=400, 
+                           detail=f"limit must not exceed {MAX_PAGINATION_LIMIT}")
 
 # Utility function to convert database models to Pydantic models
 def convert_db_listing_to_model(db_listing: StockListing) -> Listing:
@@ -99,33 +157,11 @@ async def get_listings(
     """
     service = ListingService(db)
     try:
-        # Parse date strings if provided
-        parsed_start_date = None
-        parsed_end_date = None
-
-        if start_date:
-            try:
-                parsed_start_date = datetime.strptime(start_date, "%Y-%m-%d")
-            except ValueError:
-                raise HTTPException(status_code=400, detail="Invalid start_date format. Use YYYY-MM-DD")
-
-        if end_date:
-            try:
-                parsed_end_date = datetime.strptime(end_date, "%Y-%m-%d")
-            except ValueError:
-                raise HTTPException(status_code=400, detail="Invalid end_date format. Use YYYY-MM-DD")
-
-        # Validate date range
-        if parsed_start_date and parsed_end_date and parsed_start_date > parsed_end_date:
-            raise HTTPException(status_code=400, detail="start_date must be before or equal to end_date")
+        # Parse and validate dates
+        parsed_start_date, parsed_end_date = parse_and_validate_dates(start_date, end_date)
 
         # Validate pagination parameters
-        if skip < 0:
-            raise HTTPException(status_code=400, detail="skip must be a non-negative integer")
-        if limit < 1:
-            raise HTTPException(status_code=400, detail="limit must be a positive integer")
-        if limit > 1000:
-            raise HTTPException(status_code=400, detail="limit must not exceed 1000")
+        validate_pagination_params(skip, limit)
 
         # Get database models and total count - use date range if provided, otherwise use days
         if parsed_start_date and parsed_end_date:
@@ -149,8 +185,17 @@ async def get_listings(
             skip=skip,
             limit=limit
         )
+    except HTTPException:
+        # Re-raise HTTP exceptions that were already raised by utility functions
+        raise
+    except ValueError as e:
+        # Handle validation errors
+        raise HTTPException(status_code=400, detail=f"Validation error: {str(e)}")
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        # Log unexpected errors and return a generic message
+        import logging
+        logging.error(f"Unexpected error in get_listings: {str(e)}")
+        raise HTTPException(status_code=500, detail="An unexpected error occurred while retrieving listings")
 
 @router.get("/{symbol}", response_model=Listing)
 async def get_listing(symbol: str, db: AsyncSession = Depends(get_db)):
@@ -205,5 +250,14 @@ async def create_listing(listing: ListingCreate, db: AsyncSession = Depends(get_
 
         # Convert to Pydantic model to avoid detached session issues
         return convert_db_listing_to_model(db_listing)
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
+    except ValueError as e:
+        # Handle validation errors
+        raise HTTPException(status_code=400, detail=f"Validation error: {str(e)}")
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e)) 
+        # Log unexpected errors and return a generic message
+        import logging
+        logging.error(f"Unexpected error in create_listing: {str(e)}")
+        raise HTTPException(status_code=500, detail="An unexpected error occurred while creating the listing")
