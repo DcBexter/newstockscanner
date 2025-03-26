@@ -33,8 +33,11 @@ class TestDatabaseHelper:
 
         # Mock get_session_factory to return our mock factory
         with patch('backend.scraper_service.services.database_service.get_session_factory', return_value=MockSessionFactory()):
+            # Create an instance of DatabaseHelper
+            db_helper = DatabaseHelper(MockSessionFactory())
+
             # Call the method under test
-            result = await DatabaseHelper.execute_db_operation(mock_operation)
+            result = await db_helper.execute_db_operation(mock_operation)
 
             # Verify the result
             assert result == "success"
@@ -64,9 +67,12 @@ class TestDatabaseHelper:
 
         # Mock get_session_factory to return our mock factory
         with patch('backend.scraper_service.services.database_service.get_session_factory', return_value=MockSessionFactory()):
+            # Create an instance of DatabaseHelper
+            db_helper = DatabaseHelper(MockSessionFactory())
+
             # Call the method under test and expect an exception
             with pytest.raises(ValueError, match="Test error"):
-                await DatabaseHelper.execute_db_operation(mock_operation)
+                await db_helper.execute_db_operation(mock_operation)
 
             # Verify the session was properly managed even with an error
             assert mock_session.rollback.await_count == 1
@@ -95,7 +101,7 @@ class TestDatabaseService:
         # This is a complex method that uses DatabaseHelper, so we'll mock at a higher level
 
         # Create a mock for the database helper
-        async def mock_execute_db_operation(func):
+        async def mock_execute_db_operation(self, operation):
             # Simulate the database operation by returning a success result
             return {
                 "saved_count": len(sample_listings_data),
@@ -121,7 +127,7 @@ class TestDatabaseService:
     async def test_save_listings_with_error(self, database_service, sample_listings_data, monkeypatch):
         """Test handling of errors when saving listings."""
         # Create a mock for the database helper that raises an exception
-        async def mock_execute_db_operation(func):
+        async def mock_execute_db_operation(self, operation):
             raise ValueError("Test database error")
 
         # Apply the mock

@@ -168,7 +168,7 @@ class TestStockScanner:
         # This is a complex method that uses DatabaseHelper, so we'll mock at a higher level
 
         # Create a mock for the database helper
-        async def mock_execute_db_operation(func):
+        async def mock_execute_db_operation(self, operation):
             # Simulate the database operation by calling the function with a mock db
             mock_db = AsyncMock()
             return 2  # Return 2 unnotified listings processed
