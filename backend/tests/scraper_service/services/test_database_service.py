@@ -138,12 +138,30 @@ class TestDatabaseService:
         assert result["total"] == len(sample_listings_data)
         assert result["new_listings"] == []
 
-    @pytest.mark.asyncio
-    async def test_process_listings_transaction(self, mock_db, sample_listings_data):
-        """Test the transaction handling in the process_listings function."""
-        # This test directly tests the inner function process_listings
-        # We need to extract it from the save_listings method for testing
+    # Constants for test data
+    EXCHANGE_DATA = {
+        "NASDAQ": {"id": 1, "name": "NASDAQ", "code": "NASDAQ", "url": "https://nasdaq.com"},
+        "NYSE": {"id": 2, "name": "NYSE", "code": "NYSE", "url": "https://nyse.com"}
+    }
 
+    def _create_listing_model(self, listing_data):
+        """Helper method to create a ListingCreate model from listing data."""
+        return ListingCreate(
+            name=listing_data.get("name", ""),
+            symbol=listing_data.get("symbol", ""),
+            listing_date=listing_data.get("listing_date"),
+            lot_size=listing_data.get("lot_size", 0),
+            status=listing_data.get("status", ""),
+            exchange_id=listing_data.get("exchange_id"),
+            exchange_code=listing_data.get("exchange_code", ""),
+            security_type=listing_data.get("security_type", "Equity"),
+            url=listing_data.get("url"),
+            listing_detail_url=listing_data.get("listing_detail_url")
+        )
+
+    @pytest.mark.asyncio
+    async def test_process_listings_transaction_success(self, mock_db, sample_listings_data):
+        """Test successful transaction handling in the process_listings function."""
         # Create a mock ListingService
         mock_listing_service = AsyncMock()
         mock_listing_service.get_by_symbol_and_exchange = AsyncMock(return_value=None)
@@ -151,79 +169,8 @@ class TestDatabaseService:
 
         # Mock the ListingService constructor
         with patch('backend.api_service.services.ListingService', return_value=mock_listing_service):
-            # Create a database service
-            service = DatabaseService()
-
-            # Add exchange data for the test
-            exchange_data = {
-                "NASDAQ": {"id": 1, "name": "NASDAQ", "code": "NASDAQ", "url": "https://nasdaq.com"},
-                "NYSE": {"id": 2, "name": "NYSE", "code": "NYSE", "url": "https://nyse.com"}
-            }
-
-            # Define the process_listings function (simplified version for testing)
-            async def process_listings(db):
-                # Start a transaction
-                await db.begin()
-
-                try:
-                    # Create service for listings
-                    from backend.api_service.services import ListingService
-                    service = ListingService(db)
-
-                    saved_count = 0
-                    new_listings = []
-
-                    # Process each listing
-                    for listing_data in sample_listings_data:
-                        # Add exchange_id to data based on exchange_code
-                        exchange_code = listing_data.get("exchange_code")
-                        if exchange_code in exchange_data:
-                            listing_data["exchange_id"] = exchange_data[exchange_code]["id"]
-
-                        # Check if listing exists
-                        existing = await service.get_by_symbol_and_exchange(
-                            listing_data.get("symbol"), exchange_code
-                        )
-
-                        if existing:
-                            # Update existing listing
-                            listing_data["id"] = existing.id
-                            await service.update(existing.id, listing_data)
-                        else:
-                            # Create new listing
-                            create_model = ListingCreate(
-                                name=listing_data.get("name", ""),
-                                symbol=listing_data.get("symbol", ""),
-                                listing_date=listing_data.get("listing_date"),
-                                lot_size=listing_data.get("lot_size", 0),
-                                status=listing_data.get("status", ""),
-                                exchange_id=listing_data.get("exchange_id"),
-                                exchange_code=listing_data.get("exchange_code", ""),
-                                security_type=listing_data.get("security_type", "Equity"),
-                                url=listing_data.get("url"),
-                                listing_detail_url=listing_data.get("listing_detail_url")
-                            )
-                            await service.create(create_model)
-                            new_listings.append(listing_data)
-
-                        saved_count += 1
-
-                    # Commit the transaction
-                    await db.commit()
-
-                    return {
-                        "saved_count": saved_count,
-                        "total": len(sample_listings_data),
-                        "new_listings": new_listings
-                    }
-
-                except Exception as e:
-                    # Ensure transaction is rolled back
-                    await db.rollback()
-                    raise
-
-            # Call the function with our mock db
-            result = await process_listings(mock_db)
+            # Call the process_listings function with our mock db
+            result = await self._execute_process_listings(mock_db, sample_listings_data)
 
             # Verify the transaction was committed
             mock_db.begin.assert_called_once()
@@ -234,3 +181,76 @@ class TestDatabaseService:
             assert result["saved_count"] == len(sample_listings_data)
             assert result["total"] == len(sample_listings_data)
             assert len(result["new_listings"]) == len(sample_listings_data)
+
+    @pytest.mark.asyncio
+    async def test_process_listings_transaction_error(self, mock_db, sample_listings_data):
+        """Test error handling in the process_listings function."""
+        # Create a mock ListingService that raises an exception
+        mock_listing_service = AsyncMock()
+        mock_listing_service.get_by_symbol_and_exchange = AsyncMock(side_effect=ValueError("Test error"))
+
+        # Mock the ListingService constructor
+        with patch('backend.api_service.services.ListingService', return_value=mock_listing_service):
+            # Call the process_listings function with our mock db and expect an exception
+            with pytest.raises(ValueError, match="Test error"):
+                await self._execute_process_listings(mock_db, sample_listings_data)
+
+            # Verify the transaction was rolled back
+            mock_db.begin.assert_called_once()
+            mock_db.rollback.assert_called_once()
+            mock_db.commit.assert_not_called()
+
+    async def _execute_process_listings(self, db, listings_data):
+        """
+        Execute the process_listings function with the given database and listings data.
+
+        This is a helper method that simulates the inner function of DatabaseService.save_listings.
+        """
+        # Start a transaction
+        await db.begin()
+
+        try:
+            # Create service for listings
+            from backend.api_service.services import ListingService
+            service = ListingService(db)
+
+            saved_count = 0
+            new_listings = []
+
+            # Process each listing
+            for listing_data in listings_data:
+                # Add exchange_id to data based on exchange_code
+                exchange_code = listing_data.get("exchange_code")
+                if exchange_code in self.EXCHANGE_DATA:
+                    listing_data["exchange_id"] = self.EXCHANGE_DATA[exchange_code]["id"]
+
+                # Check if listing exists
+                existing = await service.get_by_symbol_and_exchange(
+                    listing_data.get("symbol"), exchange_code
+                )
+
+                if existing:
+                    # Update existing listing
+                    listing_data["id"] = existing.id
+                    await service.update(existing.id, listing_data)
+                else:
+                    # Create new listing
+                    create_model = self._create_listing_model(listing_data)
+                    await service.create(create_model)
+                    new_listings.append(listing_data)
+
+                saved_count += 1
+
+            # Commit the transaction
+            await db.commit()
+
+            return {
+                "saved_count": saved_count,
+                "total": len(listings_data),
+                "new_listings": new_listings
+            }
+
+        except Exception as e:
+            # Ensure transaction is rolled back
+            await db.rollback()
+            raise
