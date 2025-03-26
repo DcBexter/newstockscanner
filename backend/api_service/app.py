@@ -26,6 +26,15 @@ from backend.config.logging import setup_logging, set_request_id
 from backend.core.exceptions import StockScannerError
 from backend.api_service.routes import router
 
+# Import metrics module (requires prometheus_client to be installed)
+try:
+    from backend.core.metrics import setup_metrics, metrics
+    METRICS_ENABLED = True
+except ImportError:
+    METRICS_ENABLED = False
+    logging.warning("Prometheus client not installed. Metrics collection is disabled.")
+    logging.warning("To enable metrics, install prometheus-client: pip install prometheus-client")
+
 class RequestIDMiddleware(BaseHTTPMiddleware):
     """Middleware to set a unique request ID for each request."""
 
@@ -100,6 +109,19 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Set up metrics collection if enabled
+if METRICS_ENABLED:
+    logger.info("Setting up metrics collection")
+    setup_metrics(app)
+
+    # Add API-specific metrics
+    metrics.counter('api_listings_requests_total', 'Total number of requests to the listings endpoint')
+    metrics.counter('api_exchanges_requests_total', 'Total number of requests to the exchanges endpoint')
+    metrics.counter('api_stats_requests_total', 'Total number of requests to the stats endpoint')
+    metrics.gauge('api_active_db_connections', 'Number of active database connections')
+else:
+    logger.info("Metrics collection is disabled")
 
 @app.get("/")
 async def root():
