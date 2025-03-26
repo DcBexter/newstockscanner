@@ -1,5 +1,13 @@
 """
-FastAPI application for the API service.
+FastAPI application for the Stock Scanner API service.
+
+This module defines the FastAPI application for the Stock Scanner API service,
+which provides REST API endpoints for accessing stock listings, exchanges,
+statistics, and other functionality. It includes middleware configuration,
+exception handlers, and health check endpoints.
+
+The application uses SQLAlchemy for database access and includes proper
+startup and shutdown handlers for resource management.
 """
 
 from contextlib import asynccontextmanager
@@ -21,10 +29,18 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Lifespan context manager for the FastAPI application.
+    """
+    Lifespan context manager for the FastAPI application.
 
     This replaces the deprecated on_event handlers with a context manager
-    that handles startup and shutdown events.
+    that handles startup and shutdown events. It initializes resources like
+    logging and database connections on startup and cleans them up on shutdown.
+
+    Args:
+        app (FastAPI): The FastAPI application instance.
+
+    Yields:
+        None: Control is yielded back to the application during its lifetime.
     """
     # Startup: Initialize application
     setup_logging()
@@ -66,12 +82,32 @@ app.add_middleware(
 
 @app.get("/")
 async def root():
-    """Root endpoint to check if the API is running."""
+    """
+    Root endpoint to check if the API is running.
+
+    This endpoint provides a simple way to verify that the API service
+    is up and running.
+
+    Returns:
+        dict: A message indicating that the API is running.
+    """
     return {"message": "Stock Scanner API is running"}
 
 @app.get("/health")
 async def health_check(db: AsyncSession = Depends(get_db)):
-    """Health check endpoint to verify that the API and database are working."""
+    """
+    Health check endpoint to verify that the API and database are working.
+
+    This endpoint performs a simple database query to verify that the
+    connection to the database is working properly. It returns information
+    about the API version and database connection status.
+
+    Args:
+        db (AsyncSession): The database session, injected by FastAPI.
+
+    Returns:
+        dict: A dictionary containing the API status, version, and database status.
+    """
     try:
         # Simple database query to verify connection
         await db.execute(text("SELECT 1"))
@@ -88,7 +124,20 @@ async def health_check(db: AsyncSession = Depends(get_db)):
 # Exception handlers
 @app.exception_handler(StockScannerError)
 async def stockscanner_exception_handler(request: Request, exc: StockScannerError):
-    """Handle StockScanner-specific exceptions."""
+    """
+    Handle StockScanner-specific exceptions.
+
+    This exception handler catches StockScannerError exceptions and returns
+    a JSON response with the error message and type. It also logs the error
+    for debugging purposes.
+
+    Args:
+        request (Request): The request that caused the exception.
+        exc (StockScannerError): The exception that was raised.
+
+    Returns:
+        JSONResponse: A JSON response containing the error message and type.
+    """
     logger.error(f"StockScanner error: {str(exc)}", exc_info=True)
     return JSONResponse(
         status_code=400,
@@ -97,7 +146,20 @@ async def stockscanner_exception_handler(request: Request, exc: StockScannerErro
 
 @app.exception_handler(Exception)
 async def general_exception_handler(request: Request, exc: Exception):
-    """Handle unexpected exceptions."""
+    """
+    Handle unexpected exceptions.
+
+    This exception handler catches all unexpected exceptions and returns
+    a generic error message to avoid exposing sensitive information.
+    It logs the full error details for debugging purposes.
+
+    Args:
+        request (Request): The request that caused the exception.
+        exc (Exception): The exception that was raised.
+
+    Returns:
+        JSONResponse: A JSON response with a generic error message.
+    """
     logger.error(f"Unexpected error: {str(exc)}", exc_info=True)
     return JSONResponse(
         status_code=500,
