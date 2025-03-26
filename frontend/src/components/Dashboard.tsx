@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import { Box, Container, Paper, Typography, Button, IconButton, Tooltip, useTheme, PaletteMode, Snackbar, Alert, Badge, Stack } from '@mui/material';
 import { LightMode, DarkMode, Refresh, Notifications, VisibilityOff, Visibility } from '@mui/icons-material';
 import ListingsTable from './ListingsTable';
@@ -66,15 +65,46 @@ export default function Dashboard({ toggleColorMode, currentTheme }: DashboardPr
     dispatch(actions.setDays(daysValue));
   };
 
-  // Handle manual scan for HKEX
-  const handleScan = async () => {
+  // Exchange codes
+  const EXCHANGE_CODES = {
+    HKEX: 'HKEX',
+    NASDAQ: 'NASDAQ',
+    NYSE: 'NYSE'
+  };
+
+  // Find exchanges by code or name
+  const findExchange = (code: string, nameSubstring: string) => {
+    return exchanges.find(exchange => 
+      exchange.code === code || 
+      exchange.name.toLowerCase().includes(nameSubstring.toLowerCase())
+    );
+  };
+
+  // Find common exchanges
+  const hkexExchange = findExchange(EXCHANGE_CODES.HKEX, 'hong kong');
+  const nasdaqExchange = findExchange(EXCHANGE_CODES.NASDAQ, 'nasdaq');
+  const nyseExchange = findExchange(EXCHANGE_CODES.NYSE, 'new york');
+
+  // Check if a specific exchange is selected
+  const isExchangeSelected = (exchange: typeof hkexExchange) => {
+    if (!selectedExchange || !exchange) return false;
+    return selectedExchange === exchange.code || selectedExchange === exchange.id.toString();
+  };
+
+  // Check if common exchanges are selected
+  const isHkexSelected = isExchangeSelected(hkexExchange);
+  const isNasdaqSelected = isExchangeSelected(nasdaqExchange);
+  const isNyseSelected = isExchangeSelected(nyseExchange);
+
+  // Generic scan handler for any exchange
+  const handleExchangeScan = async (exchangeCode: string) => {
     if (isScanning) return;
     dispatch(actions.setScanning(true));
     dispatch(actions.clearError());
 
     try {
-      // Call the scan API with the HKEX parameter
-      await api.triggerScrape('HKEX');
+      // Call the scan API with the exchange parameter
+      await api.triggerScrape(exchangeCode);
 
       // Create params for refreshing data after scan
       const params: Record<string, string | number> = { days };
@@ -96,128 +126,17 @@ export default function Dashboard({ toggleColorMode, currentTheme }: DashboardPr
       const statsData = await api.getStatistics(days);
       dispatch(actions.setStatistics(statsData));
     } catch (err) {
-      dispatch(actions.setError('Failed to trigger HKEX scan'));
+      dispatch(actions.setError(`Failed to trigger ${exchangeCode} scan`));
       console.error(err);
     } finally {
       dispatch(actions.setScanning(false));
     }
   };
 
-  // Find the HKEX exchange
-  const hkexExchange = useMemo(() => {
-    return exchanges.find(exchange => 
-      exchange.code === 'HKEX' || 
-      exchange.name.toLowerCase().includes('hong kong')
-    );
-  }, [exchanges]);
-
-  // Find the NASDAQ exchange
-  const nasdaqExchange = useMemo(() => {
-    return exchanges.find(exchange => 
-      exchange.code === 'NASDAQ' || 
-      exchange.name.toLowerCase().includes('nasdaq')
-    );
-  }, [exchanges]);
-
-  // Find the NYSE exchange
-  const nyseExchange = useMemo(() => {
-    return exchanges.find(exchange => 
-      exchange.code === 'NYSE' || 
-      exchange.name.toLowerCase().includes('new york')
-    );
-  }, [exchanges]);
-
-  // Check if HKEX is selected
-  const isHkexSelected = useMemo(() => {
-    if (!selectedExchange || !hkexExchange) return false;
-    return selectedExchange === hkexExchange.code || selectedExchange === hkexExchange.id.toString();
-  }, [selectedExchange, hkexExchange]);
-
-  // Check if NASDAQ is selected
-  const isNasdaqSelected = useMemo(() => {
-    if (!selectedExchange || !nasdaqExchange) return false;
-    return selectedExchange === nasdaqExchange.code || selectedExchange === nasdaqExchange.id.toString();
-  }, [selectedExchange, nasdaqExchange]);
-
-  // Check if NYSE is selected
-  const isNyseSelected = useMemo(() => {
-    if (!selectedExchange || !nyseExchange) return false;
-    return selectedExchange === nyseExchange.code || selectedExchange === nyseExchange.id.toString();
-  }, [selectedExchange, nyseExchange]);
-
-  // Handle NASDAQ scan
-  const handleNasdaqScan = async () => {
-    if (isScanning) return;
-    dispatch(actions.setScanning(true));
-    dispatch(actions.clearError());
-
-    try {
-      // Call the scan API with the NASDAQ parameter
-      await api.triggerScrape('NASDAQ');
-
-      // Create params for refreshing data after scan
-      const params: Record<string, string | number> = { days };
-      if (selectedExchange) {
-        params.exchange_code = selectedExchange;
-      }
-      const listingsData = await api.getListings(params);
-
-      // Check if new listings were found during the scan
-      if (listingsData.length > previousListingsCount) {
-        const newCount = listingsData.length - previousListingsCount;
-        dispatch(actions.setNewListings(true, newCount));
-      }
-
-      // Update listings data
-      dispatch(actions.setListings(listingsData));
-
-      // Refresh statistics
-      const statsData = await api.getStatistics(days);
-      dispatch(actions.setStatistics(statsData));
-    } catch (err) {
-      dispatch(actions.setError('Failed to trigger NASDAQ scan'));
-      console.error(err);
-    } finally {
-      dispatch(actions.setScanning(false));
-    }
-  };
-
-  // Handle NYSE scan
-  const handleNyseScan = async () => {
-    if (isScanning) return;
-    dispatch(actions.setScanning(true));
-    dispatch(actions.clearError());
-
-    try {
-      // Call the scan API with the NYSE parameter
-      await api.triggerScrape('NYSE');
-
-      // Create params for refreshing data after scan
-      const params: Record<string, string | number> = { days };
-      if (selectedExchange) {
-        params.exchange_code = selectedExchange;
-      }
-      const listingsData = await api.getListings(params);
-
-      // Check if new listings were found during the scan
-      if (listingsData.length > previousListingsCount) {
-        const newCount = listingsData.length - previousListingsCount;
-        dispatch(actions.setNewListings(true, newCount));
-      }
-
-      // Update listings data
-      dispatch(actions.setListings(listingsData));
-
-      // Refresh statistics
-      const statsData = await api.getStatistics(days);
-      dispatch(actions.setStatistics(statsData));
-    } catch (err) {
-      dispatch(actions.setError('Failed to trigger NYSE scan'));
-      console.error(err);
-    } finally {
-      dispatch(actions.setScanning(false));
-    }
-  };
+  // Specific exchange scan handlers
+  const handleScan = () => handleExchangeScan(EXCHANGE_CODES.HKEX);
+  const handleNasdaqScan = () => handleExchangeScan(EXCHANGE_CODES.NASDAQ);
+  const handleNyseScan = () => handleExchangeScan(EXCHANGE_CODES.NYSE);
 
   const paperStyle = {
     p: 3, 

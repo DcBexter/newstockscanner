@@ -8,7 +8,7 @@ the database.
 """
 
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,6 +16,45 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.api_service.services import ListingService
 from backend.core.models import Listing, ListingCreate, PaginatedListings
 from backend.database.session import get_db
+from backend.database.models import StockListing
+
+# Utility function to convert database models to Pydantic models
+def convert_db_listing_to_model(db_listing: StockListing) -> Listing:
+    """
+    Convert a database StockListing model to a Pydantic Listing model.
+
+    Args:
+        db_listing (StockListing): The database model to convert
+
+    Returns:
+        Listing: The converted Pydantic model
+    """
+    return Listing(
+        id=db_listing.id,
+        name=db_listing.name,
+        symbol=db_listing.symbol,
+        listing_date=db_listing.listing_date,
+        lot_size=db_listing.lot_size,
+        status=db_listing.status,
+        exchange_code=db_listing.exchange.code,
+        url=db_listing.url,
+        security_type=db_listing.security_type,
+        listing_detail_url=db_listing.listing_detail_url,
+        created_at=db_listing.created_at,
+        updated_at=db_listing.updated_at
+    )
+
+def convert_db_listings_to_models(db_listings: List[StockListing]) -> List[Listing]:
+    """
+    Convert a list of database StockListing models to a list of Pydantic Listing models.
+
+    Args:
+        db_listings (List[StockListing]): The database models to convert
+
+    Returns:
+        List[Listing]: The converted Pydantic models
+    """
+    return [convert_db_listing_to_model(listing) for listing in db_listings]
 
 router = APIRouter(
     prefix="/listings",
@@ -101,23 +140,7 @@ async def get_listings(
             total = await service.get_filtered_count(exchange_code, status, days)
 
         # Convert database models to Pydantic models to avoid detached session issues
-        items = [
-            Listing(
-                id=listing.id,
-                name=listing.name,
-                symbol=listing.symbol,
-                listing_date=listing.listing_date,
-                lot_size=listing.lot_size,
-                status=listing.status,
-                exchange_code=listing.exchange.code,
-                url=listing.url,
-                security_type=listing.security_type,
-                listing_detail_url=listing.listing_detail_url,
-                created_at=listing.created_at,
-                updated_at=listing.updated_at
-            )
-            for listing in db_listings
-        ]
+        items = convert_db_listings_to_models(db_listings)
 
         # Return paginated response
         return PaginatedListings(
@@ -153,20 +176,7 @@ async def get_listing(symbol: str, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Listing not found")
 
     # Convert to Pydantic model to avoid detached session issues
-    return Listing(
-        id=listing.id,
-        name=listing.name,
-        symbol=listing.symbol,
-        listing_date=listing.listing_date,
-        lot_size=listing.lot_size,
-        status=listing.status,
-        exchange_code=listing.exchange.code,
-        url=listing.url,
-        security_type=listing.security_type,
-        listing_detail_url=listing.listing_detail_url,
-        created_at=listing.created_at,
-        updated_at=listing.updated_at
-    )
+    return convert_db_listing_to_model(listing)
 
 @router.post("/", response_model=Listing)
 async def create_listing(listing: ListingCreate, db: AsyncSession = Depends(get_db)):
@@ -194,19 +204,6 @@ async def create_listing(listing: ListingCreate, db: AsyncSession = Depends(get_
         db_listing = await service.create(listing)
 
         # Convert to Pydantic model to avoid detached session issues
-        return Listing(
-            id=db_listing.id,
-            name=db_listing.name,
-            symbol=db_listing.symbol,
-            listing_date=db_listing.listing_date,
-            lot_size=db_listing.lot_size,
-            status=db_listing.status,
-            exchange_code=db_listing.exchange.code,
-            url=db_listing.url,
-            security_type=db_listing.security_type,
-            listing_detail_url=db_listing.listing_detail_url,
-            created_at=db_listing.created_at,
-            updated_at=db_listing.updated_at
-        )
+        return convert_db_listing_to_model(db_listing)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) 
