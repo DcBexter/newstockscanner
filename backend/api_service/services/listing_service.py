@@ -31,6 +31,68 @@ class ListingService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
+    def _build_base_query(
+        self,
+        select_obj,
+        exchange_code: Optional[str] = None,
+        status: Optional[str] = None,
+        days: Optional[int] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        include_exchange_join: bool = True
+    ):
+        """
+        Build a base query with common filters.
+
+        This private method builds a base query with common filters that can be used
+        by multiple public methods, reducing code duplication.
+
+        Args:
+            select_obj: The SQLAlchemy select object (either StockListing or func.count(StockListing.id))
+            exchange_code (Optional[str], optional): Filter by exchange code. Defaults to None.
+            status (Optional[str], optional): Filter by listing status. Defaults to None.
+            days (Optional[int], optional): Get listings from the last N days. Defaults to None.
+            start_date (Optional[datetime], optional): The start date of the range. Defaults to None.
+            end_date (Optional[datetime], optional): The end date of the range. Defaults to None.
+            include_exchange_join (bool, optional): Whether to include the join with Exchange. Defaults to True.
+
+        Returns:
+            The SQLAlchemy query object with filters applied.
+        """
+        # Start building the query
+        if isinstance(select_obj, type) and select_obj == StockListing:
+            # If selecting StockListing entities, use joinedload for the exchange relationship
+            query = select(select_obj).options(joinedload(StockListing.exchange))
+        else:
+            # If selecting a count or other expression, don't use joinedload
+            query = select(select_obj)
+
+        # Join with Exchange if needed
+        if include_exchange_join:
+            query = query.join(Exchange)
+
+        # Apply common filters
+        if exchange_code:
+            query = query.where(Exchange.code == exchange_code)
+        if status:
+            query = query.where(StockListing.status == status)
+
+        # Apply date filters - either days or explicit date range
+        if days:
+            # Calculate the date range from days
+            since = datetime.now(UTC).replace(tzinfo=None) - timedelta(days=days)
+            query = query.where(StockListing.listing_date >= since)
+        else:
+            # Apply explicit date range if provided
+            if start_date:
+                # Include the start date in the results (>=)
+                query = query.where(StockListing.listing_date >= start_date)
+            if end_date:
+                # Include the end date in the results (<=)
+                query = query.where(StockListing.listing_date <= end_date)
+
+        return query
+
     async def get_filtered(
         self,
         exchange_code: Optional[str] = None,
@@ -59,17 +121,13 @@ class ListingService:
             DatabaseError: If there's an error retrieving listings from the database.
         """
         try:
-            # Use joinedload to eagerly load the exchange relationship
-            query = select(StockListing).options(joinedload(StockListing.exchange)).join(Exchange)
-
-            if exchange_code:
-                query = query.where(Exchange.code == exchange_code)
-            if status:
-                query = query.where(StockListing.status == status)
-            if days:
-                # Calculate the date range
-                since = datetime.now(UTC).replace(tzinfo=None) - timedelta(days=days)
-                query = query.where(StockListing.listing_date >= since)
+            # Build the base query with filters
+            query = self._build_base_query(
+                StockListing,
+                exchange_code=exchange_code,
+                status=status,
+                days=days
+            )
 
             # Apply sorting
             query = query.order_by(StockListing.listing_date.desc())
@@ -106,17 +164,13 @@ class ListingService:
             DatabaseError: If there's an error retrieving the count from the database.
         """
         try:
-            # Build the count query
-            query = select(func.count(StockListing.id)).join(Exchange)
-
-            if exchange_code:
-                query = query.where(Exchange.code == exchange_code)
-            if status:
-                query = query.where(StockListing.status == status)
-            if days:
-                # Calculate the date range
-                since = datetime.now(UTC).replace(tzinfo=None) - timedelta(days=days)
-                query = query.where(StockListing.listing_date >= since)
+            # Build the count query using the base query helper
+            query = self._build_base_query(
+                func.count(StockListing.id),
+                exchange_code=exchange_code,
+                status=status,
+                days=days
+            )
 
             result = await self.db.execute(query)
             return result.scalar() or 0
@@ -401,21 +455,14 @@ class ListingService:
             DatabaseError: If there's an error retrieving listings from the database.
         """
         try:
-            # Use joinedload to eagerly load the exchange relationship
-            query = select(StockListing).options(joinedload(StockListing.exchange)).join(Exchange)
-
-            if exchange_code:
-                query = query.where(Exchange.code == exchange_code)
-            if status:
-                query = query.where(StockListing.status == status)
-
-            # Apply date range filter
-            if start_date:
-                # Include the start date in the results (>=)
-                query = query.where(StockListing.listing_date >= start_date)
-            if end_date:
-                # Include the end date in the results (<=)
-                query = query.where(StockListing.listing_date <= end_date)
+            # Build the query using the base query helper
+            query = self._build_base_query(
+                StockListing,
+                exchange_code=exchange_code,
+                status=status,
+                start_date=start_date,
+                end_date=end_date
+            )
 
             # Default sort by listing date, most recent first
             query = query.order_by(StockListing.listing_date.desc())
@@ -455,21 +502,14 @@ class ListingService:
             DatabaseError: If there's an error retrieving the count from the database.
         """
         try:
-            # Build the count query
-            query = select(func.count(StockListing.id)).join(Exchange)
-
-            if exchange_code:
-                query = query.where(Exchange.code == exchange_code)
-            if status:
-                query = query.where(StockListing.status == status)
-
-            # Apply date range filter
-            if start_date:
-                # Include the start date in the results (>=)
-                query = query.where(StockListing.listing_date >= start_date)
-            if end_date:
-                # Include the end date in the results (<=)
-                query = query.where(StockListing.listing_date <= end_date)
+            # Build the count query using the base query helper
+            query = self._build_base_query(
+                func.count(StockListing.id),
+                exchange_code=exchange_code,
+                status=status,
+                start_date=start_date,
+                end_date=end_date
+            )
 
             result = await self.db.execute(query)
             return result.scalar() or 0
