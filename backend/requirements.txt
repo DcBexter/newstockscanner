@@ -10,7 +10,7 @@ sqlalchemy==2.0.39
 asyncpg==0.30.0
 
 # Scraping
-aiohttp==3.11.13
+aiohttp==3.11.14
 beautifulsoup4==4.13.3
 pandas==2.2.3
 numpy==2.2.3
