@@ -62,6 +62,9 @@ class StockScanner:
         self.scraper_factory = scraper_factory or ScraperFactory()
         self.db_helper = db_helper or DatabaseHelper()
 
+        # Add scraper_classes attribute for testing
+        self.scraper_classes = self.scraper_factory.scraper_classes
+
     async def __aenter__(self):
         """
         Enter async context.

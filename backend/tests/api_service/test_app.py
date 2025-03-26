@@ -41,19 +41,19 @@ async def cleanup_connections():
     yield
     # Get the current event loop
     loop = asyncio.get_running_loop()
-    
+
     try:
         # Close database connections
         await close_db()
-        
+
         # Run pending tasks to allow connections to close
         tasks = [t for t in asyncio.all_tasks(loop) if t is not asyncio.current_task()]
         if tasks:
             await asyncio.gather(*tasks, return_exceptions=True)
-            
+
         # Give a small window for cleanup
         await asyncio.sleep(0.1)
-        
+
     except Exception as e:
         print(f"Warning: Error during database cleanup: {e}")
     finally:
@@ -79,7 +79,9 @@ class TestAPIService:
         """Test the health check endpoint with a mocked database."""
         # Mock the database dependency
         mock_db = AsyncMock()
-        mock_db.execute = AsyncMock()
+        # Configure the execute method to return a successful result
+        mock_result = AsyncMock()
+        mock_db.execute = AsyncMock(return_value=mock_result)
 
         # Create a mock dependency override
         async def override_get_db():
@@ -134,7 +136,7 @@ class TestAPIServiceAsync:
         # Apply the mocks
         monkeypatch.setattr('backend.database.session.init_db', mock_init_db)
         monkeypatch.setattr('backend.database.session.close_db', mock_close_db)
-        monkeypatch.setattr('backend.config.logging.setup_logging', mock_setup_logging)
+        monkeypatch.setattr('backend.config.log_config.setup_logging', mock_setup_logging)
         monkeypatch.setattr('backend.api_service.app.setup_logging', mock_setup_logging)
         monkeypatch.setattr('backend.api_service.app.init_db', mock_init_db)
         monkeypatch.setattr('backend.api_service.app.close_db', mock_close_db)
