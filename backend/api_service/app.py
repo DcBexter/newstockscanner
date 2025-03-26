@@ -186,7 +186,8 @@ async def health_check(db: AsyncSession = Depends(get_db)):
         await db.execute(text("SELECT 1"))
         db_status = "connected"
     except Exception as e:
-        db_status = f"error: {str(e)}"
+        logger.error(f"Database connection error: {str(e)}", exc_info=True)
+        db_status = "error"
 
     return {
         "status": "ok",
