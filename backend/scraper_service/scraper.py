@@ -12,11 +12,10 @@ from typing import List, Dict, Any, Optional
 import logging
 import os
 
-from backend.scraper_service.scrapers.hkex_scraper import HKEXScraper
-from backend.scraper_service.scrapers.nasdaq_scraper import NasdaqScraper
-from backend.scraper_service.scrapers.frankfurt_scraper import FrankfurtScraper
 from backend.api_service.services import ListingService
 from backend.config.log_config import setup_logging
+from backend.core.interfaces import DatabaseServiceInterface, NotificationServiceInterface, DatabaseHelperInterface, ScraperFactoryInterface
+from backend.scraper_service.scraper_factory import ScraperFactory
 from backend.scraper_service.services import DatabaseService, DatabaseHelper, NotificationService
 
 logger = logging.getLogger(__name__)
@@ -37,16 +36,31 @@ class StockScanner:
     MAX_RETRIES = 3
     RETRY_DELAY = 5  # seconds
 
-    def __init__(self):
+    def __init__(self, 
+                 db_service: Optional[DatabaseServiceInterface] = None,
+                 notification_service: Optional[NotificationServiceInterface] = None,
+                 scraper_factory: Optional[ScraperFactoryInterface] = None,
+                 db_helper: Optional[DatabaseHelperInterface] = None):
+        """
+        Initialize the StockScanner with dependencies.
+
+        Args:
+            db_service: A DatabaseServiceInterface instance for database operations.
+                      If None, a new DatabaseService instance will be created.
+            notification_service: A NotificationServiceInterface instance for sending notifications.
+                                If None, a new NotificationService instance will be created.
+            scraper_factory: A factory for creating scraper instances.
+                           If None, a new ScraperFactory instance will be created.
+            db_helper: A DatabaseHelperInterface instance for database operations.
+                     If None, a new DatabaseHelper instance will be created.
+        """
         setup_logging(service_name="scraper_service")
-        self.scraper_classes = {
-            "hkex": HKEXScraper,
-            "nasdaq": NasdaqScraper,
-            "nyse": NasdaqScraper,  # Using NasdaqScraper for NYSE as it can extract NYSE listings too
-            "fse": FrankfurtScraper  # Frankfurt Stock Exchange
-        }
-        self.db_service = DatabaseService()
-        self.notification_service = NotificationService()
+
+        # Set up dependencies with defaults if not provided
+        self.db_service = db_service or DatabaseService()
+        self.notification_service = notification_service or NotificationService()
+        self.scraper_factory = scraper_factory or ScraperFactory()
+        self.db_helper = db_helper or DatabaseHelper()
 
     async def __aenter__(self):
         """
@@ -92,17 +106,18 @@ class StockScanner:
             List[Dict[str, Any]]: A list of dictionaries containing the scraped listings.
         """
         all_listings = []
-        scrapers_to_run = self._filter_scrapers(exchange_filter)
+        exchanges_to_scan = self.scraper_factory.filter_exchanges(exchange_filter)
 
         # Run scrapers sequentially to ensure proper logging
-        for name, scraper_class in scrapers_to_run.items():
+        for name in exchanges_to_scan:
             for attempt in range(self.MAX_RETRIES):
                 try:
                     logger.info(f"Running {name} scraper (attempt {attempt + 1}/{self.MAX_RETRIES})...")
 
                     # Create a new scraper instance within the async context
                     try:
-                        async with scraper_class() as scraper:
+                        scraper = self.scraper_factory.get_scraper(name)
+                        async with scraper as scraper:
                             # Get date range for incremental scraping
                             incremental_scraping = os.getenv('INCREMENTAL_SCRAPING_ENABLED', 'false').lower() == 'true'
                             if incremental_scraping:
@@ -156,28 +171,6 @@ class StockScanner:
         logger.info(f"Total listings found across all scrapers: {len(all_listings)}")
         return all_listings
 
-    def _filter_scrapers(self, exchange_filter):
-        """
-        Filter scrapers based on the exchange filter.
-
-        This method returns a subset of scrapers based on the exchange filter,
-        or all scrapers if no filter is provided.
-
-        Args:
-            exchange_filter (str, optional): The exchange code to filter by.
-                                           If None, all scrapers will be returned.
-
-        Returns:
-            Dict[str, type]: A dictionary mapping exchange codes to scraper classes.
-        """
-        if not exchange_filter:
-            return self.scraper_classes
-
-        if exchange_filter.lower() in self.scraper_classes:
-            return {exchange_filter.lower(): self.scraper_classes[exchange_filter.lower()]}
-
-        logger.warning(f"Unknown exchange filter: {exchange_filter}, falling back to all scrapers")
-        return self.scraper_classes
 
     async def save_to_database(self, listings: List[Any]) -> Dict[str, Any]:
         """
@@ -327,8 +320,7 @@ class StockScanner:
                     logger.warning("Failed to send notifications for unnotified listings")
                     return 0
 
-            db_helper = DatabaseHelper()
-            return await db_helper.execute_db_operation(get_and_process_unnotified)
+            return await self.db_helper.execute_db_operation(get_and_process_unnotified)
 
         except Exception as e:
             logger.error(f"Error checking unnotified listings: {str(e)}")

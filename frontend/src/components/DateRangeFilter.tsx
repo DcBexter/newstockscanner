@@ -23,7 +23,7 @@ export default function DateRangeFilter({
       <Select
         value={value}
         label="Time Range"
-        onChange={(e) => onChange(Number(e.target.value))}
+        onChange={(event) => onChange(Number(event.target.value))}
       >
         {ranges.map((range) => (
           <MenuItem key={range.value} value={range.value}>

@@ -18,7 +18,7 @@ export default function ExchangeFilter({
       <Select
         value={value}
         label="Exchange"
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(event) => onChange(event.target.value)}
       >
         <MenuItem value="">All Exchanges</MenuItem>
         {exchanges.map((exchange) => (
