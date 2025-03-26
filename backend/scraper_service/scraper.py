@@ -103,7 +103,24 @@ class StockScanner:
                     # Create a new scraper instance within the async context
                     try:
                         async with scraper_class() as scraper:
-                            result = await scraper.scrape()
+                            # Get date range for incremental scraping
+                            if hasattr(self.settings, 'INCREMENTAL_SCRAPING_ENABLED') and self.settings.INCREMENTAL_SCRAPING_ENABLED:
+                                start_date, end_date = scraper.get_incremental_date_range(name)
+                                logger.info(f"Using incremental scraping for {name} from {start_date} to {end_date}")
+
+                                # Pass date range to scraper if it supports it
+                                if hasattr(scraper, 'scrape_with_date_range'):
+                                    result = await scraper.scrape_with_date_range(start_date, end_date)
+                                else:
+                                    # Fall back to regular scraping
+                                    result = await scraper.scrape()
+                            else:
+                                # Regular scraping
+                                result = await scraper.scrape()
+
+                            # Update last scrape time if successful
+                            if result and result.success:
+                                scraper.set_last_scrape_time(name)
                     except Exception as session_err:
                         logger.error(f"Error managing session for {name}: {str(session_err)}")
                         if attempt < self.MAX_RETRIES - 1:

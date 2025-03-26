@@ -3,20 +3,130 @@ import hashlib
 import json
 import os
 import time
+import urllib.parse
 from abc import ABC, abstractmethod
+from collections import defaultdict
 from contextlib import suppress
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional, Any, Dict, List
 
 import aiohttp
 
 from backend.config.logging import get_logger
 from backend.config.settings import get_settings
-from backend.core.exceptions import HTTPError, ScraperError
+from backend.core.exceptions import HTTPError, ScraperError, RateLimitError
 from backend.core.models import ScrapingResult, ListingBase
 
 settings = get_settings()
 logger = get_logger(__name__)
+
+
+class RateLimiter:
+    """Rate limiter for HTTP requests.
+
+    This class implements a rate limiter that enforces a maximum number of requests
+    per minute to each domain. It tracks the last request time for each domain and
+    enforces a minimum delay between requests to the same domain.
+
+    Attributes:
+        requests_per_minute (int): Maximum number of requests per minute.
+        domain_specific (bool): Whether to apply rate limiting per domain or globally.
+        last_request_time (Dict[str, float]): Mapping of domains to last request times.
+        request_counts (Dict[str, int]): Mapping of domains to request counts in the current minute.
+        last_minute_start (Dict[str, float]): Mapping of domains to the start time of the current minute.
+    """
+
+    def __init__(self, requests_per_minute: int = 30, domain_specific: bool = True):
+        """Initialize the rate limiter.
+
+        Args:
+            requests_per_minute (int, optional): Maximum number of requests per minute.
+                Defaults to 30.
+            domain_specific (bool, optional): Whether to apply rate limiting per domain
+                or globally. Defaults to True.
+        """
+        self.requests_per_minute = requests_per_minute
+        self.domain_specific = domain_specific
+        self.last_request_time: Dict[str, float] = defaultdict(float)
+        self.request_counts: Dict[str, int] = defaultdict(int)
+        self.last_minute_start: Dict[str, float] = defaultdict(float)
+
+    def get_domain(self, url: str) -> str:
+        """Extract the domain from a URL.
+
+        Args:
+            url (str): The URL to extract the domain from.
+
+        Returns:
+            str: The domain of the URL, or "global" if domain_specific is False.
+        """
+        if not self.domain_specific:
+            return "global"
+
+        try:
+            parsed_url = urllib.parse.urlparse(url)
+            return parsed_url.netloc
+        except Exception:
+            # Fall back to global rate limiting if URL parsing fails
+            return "global"
+
+    async def wait_if_needed(self, url: str) -> None:
+        """Wait if necessary to comply with rate limits.
+
+        This method checks if a request to the given URL would exceed the rate limit
+        and waits if necessary to comply with the limit.
+
+        Args:
+            url (str): The URL to check.
+
+        Raises:
+            RateLimitError: If the rate limit would be exceeded even after waiting
+                for a reasonable amount of time.
+        """
+        if not settings.RATE_LIMIT_ENABLED:
+            return
+
+        domain = self.get_domain(url)
+        current_time = time.time()
+
+        # Check if we're in a new minute
+        if current_time - self.last_minute_start[domain] >= 60:
+            self.last_minute_start[domain] = current_time
+            self.request_counts[domain] = 0
+
+        # Check if we've exceeded the rate limit
+        if self.request_counts[domain] >= self.requests_per_minute:
+            # Calculate time until the next minute starts
+            time_until_reset = 60 - (current_time - self.last_minute_start[domain])
+
+            # If the wait time is reasonable, wait
+            if time_until_reset <= 30:  # Only wait up to 30 seconds
+                logger.warning(f"Rate limit reached for {domain}. Waiting {time_until_reset:.1f}s")
+                await asyncio.sleep(time_until_reset)
+
+                # Reset for the new minute
+                self.last_minute_start[domain] = time.time()
+                self.request_counts[domain] = 0
+            else:
+                # If the wait time is too long, raise an error
+                raise RateLimitError(
+                    message=f"Rate limit exceeded for {domain}",
+                    retry_after=int(time_until_reset),
+                    url=url
+                )
+
+        # Calculate minimum delay between requests (ensures even distribution)
+        min_delay = 60 / self.requests_per_minute
+        time_since_last_request = current_time - self.last_request_time[domain]
+
+        if time_since_last_request < min_delay:
+            delay = min_delay - time_since_last_request
+            logger.debug(f"Rate limiting: waiting {delay:.2f}s before requesting {domain}")
+            await asyncio.sleep(delay)
+
+        # Update tracking
+        self.last_request_time[domain] = time.time()
+        self.request_counts[domain] += 1
 
 
 class CircuitBreaker:
@@ -95,9 +205,14 @@ class BaseScraper(ABC):
         self.settings = settings
         self.logger = logger
         self.circuit_breaker = CircuitBreaker()
+        self.rate_limiter = RateLimiter(
+            requests_per_minute=self.settings.RATE_LIMIT_REQUESTS_PER_MINUTE,
+            domain_specific=self.settings.RATE_LIMIT_DOMAIN_SPECIFIC
+        )
         self.fallback_enabled = self.settings.ENABLE_FALLBACK_SCRAPING if hasattr(self.settings, 'ENABLE_FALLBACK_SCRAPING') else True
         self.last_successful_data: List[ListingBase] = []
         self.last_successful_time: Optional[datetime] = None
+        self.last_scrape_time: Dict[str, datetime] = {}
 
     async def __aenter__(self):
         """Enter async context: create HTTP session."""
@@ -199,6 +314,7 @@ class BaseScraper(ABC):
         Raises:
             HTTPError: If the request fails after maximum retries
             ScraperError: For other scraper-specific errors
+            RateLimitError: If the rate limit would be exceeded even after waiting
         """
         # Check circuit breaker first
         if not self.circuit_breaker.allow_request():
@@ -207,6 +323,13 @@ class BaseScraper(ABC):
                 status_code=503,
                 url=url
             )
+
+        # Apply rate limiting
+        try:
+            await self.rate_limiter.wait_if_needed(url)
+        except RateLimitError as e:
+            self.logger.warning(f"Rate limit exceeded for {url}: {str(e)}")
+            raise
 
         default_headers = {"User-Agent": self.settings.USER_AGENT}
         if headers:
@@ -348,6 +471,55 @@ class BaseScraper(ABC):
             ScrapingResult containing success status, message, and scraped data
         """
         pass
+
+    async def get_last_scrape_time(self, source_id: str) -> Optional[datetime]:
+        """Get the last time this source was scraped.
+
+        Args:
+            source_id (str): Identifier for the data source (e.g., "nasdaq", "hkex")
+
+        Returns:
+            Optional[datetime]: The last time this source was scraped, or None if
+                it has never been scraped before.
+        """
+        return self.last_scrape_time.get(source_id)
+
+    def set_last_scrape_time(self, source_id: str, time: datetime = None) -> None:
+        """Set the last time this source was scraped.
+
+        Args:
+            source_id (str): Identifier for the data source (e.g., "nasdaq", "hkex")
+            time (datetime, optional): The time to set. Defaults to current time.
+        """
+        self.last_scrape_time[source_id] = time or datetime.now()
+
+    def get_incremental_date_range(self, source_id: str) -> tuple[Optional[datetime], datetime]:
+        """Get the date range for incremental scraping.
+
+        This method calculates the date range for incremental scraping based on
+        the last scrape time and the maximum days setting.
+
+        Args:
+            source_id (str): Identifier for the data source (e.g., "nasdaq", "hkex")
+
+        Returns:
+            tuple[Optional[datetime], datetime]: A tuple of (start_date, end_date)
+                where start_date is the last scrape time or None if it has never
+                been scraped before, and end_date is the current time.
+        """
+        if not self.settings.INCREMENTAL_SCRAPING_ENABLED:
+            return None, datetime.now()
+
+        last_scrape = self.get_last_scrape_time(source_id)
+
+        # If never scraped before, or if it was scraped too long ago,
+        # use the maximum days setting
+        if last_scrape is None or (datetime.now() - last_scrape).days > self.settings.INCREMENTAL_SCRAPING_MAX_DAYS:
+            start_date = datetime.now() - timedelta(days=self.settings.INCREMENTAL_SCRAPING_MAX_DAYS)
+        else:
+            start_date = last_scrape
+
+        return start_date, datetime.now()
 
     @abstractmethod
     def parse(self, content: str) -> Any:
