@@ -9,7 +9,7 @@ for handling notifications about new listings.
 from datetime import datetime, timedelta, UTC
 from typing import List, Optional, Dict, Any
 
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
@@ -35,18 +35,22 @@ class ListingService:
         self,
         exchange_code: Optional[str] = None,
         status: Optional[str] = None,
-        days: Optional[int] = None
+        days: Optional[int] = None,
+        skip: int = 0,
+        limit: int = 100
     ) -> List[StockListing]:
         """
-        Get listings with filters.
+        Get listings with filters and pagination.
 
         This method retrieves stock listings from the database with optional filters
-        for exchange code, status, and time period.
+        for exchange code, status, and time period. It also supports pagination.
 
         Args:
             exchange_code (Optional[str], optional): Filter by exchange code. Defaults to None.
             status (Optional[str], optional): Filter by listing status. Defaults to None.
             days (Optional[int], optional): Get listings from the last N days. Defaults to None.
+            skip (int, optional): Number of records to skip. Defaults to 0.
+            limit (int, optional): Maximum number of records to return. Defaults to 100.
 
         Returns:
             List[StockListing]: A list of StockListing objects matching the filters.
@@ -67,12 +71,57 @@ class ListingService:
                 since = datetime.now(UTC).replace(tzinfo=None) - timedelta(days=days)
                 query = query.where(StockListing.listing_date >= since)
 
+            # Apply sorting
             query = query.order_by(StockListing.listing_date.desc())
+
+            # Apply pagination
+            query = query.offset(skip).limit(limit)
 
             result = await self.db.execute(query)
             return list(result.scalars().all())
         except Exception as e:
             raise DatabaseQueryError(f"Failed to get listings: {str(e)}")
+
+    async def get_filtered_count(
+        self,
+        exchange_code: Optional[str] = None,
+        status: Optional[str] = None,
+        days: Optional[int] = None
+    ) -> int:
+        """
+        Get the total count of listings matching the filters.
+
+        This method retrieves the total count of stock listings from the database
+        that match the specified filters. This is useful for pagination UI.
+
+        Args:
+            exchange_code (Optional[str], optional): Filter by exchange code. Defaults to None.
+            status (Optional[str], optional): Filter by listing status. Defaults to None.
+            days (Optional[int], optional): Get listings from the last N days. Defaults to None.
+
+        Returns:
+            int: The total count of listings matching the filters.
+
+        Raises:
+            DatabaseError: If there's an error retrieving the count from the database.
+        """
+        try:
+            # Build the count query
+            query = select(func.count(StockListing.id)).join(Exchange)
+
+            if exchange_code:
+                query = query.where(Exchange.code == exchange_code)
+            if status:
+                query = query.where(StockListing.status == status)
+            if days:
+                # Calculate the date range
+                since = datetime.now(UTC).replace(tzinfo=None) - timedelta(days=days)
+                query = query.where(StockListing.listing_date >= since)
+
+            result = await self.db.execute(query)
+            return result.scalar() or 0
+        except Exception as e:
+            raise DatabaseQueryError(f"Failed to get listings count: {str(e)}")
 
     async def get_by_symbol(self, symbol: str) -> Optional[StockListing]:
         """
@@ -324,19 +373,23 @@ class ListingService:
         exchange_code: Optional[str] = None,
         status: Optional[str] = None,
         start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None
+        end_date: Optional[datetime] = None,
+        skip: int = 0,
+        limit: int = 100
     ) -> List[StockListing]:
         """
-        Get listings within a specific date range.
+        Get listings within a specific date range with pagination.
 
         This method retrieves stock listings from the database within a specific date range,
-        with optional filters for exchange code and status.
+        with optional filters for exchange code and status. It also supports pagination.
 
         Args:
             exchange_code (Optional[str], optional): Filter by exchange code. Defaults to None.
             status (Optional[str], optional): Filter by listing status. Defaults to None.
             start_date (Optional[datetime], optional): The start date of the range. Defaults to None.
             end_date (Optional[datetime], optional): The end date of the range. Defaults to None.
+            skip (int, optional): Number of records to skip. Defaults to 0.
+            limit (int, optional): Maximum number of records to return. Defaults to 100.
 
         Returns:
             List[StockListing]: A list of StockListing objects matching the filters and date range.
@@ -364,7 +417,58 @@ class ListingService:
             # Default sort by listing date, most recent first
             query = query.order_by(StockListing.listing_date.desc())
 
+            # Apply pagination
+            query = query.offset(skip).limit(limit)
+
             result = await self.db.execute(query)
             return list(result.scalars().all())
         except Exception as e:
             raise DatabaseQueryError(f"Failed to get listings by date range: {str(e)}")
+
+    async def get_by_date_range_count(
+        self,
+        exchange_code: Optional[str] = None,
+        status: Optional[str] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None
+    ) -> int:
+        """
+        Get the total count of listings within a specific date range.
+
+        This method retrieves the total count of stock listings from the database
+        within a specific date range, with optional filters for exchange code and status.
+        This is useful for pagination UI.
+
+        Args:
+            exchange_code (Optional[str], optional): Filter by exchange code. Defaults to None.
+            status (Optional[str], optional): Filter by listing status. Defaults to None.
+            start_date (Optional[datetime], optional): The start date of the range. Defaults to None.
+            end_date (Optional[datetime], optional): The end date of the range. Defaults to None.
+
+        Returns:
+            int: The total count of listings matching the filters and date range.
+
+        Raises:
+            DatabaseError: If there's an error retrieving the count from the database.
+        """
+        try:
+            # Build the count query
+            query = select(func.count(StockListing.id)).join(Exchange)
+
+            if exchange_code:
+                query = query.where(Exchange.code == exchange_code)
+            if status:
+                query = query.where(StockListing.status == status)
+
+            # Apply date range filter
+            if start_date:
+                # Include the start date in the results (>=)
+                query = query.where(StockListing.listing_date >= start_date)
+            if end_date:
+                # Include the end date in the results (<=)
+                query = query.where(StockListing.listing_date <= end_date)
+
+            result = await self.db.execute(query)
+            return result.scalar() or 0
+        except Exception as e:
+            raise DatabaseQueryError(f"Failed to get listings count by date range: {str(e)}")
