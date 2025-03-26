@@ -8,7 +8,7 @@ the database.
 """
 
 from datetime import datetime
-from typing import List, Optional
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
