@@ -14,7 +14,7 @@ from sqlalchemy.orm import joinedload
 
 from backend.core.models import ListingCreate
 from backend.database.models import StockListing, Exchange
-from backend.core.exceptions import DatabaseError
+from backend.core.exceptions import DatabaseError, DatabaseQueryError, DatabaseNotFoundError, DatabaseUpdateError, DatabaseCreateError, DatabaseTransactionError
 
 class ListingService:
     """
@@ -69,7 +69,7 @@ class ListingService:
             result = await self.db.execute(query)
             return list(result.scalars().all())
         except Exception as e:
-            raise DatabaseError(f"Failed to get listings: {str(e)}")
+            raise DatabaseQueryError(f"Failed to get listings: {str(e)}")
 
     async def get_by_symbol(self, symbol: str) -> Optional[StockListing]:
         """
@@ -92,7 +92,7 @@ class ListingService:
             result = await self.db.execute(query)
             return result.scalar_one_or_none()
         except Exception as e:
-            raise DatabaseError(f"Failed to get listing by symbol: {str(e)}")
+            raise DatabaseQueryError(f"Failed to get listing by symbol: {str(e)}")
 
     async def get_by_symbol_and_exchange(self, symbol: str, exchange_code: str) -> Optional[StockListing]:
         """
@@ -119,7 +119,7 @@ class ListingService:
             result = await self.db.execute(query)
             return result.scalar_one_or_none()
         except Exception as e:
-            raise DatabaseError(f"Failed to get listing by symbol and exchange: {str(e)}")
+            raise DatabaseQueryError(f"Failed to get listing by symbol and exchange: {str(e)}")
 
     async def update(self, listing_id: int, data: Dict[str, Any]) -> StockListing:
         """
@@ -145,7 +145,7 @@ class ListingService:
             listing = result.scalar_one_or_none()
 
             if not listing:
-                raise DatabaseError(f"Listing with ID {listing_id} not found")
+                raise DatabaseNotFoundError(f"Listing with ID {listing_id} not found", model="StockListing", record_id=str(listing_id))
 
             # Update the listing fields
             for key, value in data.items():
@@ -163,7 +163,7 @@ class ListingService:
             return listing
         except Exception as e:
             await self.db.rollback()
-            raise DatabaseError(f"Failed to update listing: {str(e)}")
+            raise DatabaseUpdateError(f"Failed to update listing: {str(e)}", model="StockListing")
 
     async def create(self, listing: ListingCreate) -> StockListing:
         """
@@ -187,7 +187,7 @@ class ListingService:
             # Get exchange by code
             exchange = await self._get_exchange(listing.exchange_code)
             if not exchange:
-                raise DatabaseError(f"Exchange with code {listing.exchange_code} not found")
+                raise DatabaseNotFoundError(f"Exchange with code {listing.exchange_code} not found", model="Exchange", record_id=listing.exchange_code)
 
             # Check if listing already exists
             existing = await self.get_by_symbol_and_exchange(listing.symbol, listing.exchange_code)
@@ -217,7 +217,7 @@ class ListingService:
             return db_listing
         except Exception as e:
             await self.db.rollback()
-            raise DatabaseError(f"Failed to create listing: {str(e)}")
+            raise DatabaseCreateError(f"Failed to create listing: {str(e)}", model="StockListing")
 
     async def _get_exchange(self, exchange_code: str) -> Optional[Exchange]:
         """
@@ -282,7 +282,7 @@ class ListingService:
             result = await self.db.execute(query)
             return list(result.scalars().all())
         except Exception as e:
-            raise DatabaseError(f"Failed to get unnotified listings: {str(e)}")
+            raise DatabaseQueryError(f"Failed to get unnotified listings: {str(e)}")
 
     async def mark_as_notified(self, listing_id: int) -> bool:
         """
@@ -314,7 +314,7 @@ class ListingService:
             return True
         except Exception as e:
             await self.db.rollback()
-            raise DatabaseError(f"Failed to mark listing as notified: {str(e)}")
+            raise DatabaseTransactionError(f"Failed to mark listing as notified: {str(e)}", operation="mark_as_notified")
 
     async def get_by_date_range(
         self,
@@ -364,4 +364,4 @@ class ListingService:
             result = await self.db.execute(query)
             return list(result.scalars().all())
         except Exception as e:
-            raise DatabaseError(f"Failed to get listings by date range: {str(e)}") 
+            raise DatabaseQueryError(f"Failed to get listings by date range: {str(e)}")
