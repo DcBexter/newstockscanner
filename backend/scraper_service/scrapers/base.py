@@ -1,18 +1,19 @@
-from abc import ABC, abstractmethod
-from typing import Optional, Any, Dict, Union, List, Tuple, Type
-import aiohttp
 import asyncio
-import time
-import os
-import json
 import hashlib
+import json
+import os
+import time
+from abc import ABC, abstractmethod
 from contextlib import suppress
 from datetime import datetime
+from typing import Optional, Any, Dict, List
 
+import aiohttp
+
+from backend.config.logging import get_logger
 from backend.config.settings import get_settings
 from backend.core.exceptions import HTTPError, ScraperError
 from backend.core.models import ScrapingResult, ListingBase
-from backend.config.logging import get_logger
 
 settings = get_settings()
 logger = get_logger(__name__)
@@ -240,7 +241,7 @@ class BaseScraper(ABC):
                 else:
                     raise HTTPError(
                         status_code=503,  # Service Unavailable
-                        detail=f"Failed to connect to {url} after {self.settings.MAX_RETRIES} attempts: {str(e)}"
+                        message=f"Failed to connect to {url} after {self.settings.MAX_RETRIES} attempts: {str(e)}"
                     )
 
             except aiohttp.ServerDisconnectedError as e:
@@ -257,7 +258,7 @@ class BaseScraper(ABC):
                 else:
                     raise HTTPError(
                         status_code=503,  # Service Unavailable
-                        detail=f"Server disconnected from {url} after {self.settings.MAX_RETRIES} attempts: {str(e)}"
+                        message=f"Server disconnected from {url} after {self.settings.MAX_RETRIES} attempts: {str(e)}"
                     )
 
             except aiohttp.ClientResponseError as e:
@@ -286,7 +287,7 @@ class BaseScraper(ABC):
                 else:
                     raise HTTPError(
                         status_code=status,
-                        detail=f"HTTP error from {url}: {status} - {str(e)}"
+                        message=f"HTTP error from {url}: {status} - {str(e)}"
                     )
 
             except aiohttp.ClientError as e:
@@ -298,7 +299,7 @@ class BaseScraper(ABC):
                     self.circuit_breaker.record_failure()
                     raise HTTPError(
                         status_code=getattr(e, 'status', 500),
-                        detail=f"Failed after {self.settings.MAX_RETRIES} attempts: {str(e)}"
+                        message=f"Failed after {self.settings.MAX_RETRIES} attempts: {str(e)}"
                     )
                 await asyncio.sleep(min(2 ** attempt, 30))  # Exponential backoff with maximum delay
 
@@ -316,7 +317,7 @@ class BaseScraper(ABC):
                     self.circuit_breaker.record_failure()
                     raise HTTPError(
                         status_code=408,  # Request Timeout
-                        detail=f"Request to {url} timed out after {self.settings.MAX_RETRIES} attempts"
+                        message=f"Request to {url} timed out after {self.settings.MAX_RETRIES} attempts"
                     )
 
             except Exception as e:

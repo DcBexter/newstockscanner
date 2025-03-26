@@ -39,9 +39,9 @@ class NotificationService:
             await self._update_log(log, success)
 
             return success
-        except Exception as exception:
-            await self._handle_error(message, notifier_type, str(exception))
-            raise NotifierError(f"Failed to send notification: {str(exception)}")
+        except Exception as e:
+            await self._handle_error(message, notifier_type, str(e))
+            raise NotifierError(f"Failed to send notification: {str(e)}")
 
     async def notify_new_listings(
         self, 
@@ -55,42 +55,20 @@ class NotificationService:
 
             notifier = self._get_notifier(notifier_type)
 
-            # Create a summary message for logging
-            summary_title = f"New Stock Listings Summary"
-            summary_body = f"Found {len(listings)} new stock listings."
-            summary_message = NotificationMessage(
-                title=summary_title,
-                body=summary_body,
-                metadata={"type": "summary", "listings_count": len(listings)}
-            )
-
-            # Create a log entry for the summary notification
-            log = await self._create_log(summary_message, notifier_type)
-
             # Check if the notifier has a specialized method for listings
-            success = False
             if hasattr(notifier, 'notify_new_listings'):
-                success = await notifier.notify_new_listings(listings)
-            else:
-                # Fallback to generic notification
-                success = await self.send(summary_message, notifier_type)
+                return await notifier.notify_new_listings(listings)
 
-            # Update the log entry with the result
-            await self._update_log(log, success)
-
-            return success
-
-        except Exception as exception:
-            await self._handle_error(
-                NotificationMessage(
-                    title="New Stock Listings Error",
-                    body=f"Error sending notifications for {len(listings)} listings",
-                    metadata={"listings_count": len(listings)}
-                ),
-                notifier_type,
-                str(exception)
+            # Fallback to generic notification
+            message = NotificationMessage(
+                title="New Stock Listings",
+                body=f"Found {len(listings)} new stock listings.",
+                metadata={"listings_count": len(listings)}
             )
-            raise NotifierError(f"Failed to send new listings notification: {str(exception)}")
+            return await self.send(message, notifier_type)
+
+        except Exception as e:
+            raise NotifierError(f"Failed to send new listings notification: {str(e)}")
 
     async def get_logs(
         self,
@@ -113,8 +91,8 @@ class NotificationService:
 
             result = await self.db.execute(query)
             return list(result.scalars().all())
-        except Exception as db_error:
-            raise DatabaseError(f"Failed to get notification logs: {str(db_error)}")
+        except Exception as e:
+            raise DatabaseError(f"Failed to get notification logs: {str(e)}")
 
     async def _initialize_notifiers(self) -> None:
         """Initialize notification service and register notifiers."""
@@ -127,8 +105,8 @@ class NotificationService:
             # Add more notifiers here as needed
 
             self._initialized = True
-        except Exception as exception:
-            raise NotifierError(f"Failed to initialize notification service: {str(exception)}")
+        except Exception as e:
+            raise NotifierError(f"Failed to initialize notification service: {str(e)}")
 
     def _get_notifier(self, notifier_type: str) -> BaseNotifier:
         """Get a notifier by type."""
@@ -156,14 +134,10 @@ class NotificationService:
 
     async def _update_log(self, log: NotificationLog, success: bool) -> None:
         """Update a notification log entry with the result."""
-        try:
-            log.status = "sent" if success else "failed"
-            if not success:
-                log.error = "Failed to send notification"
-            await self.db.commit()
-        except Exception as db_error:
-            await self.db.rollback()
-            print(f"Failed to update notification log: {str(db_error)}")
+        log.status = "sent" if success else "failed"
+        if not success:
+            log.error = "Failed to send notification"
+        await self.db.commit()
 
     async def _handle_error(
         self,
@@ -184,13 +158,9 @@ class NotificationService:
             )
             self.db.add(log)
             await self.db.commit()
-        except Exception as db_error:
+        except Exception as e:
             # Just log the error if we can't save to database
-            try:
-                await self.db.rollback()
-            except Exception:
-                pass  # Ignore errors during rollback
-            print(f"Failed to log notification error: {str(db_error)}")
+            print(f"Failed to log notification error: {str(e)}")
 
     async def cleanup(self) -> None:
         """Cleanup resources."""

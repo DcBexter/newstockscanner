@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import List
 
 from sqlalchemy import Integer, String, DateTime, ForeignKey, Text
@@ -8,11 +8,11 @@ Base = declarative_base()
 
 class TimestampMixin:
     """Mixin for adding created_at and updated_at timestamps."""
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, 
-        default=datetime.now,
-        onupdate=datetime.now,
+        default=datetime.utcnow, 
+        onupdate=datetime.utcnow,
         nullable=False
     )
 
@@ -45,15 +45,15 @@ class StockListing(TimestampMixin, Base):
     symbol: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
     listing_date: Mapped[datetime] = mapped_column(DateTime, nullable=False, index=True)
     lot_size: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    status: Mapped[str] = mapped_column(String(50), nullable=False, default="New Listing", index=True)
-    security_type: Mapped[str] = mapped_column(String(50), nullable=False, default="Equity", index=True)
+    status: Mapped[str] = mapped_column(String(50), nullable=False, default="New Listing")
+    security_type: Mapped[str] = mapped_column(String(50), nullable=False, default="Equity")
     remarks: Mapped[str] = mapped_column(Text, nullable=True)
     url: Mapped[str] = mapped_column(String(255), nullable=True)
     listing_detail_url: Mapped[str] = mapped_column(String(255), nullable=True)
-    notified: Mapped[bool] = mapped_column(default=False, nullable=False, index=True)
+    notified: Mapped[bool] = mapped_column(default=False, nullable=False)
 
     # Foreign keys
-    exchange_id: Mapped[int] = mapped_column(ForeignKey("exchanges.id"), nullable=False, index=True)
+    exchange_id: Mapped[int] = mapped_column(ForeignKey("exchanges.id"), nullable=False)
 
     # Relationships
     exchange: Mapped[Exchange] = relationship("Exchange", back_populates="listings")

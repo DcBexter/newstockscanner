@@ -87,7 +87,7 @@ services:
       - SCRAPING_INTERVAL_MINUTES=${SCRAPING_INTERVAL_MINUTES:-60}
       - NOTIFICATION_SERVICE_URL=http://notification_service:8001
       - RUN_API=true
-      - RUN_SCHEDULER=true
+      - RUN_SCHEDULER=false
     ports:
       - "8002:8002"
     depends_on:
