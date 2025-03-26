@@ -88,8 +88,9 @@ class TestAPIService:
             yield mock_db
 
         # Apply the mock
+        from backend.database.session import get_db
         app.dependency_overrides = {
-            "backend.database.session.get_db": override_get_db
+            get_db: override_get_db
         }
 
         # Make the request
