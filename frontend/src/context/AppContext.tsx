@@ -1,8 +1,11 @@
-import React, { createContext, useContext, useReducer, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useRef, useCallback } from 'react';
 import { AppState, AppAction } from './types';
 import { reducer, initialState } from './reducer';
 import * as actions from './actions';
 import { api } from '../api/client';
+
+// Constants
+const POLLING_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes in milliseconds
 
 // Create context
 interface AppContextType {
@@ -13,16 +16,8 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-// Provider component
-interface AppProviderProps {
-  children: React.ReactNode;
-}
-
-export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
-  const [state, dispatch] = useReducer(reducer, initialState);
-  const pollingIntervalRef = useRef<number | null>(null);
-
-  // Load exchanges on mount
+// Custom hooks for data fetching
+const useFetchExchanges = (dispatch: React.Dispatch<AppAction>) => {
   useEffect(() => {
     const fetchExchanges = async () => {
       try {
@@ -38,27 +33,18 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     };
 
     fetchExchanges();
-  }, []);
+  }, [dispatch]);
+};
 
-  // Load listings when filters change
+const useFetchListings = (
+  state: AppState,
+  dispatch: React.Dispatch<AppAction>
+) => {
   useEffect(() => {
     const fetchListings = async () => {
       dispatch(actions.setLoadingListings(true));
       try {
-        const params: Record<string, string | number> = {};
-
-        // Use either date range or days depending on mode
-        if (state.isPaginationMode && state.startDate && state.endDate) {
-          params.start_date = state.startDate;
-          params.end_date = state.endDate;
-        } else {
-          params.days = state.days;
-        }
-
-        if (state.selectedExchange) {
-          params.exchange_code = state.selectedExchange;
-        }
-
+        const params = createListingParams(state);
         const listingsData = await api.getListings(params);
 
         dispatch(actions.setListings(listingsData));
@@ -74,9 +60,13 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     };
 
     fetchListings();
-  }, [state.selectedExchange, state.days, state.startDate, state.endDate, state.isPaginationMode]);
+  }, [state.selectedExchange, state.days, state.startDate, state.endDate, state.isPaginationMode, dispatch]);
+};
 
-  // Load statistics when days change
+const useFetchStatistics = (
+  state: AppState,
+  dispatch: React.Dispatch<AppAction>
+) => {
   useEffect(() => {
     const fetchStatistics = async () => {
       try {
@@ -95,42 +85,43 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     };
 
     fetchStatistics();
-  }, [state.days, state.isPaginationMode]);
+  }, [state.days, state.isPaginationMode, dispatch]);
+};
 
-  // Setup polling for new listings
-  useEffect(() => {
-    // Function to fetch listings only for notification purposes
-    const fetchListingsForNotification = async () => {
-      try {
-        const params: Record<string, string | number> = { days: state.days };
-        if (state.selectedExchange) {
-          params.exchange_code = state.selectedExchange;
+const useListingPolling = (
+  state: AppState,
+  dispatch: React.Dispatch<AppAction>
+) => {
+  const pollingIntervalRef = useRef<number | null>(null);
+
+  const fetchListingsForNotification = useCallback(async () => {
+    try {
+      const params = createListingParams(state);
+      const listingsData = await api.getListings(params);
+      const currentCount = listingsData.length;
+
+      // If this isn't the first check and we have more listings than before
+      if (state.previousListingsCount > 0 && currentCount > state.previousListingsCount) {
+        const newCount = currentCount - state.previousListingsCount;
+        dispatch(actions.setNewListings(true, newCount));
+
+        // Show browser notification if allowed
+        if (Notification.permission === 'granted') {
+          new Notification('New Financial Listings', {
+            body: `${newCount} new listing${newCount > 1 ? 's' : ''} detected!`,
+            icon: '/logo.png'
+          });
         }
 
-        const listingsData = await api.getListings(params);
-        const currentCount = listingsData.length;
-
-        // If this isn't the first check and we have more listings than before
-        if (state.previousListingsCount > 0 && currentCount > state.previousListingsCount) {
-          const newCount = currentCount - state.previousListingsCount;
-          dispatch(actions.setNewListings(true, newCount));
-
-          // Show browser notification if allowed
-          if (Notification.permission === 'granted') {
-            new Notification('New Financial Listings', {
-              body: `${newCount} new listing${newCount > 1 ? 's' : ''} detected!`,
-              icon: '/logo.png'
-            });
-          }
-
-          // Update the listings without setting loading state
-          dispatch(actions.setListings(listingsData));
-        }
-      } catch (err) {
-        console.error('Background polling error:', err);
+        // Update the listings without setting loading state
+        dispatch(actions.setListings(listingsData));
       }
-    };
+    } catch (err) {
+      console.error('Background polling error:', err);
+    }
+  }, [state, dispatch]);
 
+  useEffect(() => {
     // Setup auto-polling for new listings
     if (pollingIntervalRef.current) {
       window.clearInterval(pollingIntervalRef.current);
@@ -141,7 +132,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       if (Notification.permission === 'granted') {
         fetchListingsForNotification();
       }
-    }, 5 * 60 * 1000); // Check every 5 minutes
+    }, POLLING_INTERVAL_MS);
 
     return () => {
       if (pollingIntervalRef.current) {
@@ -149,7 +140,41 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         pollingIntervalRef.current = null;
       }
     };
-  }, [state.days, state.selectedExchange, state.previousListingsCount]);
+  }, [state.days, state.selectedExchange, state.previousListingsCount, fetchListingsForNotification]);
+};
+
+// Helper function to create listing params
+const createListingParams = (state: AppState): Record<string, string | number> => {
+  const params: Record<string, string | number> = {};
+
+  // Use either date range or days depending on mode
+  if (state.isPaginationMode && state.startDate && state.endDate) {
+    params.start_date = state.startDate;
+    params.end_date = state.endDate;
+  } else {
+    params.days = state.days;
+  }
+
+  if (state.selectedExchange) {
+    params.exchange_code = state.selectedExchange;
+  }
+
+  return params;
+};
+
+// Provider component
+interface AppProviderProps {
+  children: React.ReactNode;
+}
+
+export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
+  const [state, dispatch] = useReducer(reducer, initialState);
+
+  // Use custom hooks for data fetching
+  useFetchExchanges(dispatch);
+  useFetchListings(state, dispatch);
+  useFetchStatistics(state, dispatch);
+  useListingPolling(state, dispatch);
 
   // Create context value
   const contextValue: AppContextType = {
