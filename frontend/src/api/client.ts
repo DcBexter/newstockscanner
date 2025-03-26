@@ -10,7 +10,7 @@ interface CacheEntry {
 }
 
 const cache: Record<string, CacheEntry> = {};
-const CACHE_TTL = 1; // 5 second cache TTL
+const CACHE_TTL = 1000; // 1 second cache TTL in milliseconds
 
 // Helper to get cache key
 const getCacheKey = (endpoint: string, params?: any): string => {
