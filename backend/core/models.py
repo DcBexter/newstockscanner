@@ -26,6 +26,13 @@ class Listing(ListingBase):
 
     model_config = {"from_attributes": True}
 
+class PaginatedListings(BaseModel):
+    """Model for paginated listings response."""
+    items: List[Listing]
+    total: int
+    skip: int
+    limit: int
+
 class ExchangeBase(BaseModel):
     """Base model for exchanges."""
     name: str

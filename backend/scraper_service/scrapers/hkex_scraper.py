@@ -1,15 +1,15 @@
-from typing import List, Dict, Any, Optional
-from bs4 import BeautifulSoup
-from datetime import datetime
-import pandas as pd
 import asyncio
-from contextlib import suppress
 import re
+from typing import List, Optional
 
-from backend.scraper_service.scrapers.base import BaseScraper
+import pandas as pd
+from bs4 import BeautifulSoup
+
+from backend.core.exceptions import ParsingError
 from backend.core.models import ListingBase, ScrapingResult
-from backend.core.exceptions import ParsingError, ScraperError
 from backend.core.utils import HKEXUtils, DateUtils
+from backend.scraper_service.scrapers.base import BaseScraper
+
 
 class HKEXScraper(BaseScraper):
     """Scraper for Hong Kong Stock Exchange new listings."""

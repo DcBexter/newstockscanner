@@ -45,15 +45,15 @@ class StockListing(TimestampMixin, Base):
     symbol: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
     listing_date: Mapped[datetime] = mapped_column(DateTime, nullable=False, index=True)
     lot_size: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    status: Mapped[str] = mapped_column(String(50), nullable=False, default="New Listing")
-    security_type: Mapped[str] = mapped_column(String(50), nullable=False, default="Equity")
+    status: Mapped[str] = mapped_column(String(50), nullable=False, default="New Listing", index=True)
+    security_type: Mapped[str] = mapped_column(String(50), nullable=False, default="Equity", index=True)
     remarks: Mapped[str] = mapped_column(Text, nullable=True)
     url: Mapped[str] = mapped_column(String(255), nullable=True)
     listing_detail_url: Mapped[str] = mapped_column(String(255), nullable=True)
-    notified: Mapped[bool] = mapped_column(default=False, nullable=False)
+    notified: Mapped[bool] = mapped_column(default=False, nullable=False, index=True)
 
     # Foreign keys
-    exchange_id: Mapped[int] = mapped_column(ForeignKey("exchanges.id"), nullable=False)
+    exchange_id: Mapped[int] = mapped_column(ForeignKey("exchanges.id"), nullable=False, index=True)
 
     # Relationships
     exchange: Mapped[Exchange] = relationship("Exchange", back_populates="listings")
