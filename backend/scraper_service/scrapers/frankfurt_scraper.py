@@ -150,11 +150,11 @@ class FrankfurtScraper(BaseScraper):
 
             return ListingBase(
                 name=name[:100],  # Truncate name if too long
-                symbol=symbol[:20] if symbol else f"FRA-{name[:5]}",  # Use placeholder if no symbol found
+                symbol=symbol[:20] if symbol else f"FSE-{name[:5]}",  # Use placeholder if no symbol found
                 listing_date=listing_date,
                 lot_size=1,  # Default for Frankfurt
                 status="New Listing",
-                exchange_code="FRA",  # Frankfurt Stock Exchange
+                exchange_code="FSE",  # Frankfurt Stock Exchange
                 security_type="Equity",
                 url=None,
                 listing_detail_url=detail_url

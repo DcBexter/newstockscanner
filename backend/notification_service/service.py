@@ -55,19 +55,41 @@ class NotificationService:
 
             notifier = self._get_notifier(notifier_type)
 
-            # Check if the notifier has a specialized method for listings
-            if hasattr(notifier, 'notify_new_listings'):
-                return await notifier.notify_new_listings(listings)
-
-            # Fallback to generic notification
-            message = NotificationMessage(
-                title="New Stock Listings",
-                body=f"Found {len(listings)} new stock listings.",
-                metadata={"listings_count": len(listings)}
+            # Create a summary message for logging
+            summary_title = f"New Stock Listings Summary"
+            summary_body = f"Found {len(listings)} new stock listings."
+            summary_message = NotificationMessage(
+                title=summary_title,
+                body=summary_body,
+                metadata={"type": "summary", "listings_count": len(listings)}
             )
-            return await self.send(message, notifier_type)
+
+            # Create a log entry for the summary notification
+            log = await self._create_log(summary_message, notifier_type)
+
+            # Check if the notifier has a specialized method for listings
+            success = False
+            if hasattr(notifier, 'notify_new_listings'):
+                success = await notifier.notify_new_listings(listings)
+            else:
+                # Fallback to generic notification
+                success = await self.send(summary_message, notifier_type)
+
+            # Update the log entry with the result
+            await self._update_log(log, success)
+
+            return success
 
         except Exception as e:
+            await self._handle_error(
+                NotificationMessage(
+                    title="New Stock Listings Error",
+                    body=f"Error sending notifications for {len(listings)} listings",
+                    metadata={"listings_count": len(listings)}
+                ),
+                notifier_type,
+                str(e)
+            )
             raise NotifierError(f"Failed to send new listings notification: {str(e)}")
 
     async def get_logs(

@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { ThemeProvider, createTheme, CssBaseline, PaletteMode } from '@mui/material';
 import Dashboard from './components/Dashboard';
+import { AppProvider } from './context/AppContext';
 
 function App() {
   const [mode, setMode] = useState<PaletteMode>('dark');
@@ -116,7 +117,9 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Dashboard toggleColorMode={toggleColorMode} currentTheme={mode} />
+      <AppProvider>
+        <Dashboard toggleColorMode={toggleColorMode} currentTheme={mode} />
+      </AppProvider>
     </ThemeProvider>
   );
 }

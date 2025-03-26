@@ -35,6 +35,13 @@ export interface Statistics {
   }[];
 }
 
+export interface PaginatedListings {
+  items: Listing[];
+  total: number;
+  skip: number;
+  limit: number;
+}
+
 export const api = {
   getListings: async (params?: {
     exchange_code?: string;
@@ -42,8 +49,8 @@ export const api = {
     start_date?: string;
     end_date?: string;
   }) => {
-    const { data } = await axios.get<Listing[]>(`${API_URL}/listings/`, { params });
-    return data;
+    const { data } = await axios.get<PaginatedListings>(`${API_URL}/listings/`, { params });
+    return data.items;
   },
 
   getExchanges: async () => {
