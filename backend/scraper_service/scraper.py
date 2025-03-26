@@ -139,7 +139,7 @@ class StockScanner:
 
                             # Update last scrape time if successful
                             if result and result.success:
-                                scraper.set_last_scrape_time(name)
+                                await scraper.set_last_scrape_time(name)
                     except Exception as session_err:
                         logger.error(f"Error managing session for {name}: {str(session_err)}")
                         if attempt < self.MAX_RETRIES - 1:
