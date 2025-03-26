@@ -31,7 +31,7 @@ def get_engine() -> AsyncEngine:
                 pool_timeout=30,
                 pool_pre_ping=True,
                 pool_use_lifo=True,
-                echo=settings.DEBUG
+                echo=False  # Disable SQL trace logging to reduce log verbosity
             )
 
     return _engines[thread_id]
