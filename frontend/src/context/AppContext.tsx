@@ -1,20 +1,12 @@
-import React, { createContext, useContext, useReducer, useEffect, useRef, useCallback } from 'react';
+import React, { useReducer, useEffect, useRef, useCallback } from 'react';
 import { AppState, AppAction } from './types';
 import { reducer, initialState } from './reducer';
 import * as actions from './actions';
 import { api } from '../api/client';
+import { AppContext, AppContextType } from './AppContextTypes';
 
 // Constants
 const POLLING_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes in milliseconds
-
-// Create context
-interface AppContextType {
-  state: AppState;
-  dispatch: React.Dispatch<AppAction>;
-  actions: typeof actions;
-}
-
-const AppContext = createContext<AppContextType | undefined>(undefined);
 
 // Custom hooks for data fetching
 const useFetchExchanges = (dispatch: React.Dispatch<AppAction>) => {
@@ -32,7 +24,16 @@ const useFetchExchanges = (dispatch: React.Dispatch<AppAction>) => {
       }
     };
 
-    fetchExchanges();
+    // Create a wrapper function to handle the promise
+    const fetchData = () => {
+      const promise = fetchExchanges();
+      // Handle any uncaught errors
+      promise.catch(err => {
+        console.error('Unhandled promise rejection in fetchExchanges:', err);
+      });
+    };
+
+    fetchData();
   }, [dispatch]);
 };
 
@@ -59,8 +60,17 @@ const useFetchListings = (
       }
     };
 
-    fetchListings();
-  }, [state.selectedExchange, state.days, state.startDate, state.endDate, state.isPaginationMode, dispatch]);
+    // Create a wrapper function to handle the promise
+    const fetchData = () => {
+      const promise = fetchListings();
+      // Handle any uncaught errors
+      promise.catch(err => {
+        console.error('Unhandled promise rejection in fetchListings:', err);
+      });
+    };
+
+    fetchData();
+  }, [state, dispatch]);
 };
 
 const useFetchStatistics = (
@@ -84,7 +94,16 @@ const useFetchStatistics = (
       }
     };
 
-    fetchStatistics();
+    // Create a wrapper function to handle the promise
+    const fetchData = () => {
+      const promise = fetchStatistics();
+      // Handle any uncaught errors
+      promise.catch(err => {
+        console.error('Unhandled promise rejection in fetchStatistics:', err);
+      });
+    };
+
+    fetchData();
   }, [state.days, state.isPaginationMode, dispatch]);
 };
 
@@ -130,7 +149,12 @@ const useListingPolling = (
     pollingIntervalRef.current = window.setInterval(() => {
       // Only poll if the user has granted notification permission
       if (Notification.permission === 'granted') {
-        fetchListingsForNotification();
+        // Handle the promise returned by fetchListingsForNotification
+        const promise = fetchListingsForNotification();
+        // Handle any uncaught errors
+        promise.catch(err => {
+          console.error('Unhandled promise rejection in fetchListingsForNotification:', err);
+        });
       }
     }, POLLING_INTERVAL_MS);
 
@@ -188,13 +212,4 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       {children}
     </AppContext.Provider>
   );
-};
-
-// Custom hook to use the context
-export const useAppContext = () => {
-  const context = useContext(AppContext);
-  if (context === undefined) {
-    throw new Error('useAppContext must be used within an AppProvider');
-  }
-  return context;
 };
