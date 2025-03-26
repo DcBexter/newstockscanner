@@ -1,7 +1,6 @@
 """Database service for the scraper service."""
 
 import logging
-from contextlib import AsyncExitStack
 from typing import Callable, Any, Awaitable, TypeVar
 from typing import List, Dict
 

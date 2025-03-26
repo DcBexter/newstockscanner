@@ -7,14 +7,15 @@ and creating new listings. It uses the ListingService to interact with
 the database.
 """
 
-from typing import List, Optional
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, Query
+from typing import List, Optional
+
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.api_service.services import ListingService
 from backend.core.models import Listing, ListingCreate
 from backend.database.session import get_db
-from backend.api_service.services import ListingService
 
 router = APIRouter(
     prefix="/listings",

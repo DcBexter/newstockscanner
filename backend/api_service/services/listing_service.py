@@ -6,15 +6,18 @@ including filtering, querying, and updating listings. It also includes functiona
 for handling notifications about new listings.
 """
 
-from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta, UTC
-from sqlalchemy import select, func
+from typing import List, Optional, Dict, Any
+
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
+from backend.core.exceptions import DatabaseQueryError, DatabaseNotFoundError, DatabaseUpdateError, DatabaseCreateError, \
+    DatabaseTransactionError
 from backend.core.models import ListingCreate
 from backend.database.models import StockListing, Exchange
-from backend.core.exceptions import DatabaseError, DatabaseQueryError, DatabaseNotFoundError, DatabaseUpdateError, DatabaseCreateError, DatabaseTransactionError
+
 
 class ListingService:
     """

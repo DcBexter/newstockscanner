@@ -1,10 +1,12 @@
-from typing import Dict, Any, Optional
 from datetime import datetime, timedelta, UTC
-from sqlalchemy import select, func, cast, Date
+from typing import Dict, Any, Optional
+
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.core.exceptions import DatabaseQueryError
 from backend.database.models import StockListing, Exchange
-from backend.core.exceptions import DatabaseError, DatabaseQueryError
+
 
 class StatsService:
     """Service for managing statistics."""
