@@ -49,7 +49,6 @@ class StockScanner:
                     logger.info(f"Running {name} scraper (attempt {attempt + 1}/{self.MAX_RETRIES})...")
 
                     # Create a new scraper instance within the async context
-                    result = None
                     try:
                         async with scraper_class() as scraper:
                             result = await scraper.scrape()
@@ -69,7 +68,7 @@ class StockScanner:
                         break
 
                     if result.success:
-                        listings = [listing.dict() for listing in result.data]
+                        listings = [listing.model_dump() for listing in result.data]
                         logger.info(f"Found {len(listings)} listings from {name}")
                         all_listings.extend(listings)
                         break
@@ -102,7 +101,7 @@ class StockScanner:
         """Save listings to the database using the database service."""
         listing_dicts = []
         for listing in listings:
-            listing_dict = listing if isinstance(listing, dict) else listing.dict()
+            listing_dict = listing if isinstance(listing, dict) else listing.model_dump()
 
             # Ensure exchange_code is set
             if not listing_dict.get("exchange_code"):
@@ -160,8 +159,8 @@ class StockScanner:
 
                 try:
                     unnotified_listings = await service.get_unnotified_listings()
-                except Exception as e:
-                    logger.error(f"Failed to get unnotified listings: {str(e)}")
+                except Exception as exc:
+                    logger.error(f"Failed to get unnotified listings: {str(exc)}")
                     return 0
 
                 if not unnotified_listings:
@@ -239,8 +238,8 @@ if __name__ == "__main__":
         if pending:
             try:
                 loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
-            except Exception as e:
-                logger.error(f"Error during cleanup: {str(e)}")
+            except Exception as ex:
+                logger.error(f"Error during cleanup: {str(ex)}")
 
         # Close the loop
         loop.close() 

@@ -1,12 +1,13 @@
+from typing import List, Dict, Any, Optional
+
 from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List, Dict, Any, Optional
 
-from backend.database.session import get_db
+from backend.core.exceptions import DatabaseError
 from backend.core.models import NotificationMessage
+from backend.database.session import get_db
 from backend.notification_service.service import NotificationService
-from backend.core.exceptions import NotifierError, DatabaseError
 
 app = FastAPI(title="Notification Service API", description="API for sending notifications")
 

@@ -1,8 +1,8 @@
 from datetime import datetime
 from typing import List
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text
-from sqlalchemy.orm import relationship, Mapped, mapped_column
-from sqlalchemy.ext.declarative import declarative_base
+
+from sqlalchemy import Integer, String, DateTime, ForeignKey, Text
+from sqlalchemy.orm import declarative_base, relationship, Mapped, mapped_column
 
 Base = declarative_base()
 
@@ -51,10 +51,10 @@ class StockListing(TimestampMixin, Base):
     url: Mapped[str] = mapped_column(String(255), nullable=True)
     listing_detail_url: Mapped[str] = mapped_column(String(255), nullable=True)
     notified: Mapped[bool] = mapped_column(default=False, nullable=False)
-    
+
     # Foreign keys
     exchange_id: Mapped[int] = mapped_column(ForeignKey("exchanges.id"), nullable=False)
-    
+
     # Relationships
     exchange: Mapped[Exchange] = relationship("Exchange", back_populates="listings")
 
