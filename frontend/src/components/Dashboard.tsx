@@ -1,11 +1,14 @@
-import { Box, Container, Paper, Typography, Button, IconButton, Tooltip, useTheme, PaletteMode, Snackbar, Alert, Badge, Stack } from '@mui/material';
-import { LightMode, DarkMode, Refresh, Notifications, VisibilityOff, Visibility } from '@mui/icons-material';
+import { Box, Container, Paper, Typography, Button, IconButton, Tooltip, useTheme, PaletteMode, Stack } from '@mui/material';
+import { LightMode, DarkMode, VisibilityOff, Visibility } from '@mui/icons-material';
 import ListingsTable from './ListingsTable';
 import StatisticsChart from './StatisticsChart';
 import ExchangeFilter from './ExchangeFilter';
 import MonthPagination from './MonthPagination';
+import ScanButton from './ScanButton';
+import NotificationSection from './NotificationSection';
 import { useAppContext } from '../context/AppContext';
-import { api } from '../api/client';
+import { findCommonExchanges, isExchangeSelected } from '../utils/exchangeUtils';
+import { EXCHANGE_CODES } from '../constants/exchanges';
 
 interface DashboardProps {
   toggleColorMode: () => void;
@@ -27,33 +30,9 @@ export default function Dashboard({ toggleColorMode, currentTheme }: DashboardPr
     exchanges,
     statistics,
     isLoadingListings,
-    isScanning,
     error,
-    showStatistics,
-    hasNewListings,
-    notificationOpen,
-    newListingsCount,
-    previousListingsCount
+    showStatistics
   } = state;
-
-  // Handle notification close
-  const handleNotificationClose = () => {
-    dispatch(actions.setNotificationOpen(false));
-  };
-
-  // Acknowledge new listings
-  const acknowledgeNewListings = () => {
-    dispatch(actions.acknowledgeNewListings());
-  };
-
-  // Request notification permission
-  const requestNotificationPermission = () => {
-    if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
-      Notification.requestPermission().then(permission => {
-        console.log(`Notification permission ${permission}`);
-      });
-    }
-  };
 
   // Handle month change from the MonthPagination component
   const handleMonthChange = (start: string, end: string) => {
@@ -65,93 +44,15 @@ export default function Dashboard({ toggleColorMode, currentTheme }: DashboardPr
     dispatch(actions.setDays(daysValue));
   };
 
-  // Constants for the application
-  const NOTIFICATION_DURATION = 6000; // 6 seconds in milliseconds
+  // Find common exchanges using utility function
+  const { hkexExchange, nasdaqExchange, nyseExchange } = findCommonExchanges(exchanges);
 
-  // Exchange codes - these could be moved to a constants file
-  const EXCHANGE_CODES = {
-    HKEX: 'HKEX',
-    NASDAQ: 'NASDAQ',
-    NYSE: 'NYSE'
-  };
+  // Check if common exchanges are selected using utility function
+  const isHkexSelected = isExchangeSelected(selectedExchange, hkexExchange);
+  const isNasdaqSelected = isExchangeSelected(selectedExchange, nasdaqExchange);
+  const isNyseSelected = isExchangeSelected(selectedExchange, nyseExchange);
 
-  // Find exchanges by code or name
-  const findExchange = (code: string, nameSubstring: string) => {
-    return exchanges.find(exchange => 
-      exchange.code === code || 
-      exchange.name.toLowerCase().includes(nameSubstring.toLowerCase())
-    );
-  };
-
-  // Find common exchanges
-  const hkexExchange = findExchange(EXCHANGE_CODES.HKEX, 'hong kong');
-  const nasdaqExchange = findExchange(EXCHANGE_CODES.NASDAQ, 'nasdaq');
-  const nyseExchange = findExchange(EXCHANGE_CODES.NYSE, 'new york');
-
-  // Check if a specific exchange is selected
-  const isExchangeSelected = (exchange: typeof hkexExchange) => {
-    if (!selectedExchange || !exchange) return false;
-    return selectedExchange === exchange.code || selectedExchange === exchange.id.toString();
-  };
-
-  // Check if common exchanges are selected
-  const isHkexSelected = isExchangeSelected(hkexExchange);
-  const isNasdaqSelected = isExchangeSelected(nasdaqExchange);
-  const isNyseSelected = isExchangeSelected(nyseExchange);
-
-  // Generic scan handler for any exchange
-  const handleExchangeScan = async (exchangeCode: string) => {
-    if (isScanning) return;
-    dispatch(actions.setScanning(true));
-    dispatch(actions.clearError());
-
-    try {
-      // Call the scan API with the exchange parameter
-      await api.triggerScrape(exchangeCode);
-
-      // Create params for refreshing data after scan
-      const params: Record<string, string | number> = { days };
-      if (selectedExchange) {
-        params.exchange_code = selectedExchange;
-      }
-      const listingsData = await api.getListings(params);
-
-      // Check if new listings were found during the scan
-      if (listingsData.length > previousListingsCount) {
-        const newCount = listingsData.length - previousListingsCount;
-        dispatch(actions.setNewListings(true, newCount));
-      }
-
-      // Update listings data
-      dispatch(actions.setListings(listingsData));
-
-      // Refresh statistics
-      const statsData = await api.getStatistics(days);
-      dispatch(actions.setStatistics(statsData));
-    } catch (err) {
-      dispatch(actions.setError(`Failed to trigger ${exchangeCode} scan`));
-      console.error(err);
-    } finally {
-      dispatch(actions.setScanning(false));
-    }
-  };
-
-  // ScanButton component to eliminate duplicate button rendering logic
-  const ScanButton = ({ exchangeCode, isSelected }: { exchangeCode: string, isSelected: boolean }) => {
-    if (!isSelected) return null;
-
-    return (
-      <Button
-        variant="contained"
-        onClick={() => handleExchangeScan(exchangeCode)}
-        disabled={isScanning}
-        startIcon={<Refresh />}
-        size="large"
-      >
-        {isScanning ? 'Scanning...' : `SCAN ${exchangeCode}`}
-      </Button>
-    );
-  };
+  // No scan handler needed - moved to ScanButton component
 
   const paperStyle = {
     p: 3, 
@@ -185,22 +86,8 @@ export default function Dashboard({ toggleColorMode, currentTheme }: DashboardPr
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-          {hasNewListings && (
-            <Tooltip title={`${newListingsCount} new listing${newListingsCount > 1 ? 's' : ''} detected`}>
-              <Badge badgeContent={newListingsCount} color="error" overlap="circular">
-                <IconButton color="primary" onClick={acknowledgeNewListings}>
-                  <Notifications />
-                </IconButton>
-              </Badge>
-            </Tooltip>
-          )}
-          {Notification.permission !== 'granted' && Notification.permission !== 'denied' && (
-            <Tooltip title="Enable notifications">
-              <IconButton color="primary" onClick={requestNotificationPermission}>
-                <Notifications />
-              </IconButton>
-            </Tooltip>
-          )}
+          <NotificationSection />
+
           <Tooltip title={`Switch to ${currentTheme === 'dark' ? 'light' : 'dark'} mode`}>
             <IconButton onClick={toggleColorMode} color="primary">
               {currentTheme === 'dark' ? <LightMode /> : <DarkMode />}
@@ -213,22 +100,7 @@ export default function Dashboard({ toggleColorMode, currentTheme }: DashboardPr
         </Box>
       </Box>
 
-      {/* New Listings Notification */}
-      <Snackbar 
-        open={notificationOpen} 
-        autoHideDuration={NOTIFICATION_DURATION} 
-        onClose={handleNotificationClose}
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-      >
-        <Alert 
-          onClose={handleNotificationClose} 
-          severity="success" 
-          variant="filled"
-          sx={{ width: '100%' }}
-        >
-          {newListingsCount} new listing{newListingsCount > 1 ? 's' : ''} detected!
-        </Alert>
-      </Snackbar>
+      {/* Notification handling moved to NotificationSection component */}
 
       {error && (
         <Paper sx={{ p: 2, mb: 3, bgcolor: 'error.light', color: 'error.contrastText' }}>

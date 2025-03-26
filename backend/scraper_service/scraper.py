@@ -16,7 +16,7 @@ from backend.scraper_service.scrapers.hkex_scraper import HKEXScraper
 from backend.scraper_service.scrapers.nasdaq_scraper import NasdaqScraper
 from backend.scraper_service.scrapers.frankfurt_scraper import FrankfurtScraper
 from backend.api_service.services import ListingService
-from backend.config.logging import setup_logging
+from backend.config.log_config import setup_logging
 from backend.scraper_service.services import DatabaseService, DatabaseHelper, NotificationService
 
 logger = logging.getLogger(__name__)
@@ -327,7 +327,8 @@ class StockScanner:
                     logger.warning("Failed to send notifications for unnotified listings")
                     return 0
 
-            return await DatabaseHelper.execute_db_operation(get_and_process_unnotified)
+            db_helper = DatabaseHelper()
+            return await db_helper.execute_db_operation(get_and_process_unnotified)
 
         except Exception as e:
             logger.error(f"Error checking unnotified listings: {str(e)}")
