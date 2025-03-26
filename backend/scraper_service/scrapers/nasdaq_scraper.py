@@ -63,6 +63,75 @@ class NasdaqScraper(BaseScraper):
                 data=[]
             )
 
+    async def scrape_with_date_range(self, start_date: datetime, end_date: datetime) -> ScrapingResult:
+        """Scrape NASDAQ IPO listings within a specific date range.
+
+        This method modifies the API URL to include date parameters for incremental scraping.
+        It helps reduce the load on the NASDAQ API by only requesting data for a specific
+        date range instead of all available data.
+
+        Args:
+            start_date (datetime): The start date for the date range.
+            end_date (datetime): The end date for the date range.
+
+        Returns:
+            ScrapingResult: The result of the scraping operation.
+        """
+        self.logger.info(f"Starting NASDAQ IPO incremental scraping from {start_date} to {end_date}")
+
+        try:
+            # Format dates for API
+            start_str = start_date.strftime("%Y-%m")
+            end_str = end_date.strftime("%Y-%m")
+
+            # If same month, just use one API call
+            if start_str == end_str:
+                self.api_url_alt = f"https://api.nasdaq.com/api/ipo/calendar?date={start_str}"
+                return await self._try_alternative_api()
+
+            # Otherwise, try multiple months
+            all_listings = []
+            current_date = start_date
+
+            while current_date <= end_date:
+                month_str = current_date.strftime("%Y-%m")
+                self.logger.info(f"Scraping NASDAQ IPOs for {month_str}")
+
+                # Update API URL for this month
+                self.api_url_alt = f"https://api.nasdaq.com/api/ipo/calendar?date={month_str}"
+
+                # Try to get data for this month
+                result = await self._try_alternative_api()
+                if result and result.success and result.data:
+                    self.logger.info(f"Found {len(result.data)} listings for {month_str}")
+                    all_listings.extend(result.data)
+
+                # Move to next month
+                if current_date.month == 12:
+                    current_date = current_date.replace(year=current_date.year + 1, month=1)
+                else:
+                    current_date = current_date.replace(month=current_date.month + 1)
+
+            if all_listings:
+                return ScrapingResult(
+                    success=True,
+                    message=f"Successfully scraped {len(all_listings)} listings from NASDAQ using incremental scraping",
+                    data=all_listings
+                )
+
+            # If no data found, fall back to HTML scraping
+            self.logger.warning("No data found with incremental API scraping, falling back to HTML")
+            return await self._scrape_html()
+
+        except Exception as e:
+            error_msg = f"Failed to scrape NASDAQ incrementally: {type(e).__name__}"
+            self.logger.error(error_msg)
+            self.logger.debug(f"Detailed error: {str(e)}", exc_info=True)
+
+            # Fall back to regular scraping
+            self.logger.info("Falling back to regular scraping")
+            return await self.scrape()
+
     async def _try_primary_api(self) -> Optional[ScrapingResult]:
         """Try to fetch data from the primary API endpoint."""
         try:
