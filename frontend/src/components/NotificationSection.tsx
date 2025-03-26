@@ -1,6 +1,6 @@
 import { Snackbar, Alert, IconButton, Badge, Tooltip } from '@mui/material';
 import { Notifications } from '@mui/icons-material';
-import { useAppContext } from '../context/useAppContext';
+import { useAppContext } from '../context/AppContext';
 import { NOTIFICATION_DURATION } from '../constants/exchanges';
 
 /**
@@ -47,7 +47,7 @@ export default function NotificationSection() {
           </Badge>
         </Tooltip>
       )}
-
+      
       {Notification.permission !== 'granted' && Notification.permission !== 'denied' && (
         <Tooltip title="Enable notifications">
           <IconButton color="primary" onClick={requestNotificationPermission}>
