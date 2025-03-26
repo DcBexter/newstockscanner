@@ -31,6 +31,7 @@ class ExchangeBase(BaseModel):
     name: str
     code: str
     url: str
+    description: Optional[str] = None
 
 class ExchangeCreate(ExchangeBase):
     """Model for creating a new exchange."""
