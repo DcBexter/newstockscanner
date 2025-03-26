@@ -9,7 +9,7 @@ import re
 from backend.scraper_service.scrapers.base import BaseScraper
 from backend.core.models import ListingBase, ScrapingResult
 from backend.core.exceptions import ParsingError, ScraperError
-from backend.core.utils import HKEXUtils
+from backend.core.utils import HKEXUtils, DateUtils
 
 class HKEXScraper(BaseScraper):
     """Scraper for Hong Kong Stock Exchange new listings."""
@@ -26,7 +26,7 @@ class HKEXScraper(BaseScraper):
         """Scrape HKEX for new listings."""
         try:
             self.logger.info(f"Starting HKEX scraping from URL: {self.url}")
-            
+
             content = await self._fetch_hkex_content()
             if not content:
                 return ScrapingResult(
@@ -34,10 +34,10 @@ class HKEXScraper(BaseScraper):
                     message="Failed to retrieve content from HKEX",
                     data=[]
                 )
-            
+
             listings = self.parse(content)
             self._log_listings_found(listings)
-            
+
             return ScrapingResult(
                 success=True,
                 message=f"Successfully scraped {len(listings)} listings from HKEX",
@@ -75,7 +75,7 @@ class HKEXScraper(BaseScraper):
         except Exception as e:
             self.logger.error(f"Error fetching HKEX content: {str(e)}")
             return None
-    
+
     def _log_listings_found(self, listings: List[ListingBase]) -> None:
         """Log information about found listings."""
         self.logger.info(f"Successfully parsed {len(listings)} listings from HKEX")
@@ -87,7 +87,7 @@ class HKEXScraper(BaseScraper):
         try:
             soup = BeautifulSoup(content, 'html.parser')
             table = soup.find('table', {'class': 'table migrate'})
-            
+
             if not table:
                 error_msg = "Could not find listings table in HKEX page"
                 self.logger.error(error_msg)
@@ -96,7 +96,7 @@ class HKEXScraper(BaseScraper):
             listings = []
             rows = table.find_all('tr')[1:]  # Skip header
             self.logger.debug(f"Found {len(rows)} rows in the listings table")
-            
+
             for row in rows:
                 cols = row.find_all('td')
                 if len(cols) >= 10:  # Ensure row has enough columns
@@ -123,40 +123,41 @@ class HKEXScraper(BaseScraper):
             date_text = cols[0].text.strip().rstrip('*')
             if not date_text:
                 return None
-                
-            listing_date = datetime.strptime(date_text, '%d/%m/%Y')
-            
+
+            # Use DateUtils to parse the date with UK/HK format
+            listing_date = DateUtils.parse_date_with_format(date_text, DateUtils.UK_FORMAT)
+
             # Get name and URL from first link if present
             name_col = cols[1]
             name = name_col.text.strip()
             if not name:
                 return None
-                
+
             url = None
             link = name_col.find('a')
             if link and 'href' in link.attrs:
                 url = link['href']
-            
+
             # Extract stock code
             symbol_col = cols[2]
             symbol = symbol_col.text.strip()
             if not symbol:
                 # Generate placeholder symbol if not found
                 symbol = f"HK-{self._generate_symbol(name)}"
-            
+
             # Minimum lot size
             lot_size_col = cols[3]
             lot_size_text = lot_size_col.text.strip()
             lot_size = self._parse_lot_size(lot_size_text) or 1000  # Default to 1000 if parsing fails
-            
+
             # Determine if this is a rights issue or new listing
             issue_type_col = cols[4]
             issue_type = issue_type_col.text.strip()
             status = "Rights Issue" if "Rights" in issue_type else "New Listing"
-            
+
             # Get listing detail URL and security type from HKEXUtils
             listing_detail_url, security_type = HKEXUtils.get_listing_detail_url(symbol, name, status)
-            
+
             # Create listing object
             return ListingBase(
                 name=name[:100],  # Truncate name if too long
@@ -172,13 +173,13 @@ class HKEXScraper(BaseScraper):
         except Exception as e:
             self.logger.warning(f"Error parsing listing row: {str(e)}")
             return None
-    
+
     def _parse_lot_size(self, lot_size_text: str) -> int:
         """Parse lot size from text.
-        
+
         Args:
             lot_size_text: String containing lot size (e.g. "1,000" or "500")
-            
+
         Returns:
             Integer lot size or 1000 as default
         """
@@ -190,19 +191,19 @@ class HKEXScraper(BaseScraper):
             return int(cleaned_text)
         except (ValueError, TypeError):
             return 1000
-    
+
     def _generate_symbol(self, company_name: str) -> str:
         """Generate a symbol from company name.
-        
+
         Args:
             company_name: The name of the company
-            
+
         Returns:
             A simple alphanumeric symbol derived from the name
         """
         if not company_name:
             return "UNKNOWN"
-            
+
         # Take first 5 alphanumeric characters
         alphanumeric = re.sub(r'[^a-zA-Z0-9]', '', company_name)
         return alphanumeric[:5].upper() or "HKEX"
@@ -213,19 +214,19 @@ class HKEXScraper(BaseScraper):
             content = await self._fetch_hkex_content()
             if not content:
                 return pd.DataFrame()
-                
+
             listings = self.parse(content)
             if not listings:
                 return pd.DataFrame()
-                
+
             df = pd.DataFrame([vars(listing) for listing in listings])
-            
+
             filters = {
                 'all': slice(None),
                 'new_listings': df['status'] == 'New Listing',
                 'rights_issues': df['status'] == 'Rights Issue'
             }
-            
+
             filter_slice = filters.get(filter_type, slice(None))
             return df[filter_slice].copy()
         except Exception as e:

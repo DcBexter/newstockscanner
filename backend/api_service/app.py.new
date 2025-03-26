@@ -3,18 +3,36 @@ FastAPI application for the API service.
 """
 
 from contextlib import asynccontextmanager
+import uuid
 from fastapi import FastAPI, Depends, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 import logging
 
 from backend.database.session import get_db, init_db, close_db
 from backend.config.settings import get_settings
-from backend.config.logging import setup_logging
+from backend.config.logging import setup_logging, set_request_id
 from backend.core.exceptions import StockScannerError
 from backend.api_service.routes import router
+
+class RequestIDMiddleware(BaseHTTPMiddleware):
+    """Middleware to set a unique request ID for each request."""
+
+    async def dispatch(self, request: Request, call_next):
+        # Get request ID from header or generate a new one
+        request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
+
+        # Set the request ID in the context variable
+        set_request_id(request_id)
+
+        # Add the request ID to the response headers
+        response = await call_next(request)
+        response.headers["X-Request-ID"] = request_id
+
+        return response
 
 settings = get_settings()
 logger = logging.getLogger(__name__)
@@ -27,7 +45,7 @@ async def lifespan(app: FastAPI):
     that handles startup and shutdown events.
     """
     # Startup: Initialize application
-    setup_logging()
+    setup_logging(service_name="api_service")
     logger.info("Initializing application...")
 
     # Initialize database
@@ -54,6 +72,9 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+
+# Add request ID middleware
+app.add_middleware(RequestIDMiddleware)
 
 # Configure CORS
 app.add_middleware(

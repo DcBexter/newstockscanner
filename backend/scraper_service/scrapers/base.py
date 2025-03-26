@@ -141,8 +141,10 @@ class BaseScraper(ABC):
                 "content": content
             }
 
+            # Convert to JSON string first, then write to file to avoid type issues
+            json_str = json.dumps(cache_data)
             with open(cache_file, 'w', encoding='utf-8') as f:
-                json.dump(cache_data, f)
+                f.write(json_str)
 
             self.logger.debug(f"Cached response for {url}")
         except Exception as e:

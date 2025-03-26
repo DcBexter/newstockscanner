@@ -1,10 +1,12 @@
 from typing import List, Optional, Dict, Any
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.core.exceptions import DatabaseQueryError, DatabaseCreateError, DatabaseUpdateError, DatabaseDeleteError
 from backend.core.models import ExchangeCreate
 from backend.database.models import Exchange
-from backend.core.exceptions import DatabaseError, DatabaseQueryError, DatabaseCreateError, DatabaseUpdateError, DatabaseDeleteError
+
 
 class ExchangeService:
     """Service for managing exchanges."""

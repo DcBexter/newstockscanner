@@ -10,7 +10,7 @@ from backend.scraper_service.api import start_api
 from backend.scraper_service.scraper import StockScanner, start_continuous_scanning_loop
 
 # Set up logging
-setup_logging()
+setup_logging(service_name="scraper_service")
 logger = logging.getLogger(__name__)
 
 def start_api_server():
