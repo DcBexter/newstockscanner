@@ -72,7 +72,10 @@ The application uses request IDs to trace requests across services. Request IDs 
 
 ```python
 
-from backend.config.logging import get_logger
+from backend.config.log_config import get_logger  # Preferred import
+
+# Alternatively, you can still use the old import, but it's deprecated:
+# from backend.config.logging import get_logger
 
 logger = get_logger(__name__)
 
@@ -87,6 +90,11 @@ logger.critical("Critical message")
 ### Logging with Context
 
 ```python
+from backend.config.log_config import get_logger  # Preferred import
+
+# Get a logger instance
+logger = get_logger(__name__)
+
 # Log with exception information
 try:
     # Some code that might raise an exception
@@ -98,7 +106,10 @@ except Exception as e:
 ### Setting up Logging
 
 ```python
-from backend.config.logging import setup_logging
+from backend.config.log_config import setup_logging  # Preferred import
+
+# Alternatively, you can still use the old import, but it's deprecated:
+# from backend.config.logging import setup_logging
 
 # Set up logging with service name
 setup_logging(service_name="my_service")

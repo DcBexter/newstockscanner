@@ -10,7 +10,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from backend.config.logging import setup_logging, get_logger, set_request_id
+from backend.config.log_config import setup_logging, get_logger, set_request_id
 from backend.config.settings import get_settings
 from backend.core.exceptions import DatabaseError
 from backend.core.models import NotificationMessage

@@ -18,7 +18,6 @@ import {
 } from '@mui/material';
 import LaunchIcon from '@mui/icons-material/Launch';
 import InfoIcon from '@mui/icons-material/Info';
-import SearchIcon from '@mui/icons-material/Search';
 import LinkIcon from '@mui/icons-material/Link';
 import { Listing } from '../api/client';
 import dayjs from 'dayjs';

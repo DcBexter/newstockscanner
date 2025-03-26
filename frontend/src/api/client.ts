@@ -1,6 +1,5 @@
 import axios from 'axios';
-
-const API_URL = '/api/v1';
+import { API_URL, CACHE_SETTINGS, API_ENDPOINTS } from '../config/api.config';
 
 // Simple cache implementation
 interface CacheEntry {
@@ -10,7 +9,8 @@ interface CacheEntry {
 }
 
 const cache: Record<string, CacheEntry> = {};
-const CACHE_TTL = 1000; // 1 second cache TTL in milliseconds
+// Use cache TTL from configuration
+const CACHE_TTL = CACHE_SETTINGS.TTL;
 
 // Helper to get cache key
 const getCacheKey = (endpoint: string, params?: any): string => {
@@ -74,7 +74,7 @@ export const api = {
     start_date?: string;
     end_date?: string;
   }) => {
-    const cacheKey = getCacheKey('listings', params);
+    const cacheKey = getCacheKey(API_ENDPOINTS.LISTINGS, params);
 
     // Check cache first
     if (isCacheValid(cacheKey)) {
@@ -83,7 +83,7 @@ export const api = {
     }
 
     // If not in cache or expired, make the API call
-    const { data } = await axios.get<PaginatedListings>(`${API_URL}/listings/`, { params });
+    const { data } = await axios.get<PaginatedListings>(`${API_URL}/${API_ENDPOINTS.LISTINGS}/`, { params });
 
     // Store in cache
     cache[cacheKey] = {
@@ -96,7 +96,7 @@ export const api = {
   },
 
   getExchanges: async () => {
-    const cacheKey = getCacheKey('exchanges');
+    const cacheKey = getCacheKey(API_ENDPOINTS.EXCHANGES);
 
     // Check cache first
     if (isCacheValid(cacheKey)) {
@@ -105,7 +105,7 @@ export const api = {
     }
 
     // If not in cache or expired, make the API call
-    const { data } = await axios.get<Exchange[]>(`${API_URL}/exchanges/`);
+    const { data } = await axios.get<Exchange[]>(`${API_URL}/${API_ENDPOINTS.EXCHANGES}/`);
 
     // Store in cache
     cache[cacheKey] = {
@@ -117,7 +117,7 @@ export const api = {
   },
 
   getStatistics: async (days: number = 30) => {
-    const cacheKey = getCacheKey('statistics', { days });
+    const cacheKey = getCacheKey(API_ENDPOINTS.STATISTICS, { days });
 
     // Check cache first
     if (isCacheValid(cacheKey)) {
@@ -126,7 +126,7 @@ export const api = {
     }
 
     // If not in cache or expired, make the API call
-    const { data } = await axios.get<Statistics>(`${API_URL}/statistics/`, {
+    const { data } = await axios.get<Statistics>(`${API_URL}/${API_ENDPOINTS.STATISTICS}/`, {
       params: { days },
     });
 
@@ -141,7 +141,7 @@ export const api = {
   },
 
   triggerScrape: async (exchange?: string) => {
-    const { data } = await axios.post(`${API_URL}/scrape/`, null, {
+    const { data } = await axios.post(`${API_URL}/${API_ENDPOINTS.SCRAPE}/`, null, {
       params: exchange ? { exchange } : undefined
     });
     return data;

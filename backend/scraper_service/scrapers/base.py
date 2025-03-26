@@ -12,7 +12,7 @@ from typing import Optional, Any, Dict, List
 
 import aiohttp
 
-from backend.config.logging import get_logger
+from backend.config.log_config import get_logger
 from backend.config.settings import get_settings
 from backend.core.exceptions import HTTPError, ScraperError, RateLimitError
 from backend.core.models import ScrapingResult, ListingBase

@@ -5,7 +5,7 @@ import json
 
 from backend.core.models import NotificationMessage
 from backend.core.exceptions import NotifierError
-from backend.config.logging import get_logger
+from backend.config.log_config import get_logger
 from backend.config.settings import get_settings
 
 settings = get_settings()
@@ -56,7 +56,7 @@ class BaseNotifier(ABC):
         """Log the notification attempt."""
         try:
             metadata = json.dumps(message.metadata) if message.metadata else None
-            
+
             # Here you would typically save to the database using the NotificationLog model
             self.logger.info(
                 f"Notification sent: success={success}, "

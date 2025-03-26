@@ -5,7 +5,7 @@ import logging
 import os
 import threading
 
-from backend.config.logging import setup_logging
+from backend.config.log_config import setup_logging
 from backend.scraper_service.api import start_api
 from backend.scraper_service.scraper import StockScanner, start_continuous_scanning_loop
 
