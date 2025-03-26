@@ -14,18 +14,18 @@ import { API_URL, CACHE_SETTINGS, API_ENDPOINTS } from '../config/api.config';
  */
 
 // Simple cache implementation
-interface CacheEntry {
-  data: any;
+interface CacheEntry<T> {
+  data: T;
   timestamp: number;
   params?: string;
 }
 
-const cache: Record<string, CacheEntry> = {};
+const cache: Record<string, CacheEntry<unknown>> = {};
 // Use cache TTL from configuration
 const CACHE_TTL = CACHE_SETTINGS.TTL;
 
 // Helper to get cache key
-const getCacheKey = (endpoint: string, params?: any): string => {
+const getCacheKey = (endpoint: string, params?: Record<string, unknown>): string => {
   const paramsString = params ? JSON.stringify(params) : '';
   return `${endpoint}:${paramsString}`;
 };
@@ -85,13 +85,13 @@ export const api = {
     days?: number;
     start_date?: string;
     end_date?: string;
-  }) => {
+  }): Promise<Listing[]> => {
     const cacheKey = getCacheKey(API_ENDPOINTS.LISTINGS, params);
 
     // Check cache first
     if (isCacheValid(cacheKey)) {
       console.log('Using cached listings data');
-      return cache[cacheKey].data;
+      return cache[cacheKey].data as Listing[];
     }
 
     // If not in cache or expired, make the API call
@@ -102,18 +102,18 @@ export const api = {
       data: data.items,
       timestamp: Date.now(),
       params: JSON.stringify(params)
-    };
+    } as CacheEntry<Listing[]>;
 
     return data.items;
   },
 
-  getExchanges: async () => {
+  getExchanges: async (): Promise<Exchange[]> => {
     const cacheKey = getCacheKey(API_ENDPOINTS.EXCHANGES);
 
     // Check cache first
     if (isCacheValid(cacheKey)) {
       console.log('Using cached exchanges data');
-      return cache[cacheKey].data;
+      return cache[cacheKey].data as Exchange[];
     }
 
     // If not in cache or expired, make the API call
@@ -123,18 +123,18 @@ export const api = {
     cache[cacheKey] = {
       data,
       timestamp: Date.now()
-    };
+    } as CacheEntry<Exchange[]>;
 
     return data;
   },
 
-  getStatistics: async (days: number = 30) => {
+  getStatistics: async (days: number = 30): Promise<Statistics> => {
     const cacheKey = getCacheKey(API_ENDPOINTS.STATISTICS, { days });
 
     // Check cache first
     if (isCacheValid(cacheKey)) {
       console.log('Using cached statistics data');
-      return cache[cacheKey].data;
+      return cache[cacheKey].data as Statistics;
     }
 
     // If not in cache or expired, make the API call
@@ -147,12 +147,12 @@ export const api = {
       data,
       timestamp: Date.now(),
       params: JSON.stringify({ days })
-    };
+    } as CacheEntry<Statistics>;
 
     return data;
   },
 
-  triggerScrape: async (exchange?: string) => {
+  triggerScrape: async (exchange?: string): Promise<unknown> => {
     const { data } = await axios.post(`${API_URL}/${API_ENDPOINTS.SCRAPE}/`, null, {
       params: exchange ? { exchange } : undefined
     });
