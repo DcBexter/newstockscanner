@@ -38,7 +38,7 @@ class StockScanner:
     RETRY_DELAY = 5  # seconds
 
     def __init__(self):
-        setup_logging()
+        setup_logging(service_name="scraper_service")
         self.scraper_classes = {
             "hkex": HKEXScraper,
             "nasdaq": NasdaqScraper,

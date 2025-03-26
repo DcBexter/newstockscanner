@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List
 
 from sqlalchemy import Integer, String, DateTime, ForeignKey, Text
@@ -8,11 +8,11 @@ Base = declarative_base()
 
 class TimestampMixin:
     """Mixin for adding created_at and updated_at timestamps."""
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now(timezone.utc), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, 
-        default=datetime.utcnow, 
-        onupdate=datetime.utcnow,
+        default=datetime.now(timezone.utc),
+        onupdate=datetime.now(timezone.utc),
         nullable=False
     )
 

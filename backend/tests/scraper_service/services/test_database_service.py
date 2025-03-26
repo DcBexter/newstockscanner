@@ -2,8 +2,7 @@
 Tests for the database service.
 """
 
-from unittest.mock import AsyncMock, patch, MagicMock
-from types import SimpleNamespace
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession

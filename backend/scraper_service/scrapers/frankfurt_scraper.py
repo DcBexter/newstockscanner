@@ -1,15 +1,16 @@
+from typing import List, Dict, Any, Optional
+import logging
+import json
+import asyncio
+from bs4 import BeautifulSoup
+from datetime import datetime, timedelta
 import re
 from contextlib import suppress
-from datetime import datetime, timedelta
-from typing import List, Dict, Any, Optional
 
-from bs4 import BeautifulSoup
-
-from backend.core.exceptions import ParsingError
-from backend.core.models import ListingBase, ScrapingResult
-from backend.core.utils import DateUtils
 from backend.scraper_service.scrapers.base import BaseScraper
-
+from backend.core.models import ListingBase, ScrapingResult
+from backend.core.exceptions import ParsingError, ScraperError
+from backend.core.utils import DateUtils
 
 class FrankfurtScraper(BaseScraper):
     """Scraper for Frankfurt Stock Exchange (Börse Frankfurt) listings."""
@@ -150,11 +151,11 @@ class FrankfurtScraper(BaseScraper):
 
             return ListingBase(
                 name=name[:100],  # Truncate name if too long
-                symbol=symbol[:20] if symbol else f"FSE-{name[:5]}",  # Use placeholder if no symbol found
+                symbol=symbol[:20] if symbol else f"FRA-{name[:5]}",  # Use placeholder if no symbol found
                 listing_date=listing_date,
                 lot_size=1,  # Default for Frankfurt
                 status="New Listing",
-                exchange_code="FSE",  # Frankfurt Stock Exchange
+                exchange_code="FRA",  # Frankfurt Stock Exchange
                 security_type="Equity",
                 url=None,
                 listing_detail_url=detail_url

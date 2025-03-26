@@ -1,8 +1,7 @@
+from typing import Tuple, Optional, Union
+from datetime import datetime, timedelta
 import re
 from contextlib import suppress
-from datetime import datetime, timedelta
-from typing import Tuple, Optional
-
 
 class DateUtils:
     """Utility class for date-related operations.
