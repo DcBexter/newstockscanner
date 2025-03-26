@@ -47,6 +47,15 @@ export default function Dashboard({ toggleColorMode, currentTheme }: DashboardPr
     dispatch(actions.acknowledgeNewListings());
   };
 
+  // Request notification permission
+  const requestNotificationPermission = () => {
+    if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+      Notification.requestPermission().then(permission => {
+        console.log(`Notification permission ${permission}`);
+      });
+    }
+  };
+
   // Handle month change from the MonthPagination component
   const handleMonthChange = (start: string, end: string) => {
     dispatch(actions.setDateRange(start, end));
@@ -249,6 +258,13 @@ export default function Dashboard({ toggleColorMode, currentTheme }: DashboardPr
                   <Notifications />
                 </IconButton>
               </Badge>
+            </Tooltip>
+          )}
+          {Notification.permission !== 'granted' && Notification.permission !== 'denied' && (
+            <Tooltip title="Enable notifications">
+              <IconButton color="primary" onClick={requestNotificationPermission}>
+                <Notifications />
+              </IconButton>
             </Tooltip>
           )}
           <Tooltip title={`Switch to ${currentTheme === 'dark' ? 'light' : 'dark'} mode`}>
