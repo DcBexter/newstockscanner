@@ -2,8 +2,8 @@
 Tests for the API service application.
 """
 
-from unittest.mock import AsyncMock, MagicMock
 import asyncio
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from fastapi import FastAPI, APIRouter
@@ -11,7 +11,7 @@ from fastapi.testclient import TestClient
 
 from backend.api_service.app import app, lifespan
 from backend.core.exceptions import StockScannerError
-from backend.database.session import close_db, get_engine
+from backend.database.session import close_db
 
 
 # Simple test function at module level to help pytest discover tests
