@@ -128,13 +128,15 @@ export default function ListingsTable({ data, isLoading }: ListingsTableProps) {
           size="small"
           placeholder="Search by name, symbol, exchange, or type..."
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <Search />
-              </InputAdornment>
-            ),
+          onChange={(event) => setSearchTerm(event.target.value)}
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search />
+                </InputAdornment>
+              ),
+            }
           }}
         />
       </Box>
