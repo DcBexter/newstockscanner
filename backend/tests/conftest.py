@@ -2,13 +2,14 @@
 Shared test fixtures for the backend tests.
 """
 
-from unittest.mock import AsyncMock
-
+import asyncio
 import pytest
 import pytest_asyncio
+from typing import AsyncGenerator, Dict, Any
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from backend.config.settings import get_settings
-
+from backend.database.session import get_db
 
 # Settings fixture
 @pytest.fixture

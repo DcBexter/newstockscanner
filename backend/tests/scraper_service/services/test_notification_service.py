@@ -2,13 +2,15 @@
 Tests for the notification service.
 """
 
-import json
-from unittest.mock import AsyncMock, patch, MagicMock
-
 import pytest
+import asyncio
+import os
+from unittest.mock import AsyncMock, patch, MagicMock
+from datetime import datetime, timedelta
+import json
+import types
 
 from backend.scraper_service.services.notification_service import NotificationService, CircuitBreaker
-
 
 class AsyncContextManagerMock:
     """A custom async context manager for mocking responses."""
