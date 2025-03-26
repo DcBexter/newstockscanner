@@ -1,6 +1,18 @@
 import axios from 'axios';
 import { API_URL, CACHE_SETTINGS, API_ENDPOINTS } from '../config/api.config';
 
+/**
+ * API Client for the Stock Scanner Application
+ * 
+ * Note on naming conventions:
+ * - The backend API uses snake_case for all field names and parameters
+ * - The frontend uses camelCase for variables and functions
+ * - For API communication, we maintain snake_case in interfaces and parameters
+ *   that directly interact with the API to match the backend convention
+ * - This approach avoids the need for conversion between naming conventions
+ *   but requires careful attention when working with API data
+ */
+
 // Simple cache implementation
 interface CacheEntry {
   data: any;
