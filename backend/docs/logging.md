@@ -71,7 +71,7 @@ The application uses request IDs to trace requests across services. Request IDs 
 ### Basic Logging
 
 ```python
-import logging
+
 from backend.config.logging import get_logger
 
 logger = get_logger(__name__)

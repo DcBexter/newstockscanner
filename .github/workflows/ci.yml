@@ -20,17 +20,17 @@ jobs:
       - name: Run backend tests
         run: |
           # Create a .env file with test values
-          echo "POSTGRES_USER=postgres" > .env.test
-          echo "POSTGRES_PASSWORD=postgres" >> .env.test
-          echo "POSTGRES_DB=backend_test" >> .env.test
-          echo "TELEGRAM_BOT_TOKEN=dummy_token" >> .env.test
-          echo "TELEGRAM_CHAT_ID=-1002575188289" >> .env.test
+          echo "POSTGRES_USER=postgres" > .env
+          echo "POSTGRES_PASSWORD=postgres" >> .env
+          echo "POSTGRES_DB=backend_test" >> .env
+          echo "TELEGRAM_BOT_TOKEN=dummy_token" >> .env
+          echo "TELEGRAM_CHAT_ID=-1002575188289" >> .env
           echo "DEBUG=True" >> .env
-          echo "NOTIFICATION_SERVICE_URL=http://notification_service:8001" >> .env.test
-          echo "SCRAPER_SERVICE_URL=http://scraper_service:8002" >> .env.test
+          echo "NOTIFICATION_SERVICE_URL=http://notification_service:8001" >> .env
+          echo "SCRAPER_SERVICE_URL=http://scraper_service:8002" >> .env
           
           # Run tests using docker-compose
-          docker compose -f docker-compose.test.yml up --build --exit-code-from test_runner
+          docker-compose -f docker-compose.test.yml up --build --exit-code-from test_runner
 
   frontend-lint:
     name: Frontend Linting

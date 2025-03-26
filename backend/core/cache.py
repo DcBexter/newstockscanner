@@ -9,7 +9,7 @@ checking if values exist.
 
 import time
 from datetime import timedelta
-from typing import Dict, Any, Optional, Tuple, Union, TypeVar, Generic
+from typing import Dict, Optional, Tuple, Union, TypeVar, Generic
 
 T = TypeVar('T')
 

@@ -23,13 +23,13 @@ Usage:
 """
 
 import time
-from typing import Dict, Optional, Any, Callable
-from functools import wraps
+from typing import Dict, Optional, Callable
 
 from fastapi import FastAPI, Request, Response
-from starlette.middleware.base import BaseHTTPMiddleware
 from prometheus_client import Counter, Histogram, Gauge, Summary, REGISTRY
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+from starlette.middleware.base import BaseHTTPMiddleware
+
 
 class Metrics:
     """

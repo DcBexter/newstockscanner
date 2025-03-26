@@ -1,22 +1,21 @@
-from typing import List, Dict, Any, Optional
-import logging
 import time
 import uuid
 from datetime import datetime
+from typing import List, Dict, Any, Optional
 
 from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
-from fastapi.middleware.cors import CORSMiddleware
-from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi import Request
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.middleware.base import BaseHTTPMiddleware
 
+from backend.config.logging import setup_logging, get_logger, set_request_id
+from backend.config.settings import get_settings
 from backend.core.exceptions import DatabaseError
 from backend.core.models import NotificationMessage
 from backend.database.session import get_db
 from backend.notification_service.service import NotificationService
-from backend.config.logging import setup_logging, get_logger, set_request_id
-from backend.config.settings import get_settings
 
 # Set up logging
 setup_logging(service_name="notification_service")
@@ -31,8 +30,6 @@ try:
     METRICS_ENABLED = True
 except ImportError:
     METRICS_ENABLED = False
-    logger.warning("Prometheus client not installed. Metrics collection is disabled.")
-    logger.warning("To enable metrics, install prometheus-client: pip install prometheus-client")
 
 class RequestIDMiddleware(BaseHTTPMiddleware):
     """Middleware to set a unique request ID for each request."""

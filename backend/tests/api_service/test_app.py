@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from fastapi import FastAPI, APIRouter
 from fastapi.testclient import TestClient
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.api_service.app import app, lifespan
 from backend.core.exceptions import StockScannerError
