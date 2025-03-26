@@ -127,7 +127,7 @@ async def health_check(db: AsyncSession = Depends(get_db)):
         await db.execute(text("SELECT 1"))
     except Exception as e:
         logger.error(f"Database health check failed: {str(e)}")
-        db_status = f"error: {str(e)}"
+        db_status = "error: unable to connect to the database"
 
     # Check Telegram configuration
     telegram_status = "configured"
