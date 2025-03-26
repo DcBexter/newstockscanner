@@ -46,7 +46,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       dispatch(actions.setLoadingListings(true));
       try {
         const params: Record<string, string | number> = {};
-        
+
         // Use either date range or days depending on mode
         if (state.isPaginationMode && state.startDate && state.endDate) {
           params.start_date = state.startDate;
@@ -54,15 +54,15 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         } else {
           params.days = state.days;
         }
-        
+
         if (state.selectedExchange) {
           params.exchange_code = state.selectedExchange;
         }
-        
+
         const listingsData = await api.getListings(params);
-        
+
         dispatch(actions.setListings(listingsData));
-        
+
         // Reset notification state when filters change
         dispatch(actions.setNewListings(false, 0));
       } catch (err) {
@@ -106,15 +106,15 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         if (state.selectedExchange) {
           params.exchange_code = state.selectedExchange;
         }
-        
+
         const listingsData = await api.getListings(params);
         const currentCount = listingsData.length;
-        
+
         // If this isn't the first check and we have more listings than before
         if (state.previousListingsCount > 0 && currentCount > state.previousListingsCount) {
           const newCount = currentCount - state.previousListingsCount;
           dispatch(actions.setNewListings(true, newCount));
-          
+
           // Show browser notification if allowed
           if (Notification.permission === 'granted') {
             new Notification('New Financial Listings', {
@@ -122,7 +122,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
               icon: '/logo.png'
             });
           }
-          
+
           // Update the listings without setting loading state
           dispatch(actions.setListings(listingsData));
         }
@@ -135,18 +135,13 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     if (pollingIntervalRef.current) {
       window.clearInterval(pollingIntervalRef.current);
     }
-    
+
     pollingIntervalRef.current = window.setInterval(() => {
       // Only poll if the user has granted notification permission
       if (Notification.permission === 'granted') {
         fetchListingsForNotification();
       }
     }, 5 * 60 * 1000); // Check every 5 minutes
-    
-    // Request notification permission on component mount
-    if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
-      Notification.requestPermission();
-    }
 
     return () => {
       if (pollingIntervalRef.current) {

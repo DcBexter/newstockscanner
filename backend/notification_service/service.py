@@ -156,10 +156,14 @@ class NotificationService:
 
     async def _update_log(self, log: NotificationLog, success: bool) -> None:
         """Update a notification log entry with the result."""
-        log.status = "sent" if success else "failed"
-        if not success:
-            log.error = "Failed to send notification"
-        await self.db.commit()
+        try:
+            log.status = "sent" if success else "failed"
+            if not success:
+                log.error = "Failed to send notification"
+            await self.db.commit()
+        except Exception as e:
+            await self.db.rollback()
+            print(f"Failed to update notification log: {str(e)}")
 
     async def _handle_error(
         self,
@@ -182,6 +186,10 @@ class NotificationService:
             await self.db.commit()
         except Exception as e:
             # Just log the error if we can't save to database
+            try:
+                await self.db.rollback()
+            except Exception:
+                pass  # Ignore errors during rollback
             print(f"Failed to log notification error: {str(e)}")
 
     async def cleanup(self) -> None:
