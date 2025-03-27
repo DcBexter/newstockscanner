@@ -20,8 +20,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
 
       - name: Cache pytest results
         uses: actions/cache@v4
@@ -33,37 +35,26 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pytest-
 
-      - name: Cache PostgreSQL data
-        uses: actions/cache@v4
-        with:
-          path: .postgres-data
-          key: ${{ runner.os }}-postgres-${{ hashFiles('backend/database/init.sql', 'backend/database/models.py') }}
-          restore-keys: |
-            ${{ runner.os }}-postgres-
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+          pip install pytest pytest-cov
 
-      - name: Run backend tests
+      - name: Run backend tests with coverage
         run: |
           # Create a .env file with test values
-          echo "POSTGRES_USER=postgres" > .env.test
-          echo "POSTGRES_PASSWORD=postgres" >> .env.test
-          echo "POSTGRES_DB=backend_test" >> .env.test
-          echo "TELEGRAM_BOT_TOKEN=dummy_token" >> .env.test
+          echo "TELEGRAM_BOT_TOKEN=dummy_token" > .env.test
           echo "TELEGRAM_CHAT_ID=-1002575188289" >> .env.test
           echo "DEBUG=True" >> .env
           echo "NOTIFICATION_SERVICE_URL=http://notification_service:8001" >> .env.test
           echo "SCRAPER_SERVICE_URL=http://scraper_service:8002" >> .env.test
 
-          # Ensure the PostgreSQL data directory exists
-          mkdir -p .postgres-data
+          # Run tests with coverage
+          cd backend
+          pytest --cov --cov-branch --cov-report=xml
 
-          # Build test_runner image with cache
-          docker buildx build \
-            --cache-from=type=gha,scope=backend-test \
-            --cache-to=type=gha,mode=max,scope=backend-test \
-            --build-arg BUILDKIT_INLINE_CACHE=1 \
-            --load \
-            -t test_runner:latest \
-            -f ./backend/Dockerfile.dev ./backend
-
-          # Run tests using docker-compose with pre-built image
-          docker compose -f docker-compose.test.yml up --exit-code-from test_runner
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
