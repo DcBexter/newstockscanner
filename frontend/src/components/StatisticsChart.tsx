@@ -1,14 +1,14 @@
 import { Box, useTheme } from '@mui/material';
+import dayjs from 'dayjs';
 import {
-  LineChart,
+  CartesianGrid,
   Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
 } from 'recharts';
-import dayjs from 'dayjs';
 
 interface StatisticsChartProps {
   data: {
@@ -19,12 +19,14 @@ interface StatisticsChartProps {
 
 export function StatisticsChart({ data }: StatisticsChartProps) {
   const theme = useTheme();
-  
+
   return (
-    <Box sx={{ 
-      width: '100%', 
-      height: 500,
-    }}>
+    <Box
+      sx={{
+        width: '100%',
+        height: 500,
+      }}
+    >
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
           data={data}
@@ -38,13 +40,13 @@ export function StatisticsChart({ data }: StatisticsChartProps) {
           <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
           <XAxis
             dataKey="date"
-            tickFormatter={(date) => dayjs(date).format('MMM D')}
+            tickFormatter={date => dayjs(date).format('MMM D')}
             stroke={theme.palette.text.secondary}
           />
           <YAxis stroke={theme.palette.text.secondary} />
           <Tooltip
-            labelFormatter={(date) => dayjs(date).format('YYYY-MM-DD')}
-            formatter={(value) => [value, 'Listings']}
+            labelFormatter={date => dayjs(date).format('YYYY-MM-DD')}
+            formatter={value => [value, 'Listings']}
             contentStyle={{
               backgroundColor: theme.palette.background.paper,
               borderColor: theme.palette.divider,
@@ -65,4 +67,4 @@ export function StatisticsChart({ data }: StatisticsChartProps) {
   );
 }
 
-export default StatisticsChart; 
+export default StatisticsChart;

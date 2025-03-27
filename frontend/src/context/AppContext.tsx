@@ -1,38 +1,41 @@
-import React, { useReducer, useEffect, useRef, useCallback } from 'react';
-import { AppState, AppAction } from './types';
-import { reducer, initialState } from './reducer';
-import * as actions from './actions';
+import type { AppContextType } from './AppContextTypes';
+import type { AppAction, AppState } from './types';
+import process from 'node:process';
+import React, { useCallback, useEffect, useReducer, useRef } from 'react';
 import { api } from '../api/client';
-import { AppContext, AppContextType } from './AppContextTypes';
+import * as actions from './actions';
+import { AppContext } from './AppContextTypes';
+import { initialState, reducer } from './reducer';
 
 // Helper function for logging errors that only runs in development mode
-const devError = (error: unknown, message?: string): void => {
+function devError(error: unknown, message?: string): void {
   if (process.env.NODE_ENV === 'development') {
     if (message) {
-      // eslint-disable-next-line no-console
       console.error(message, error);
-    } else {
-      // eslint-disable-next-line no-console
+    }
+    else {
       console.error(error);
     }
   }
-};
+}
 
 // Constants
 const POLLING_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes in milliseconds
 
 // Custom hooks for data fetching
-const useFetchExchanges = (dispatch: React.Dispatch<AppAction>) => {
+function useFetchExchanges(dispatch: React.Dispatch<AppAction>) {
   useEffect(() => {
     const fetchExchanges = async () => {
       try {
         dispatch(actions.setLoadingExchanges(true));
         const exchangesData = await api.getExchanges();
         dispatch(actions.setExchanges(exchangesData));
-      } catch (err) {
+      }
+      catch (err) {
         dispatch(actions.setError('Failed to load exchanges'));
         devError(err);
-      } finally {
+      }
+      finally {
         dispatch(actions.setLoadingExchanges(false));
       }
     };
@@ -41,16 +44,16 @@ const useFetchExchanges = (dispatch: React.Dispatch<AppAction>) => {
     const fetchData = () => {
       const promise = fetchExchanges();
       // Handle any uncaught errors
-      promise.catch(err => {
+      promise.catch((err) => {
         devError(err, 'Unhandled promise rejection in fetchExchanges:');
       });
     };
 
     fetchData();
   }, [dispatch]);
-};
+}
 
-const useFetchListings = (state: AppState, dispatch: React.Dispatch<AppAction>) => {
+function useFetchListings(state: AppState, dispatch: React.Dispatch<AppAction>) {
   useEffect(() => {
     const fetchListings = async () => {
       dispatch(actions.setLoadingListings(true));
@@ -62,10 +65,12 @@ const useFetchListings = (state: AppState, dispatch: React.Dispatch<AppAction>) 
 
         // Reset notification state when filters change
         dispatch(actions.setNewListings(false, 0));
-      } catch {
+      }
+      catch {
         dispatch(actions.setError('Failed to load listings'));
         // console.error(err);
-      } finally {
+      }
+      finally {
         dispatch(actions.setLoadingListings(false));
       }
     };
@@ -74,16 +79,16 @@ const useFetchListings = (state: AppState, dispatch: React.Dispatch<AppAction>) 
     const fetchData = () => {
       const promise = fetchListings();
       // Handle any uncaught errors
-      promise.catch(err => {
+      promise.catch((err) => {
         devError(err, 'Unhandled promise rejection in fetchListings');
       });
     };
 
     fetchData();
   }, [state, dispatch]);
-};
+}
 
-const useFetchStatistics = (state: AppState, dispatch: React.Dispatch<AppAction>) => {
+function useFetchStatistics(state: AppState, dispatch: React.Dispatch<AppAction>) {
   useEffect(() => {
     const fetchStatistics = async () => {
       try {
@@ -93,10 +98,12 @@ const useFetchStatistics = (state: AppState, dispatch: React.Dispatch<AppAction>
           const statsData = await api.getStatistics(state.days);
           dispatch(actions.setStatistics(statsData));
         }
-      } catch (err) {
+      }
+      catch (err) {
         dispatch(actions.setError('Failed to load statistics'));
         devError(err);
-      } finally {
+      }
+      finally {
         dispatch(actions.setLoadingStatistics(false));
       }
     };
@@ -105,16 +112,16 @@ const useFetchStatistics = (state: AppState, dispatch: React.Dispatch<AppAction>
     const fetchData = () => {
       const promise = fetchStatistics();
       // Handle any uncaught errors
-      promise.catch(err => {
+      promise.catch((err) => {
         devError(err, 'Unhandled promise rejection in fetchStatistics:');
       });
     };
 
     fetchData();
   }, [state.days, state.isPaginationMode, dispatch]);
-};
+}
 
-const useListingPolling = (state: AppState, dispatch: React.Dispatch<AppAction>) => {
+function useListingPolling(state: AppState, dispatch: React.Dispatch<AppAction>) {
   const pollingIntervalRef = useRef<number | null>(null);
 
   const fetchListingsForNotification = useCallback(async () => {
@@ -130,16 +137,21 @@ const useListingPolling = (state: AppState, dispatch: React.Dispatch<AppAction>)
 
         // Show browser notification if allowed
         if (Notification.permission === 'granted') {
-          new Notification('New Financial Listings', {
+          const notification = new Notification('New Financial Listings', {
             body: `${newCount} new listing${newCount > 1 ? 's' : ''} detected!`,
             icon: '/logo.png',
           });
+          // Use the notification object to avoid 'new' for side effects warning
+          if (notification) {
+            // The notification is created and can be used if needed
+          }
         }
 
         // Update the listings without setting loading state
         dispatch(actions.setListings(listingsData));
       }
-    } catch (err) {
+    }
+    catch (err) {
       devError(err, 'Background polling error:');
     }
   }, [state, dispatch]);
@@ -156,7 +168,7 @@ const useListingPolling = (state: AppState, dispatch: React.Dispatch<AppAction>)
         // Handle the promise returned by fetchListingsForNotification
         const promise = fetchListingsForNotification();
         // Handle any uncaught errors
-        promise.catch(err => {
+        promise.catch((err) => {
           devError(err, 'Unhandled promise rejection in fetchListingsForNotification:');
         });
       }
@@ -174,17 +186,18 @@ const useListingPolling = (state: AppState, dispatch: React.Dispatch<AppAction>)
     state.previousListingsCount,
     fetchListingsForNotification,
   ]);
-};
+}
 
 // Helper function to create listing params
-const createListingParams = (state: AppState): Record<string, string | number> => {
+function createListingParams(state: AppState): Record<string, string | number> {
   const params: Record<string, string | number> = {};
 
   // Use either date range or days depending on mode
   if (state.isPaginationMode && state.startDate && state.endDate) {
     params.start_date = state.startDate;
     params.end_date = state.endDate;
-  } else {
+  }
+  else {
     params.days = state.days;
   }
 
@@ -193,7 +206,7 @@ const createListingParams = (state: AppState): Record<string, string | number> =
   }
 
   return params;
-};
+}
 
 // Provider component
 interface AppProviderProps {

@@ -1,7 +1,6 @@
+import type { Exchange } from '../api/client';
 import { FormControl, InputLabel, MenuItem, Select } from '@mui/material';
-import { Exchange } from '../api/client';
 
-/* eslint-disable no-unused-vars */
 interface ExchangeFilterProps {
   exchanges: Exchange[];
   value: string;

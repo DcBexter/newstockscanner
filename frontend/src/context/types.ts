@@ -1,4 +1,4 @@
-import { Listing, Exchange, Statistics } from '../api/client';
+import type { Exchange, Listing, Statistics } from '../api/client';
 
 // State types
 export interface AppState {
@@ -32,7 +32,7 @@ export interface AppState {
 }
 
 // Action types
-/* eslint-disable no-unused-vars */
+
 export enum ActionType {
   // Data actions
   SET_LISTINGS = 'SET_LISTINGS',
@@ -61,7 +61,6 @@ export enum ActionType {
   SET_NOTIFICATION_OPEN = 'SET_NOTIFICATION_OPEN',
   ACKNOWLEDGE_NEW_LISTINGS = 'ACKNOWLEDGE_NEW_LISTINGS',
 }
-/* eslint-enable no-unused-vars */
 
 // Action interfaces
 export interface SetListingsAction {
@@ -91,7 +90,7 @@ export interface SetDaysAction {
 
 export interface SetDateRangeAction {
   type: ActionType.SET_DATE_RANGE;
-  payload: { startDate: string; endDate: string };
+  payload: { startDate: string; endDate: string; };
 }
 
 export interface SetPaginationModeAction {
@@ -134,7 +133,7 @@ export interface ClearErrorAction {
 
 export interface SetNewListingsAction {
   type: ActionType.SET_NEW_LISTINGS;
-  payload: { hasNewListings: boolean; newListingsCount: number };
+  payload: { hasNewListings: boolean; newListingsCount: number; };
 }
 
 export interface SetNotificationOpenAction {

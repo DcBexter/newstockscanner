@@ -1,28 +1,28 @@
-import { useState, useEffect, useMemo } from 'react';
+import type { Listing } from '../api/client';
+import { Search } from '@mui/icons-material';
+import InfoIcon from '@mui/icons-material/Info';
+import LaunchIcon from '@mui/icons-material/Launch';
+import LinkIcon from '@mui/icons-material/Link';
 import {
+  Box,
+  Chip,
+  CircularProgress,
+  IconButton,
+  InputAdornment,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  CircularProgress,
-  Box,
-  IconButton,
-  Tooltip,
-  Chip,
-  TextField,
-  InputAdornment,
   TableSortLabel,
+  TextField,
+  Tooltip,
   useTheme,
 } from '@mui/material';
-import LaunchIcon from '@mui/icons-material/Launch';
-import InfoIcon from '@mui/icons-material/Info';
-import LinkIcon from '@mui/icons-material/Link';
-import { Listing } from '../api/client';
 import dayjs from 'dayjs';
 import localizedFormat from 'dayjs/plugin/localizedFormat';
-import { Search } from '@mui/icons-material';
+import { useEffect, useMemo, useState } from 'react';
 
 // Initialize dayjs plugins
 dayjs.extend(localizedFormat);
@@ -62,10 +62,10 @@ export default function ListingsTable({ data, isLoading }: ListingsTableProps) {
     const dataArray = Array.isArray(data) ? data : [];
     const results = dataArray.filter((item) => {
       return (
-        (item.symbol && item.symbol.toLowerCase().includes(lowercasedTerm)) ||
-        (item.name && item.name.toLowerCase().includes(lowercasedTerm)) ||
-        (item.exchange_code && item.exchange_code.toLowerCase().includes(lowercasedTerm)) ||
-        (item.security_type && item.security_type.toLowerCase().includes(lowercasedTerm))
+        (item.symbol && item.symbol.toLowerCase().includes(lowercasedTerm))
+        || (item.name && item.name.toLowerCase().includes(lowercasedTerm))
+        || (item.exchange_code && item.exchange_code.toLowerCase().includes(lowercasedTerm))
+        || (item.security_type && item.security_type.toLowerCase().includes(lowercasedTerm))
       );
     });
 
@@ -81,7 +81,8 @@ export default function ListingsTable({ data, isLoading }: ListingsTableProps) {
 
   // Sort data based on current sort settings
   const sortedData = useMemo(() => {
-    if (!sortField) return filteredData || [];
+    if (!sortField)
+      return filteredData || [];
 
     // Ensure filteredData is an array before spreading
     const dataToSort = Array.isArray(filteredData) ? filteredData : [];
@@ -91,21 +92,21 @@ export default function ListingsTable({ data, isLoading }: ListingsTableProps) {
 
       // Handle various data types
       if (typeof aValue === 'string' && typeof bValue === 'string') {
-        return sortDirection === 'asc' 
-          ? aValue.localeCompare(bValue) 
+        return sortDirection === 'asc'
+          ? aValue.localeCompare(bValue)
           : bValue.localeCompare(aValue);
       }
 
       // Handle numeric values
       if (aValue !== undefined && bValue !== undefined) {
-        return sortDirection === 'asc' 
-          ? (aValue > bValue ? 1 : -1) 
-          : (bValue > aValue ? 1 : -1);
+        return sortDirection === 'asc' ? (aValue > bValue ? 1 : -1) : bValue > aValue ? 1 : -1;
       }
 
       // Handle undefined values
-      if (aValue === undefined) return sortDirection === 'asc' ? -1 : 1;
-      if (bValue === undefined) return sortDirection === 'asc' ? 1 : -1;
+      if (aValue === undefined)
+        return sortDirection === 'asc' ? -1 : 1;
+      if (bValue === undefined)
+        return sortDirection === 'asc' ? 1 : -1;
 
       // Fallback
       return 0;
@@ -128,7 +129,7 @@ export default function ListingsTable({ data, isLoading }: ListingsTableProps) {
           size="small"
           placeholder="Search by name, symbol, exchange, or type..."
           value={searchTerm}
-          onChange={(event) => setSearchTerm(event.target.value)}
+          onChange={event => setSearchTerm(event.target.value)}
           slotProps={{
             input: {
               startAdornment: (
@@ -136,16 +137,16 @@ export default function ListingsTable({ data, isLoading }: ListingsTableProps) {
                   <Search />
                 </InputAdornment>
               ),
-            }
+            },
           }}
         />
       </Box>
 
-      <TableContainer 
-        className="table-container" 
-        sx={{ 
-          backgroundColor: theme.palette.background.paper,
-          borderRadius: 1,
+      <TableContainer
+        className="table-container"
+        sx={{
+          'backgroundColor': theme.palette.background.paper,
+          'borderRadius': 1,
           '& .MuiTableCell-root': {
             borderBottom: `1px solid ${theme.palette.divider}`,
             fontSize: '1.1rem',
@@ -155,7 +156,9 @@ export default function ListingsTable({ data, isLoading }: ListingsTableProps) {
       >
         <Table>
           <TableHead>
-            <TableRow sx={{ backgroundColor: theme.palette.mode === 'dark' ? '#1e1e1e' : '#f5f5f5' }}>
+            <TableRow
+              sx={{ backgroundColor: theme.palette.mode === 'dark' ? '#1e1e1e' : '#f5f5f5' }}
+            >
               <TableCell>
                 <TableSortLabel
                   active={sortField === 'name'}
@@ -211,104 +214,116 @@ export default function ListingsTable({ data, isLoading }: ListingsTableProps) {
             </TableRow>
           </TableHead>
           <TableBody>
-            {sortedData.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} align="center">
-                  No listings found
-                </TableCell>
-              </TableRow>
-            ) : (
-              sortedData.map((listing, index) => (
-                <TableRow 
-                  key={listing.id || `${listing.exchange_code}-${listing.symbol}` || index}
-                  hover
-                  sx={{ 
-                    '&:hover': { 
-                      backgroundColor: theme.palette.action.hover
-                    }
-                  }}
-                >
-                  <TableCell>{listing.name || 'N/A'}</TableCell>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      <Box component="span" color="primary.main" mr={1}>
-                        {listing.symbol || 'N/A'}
-                      </Box>
-
-                      {listing.url && (
-                        <Tooltip title="Company Information">
-                          <IconButton
-                            href={listing.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            size="small"
-                            color="primary"
-                            sx={{ ml: 0.5 }}
-                          >
-                            {listing.url.toLowerCase().endsWith('.pdf') ? 
-                              <InfoIcon fontSize="small" /> : 
-                              <LinkIcon fontSize="small" />
-                            }
-                          </IconButton>
-                        </Tooltip>
-                      )}
-
-                      {listing.listing_detail_url && (
-                        <Tooltip title="Listing Details">
-                          <IconButton
-                            href={listing.listing_detail_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            size="small"
-                            color="primary"
-                            sx={{ ml: 0.5 }}
-                          >
-                            <LaunchIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      )}
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Chip 
-                      label={listing.exchange_code || 'Unknown'}
-                      size="small"
-                      variant="outlined"
-                      sx={{ 
-                        fontWeight: 'medium',
-                        color: theme.palette.primary.main,
-                        borderColor: theme.palette.primary.main,
-                      }} 
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Chip 
-                      label={listing.security_type || 'Equity'} 
-                      size="small" 
-                      sx={{ 
-                        backgroundColor: theme.palette.mode === 'dark' ? 'rgba(58, 65, 111, 0.2)' : 'rgba(58, 65, 111, 0.1)', 
-                        borderColor: 'divider',
-                        color: 'text.primary',
+            {sortedData.length === 0
+              ? (
+                  <TableRow>
+                    <TableCell colSpan={7} align="center">
+                      No listings found
+                    </TableCell>
+                  </TableRow>
+                )
+              : (
+                  sortedData.map((listing, index) => (
+                    <TableRow
+                      key={listing.id || `${listing.exchange_code}-${listing.symbol}` || index}
+                      hover
+                      sx={{
+                        '&:hover': {
+                          backgroundColor: theme.palette.action.hover,
+                        },
                       }}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    {listing.listing_date ? dayjs(listing.listing_date).format('ll') : 'N/A'}
-                  </TableCell>
-                  <TableCell align="right">{listing.lot_size || 'N/A'}</TableCell>
-                  <TableCell>
-                    {listing.status === 'Trading' || listing.status?.includes('Trading') ? (
-                      <Box component="span" color="success.main">{listing.status}</Box>
-                    ) : (
-                      listing.status
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
+                    >
+                      <TableCell>{listing.name || 'N/A'}</TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <Box component="span" color="primary.main" mr={1}>
+                            {listing.symbol || 'N/A'}
+                          </Box>
+
+                          {listing.url && (
+                            <Tooltip title="Company Information">
+                              <IconButton
+                                href={listing.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                size="small"
+                                color="primary"
+                                sx={{ ml: 0.5 }}
+                              >
+                                {listing.url.toLowerCase().endsWith('.pdf')
+                                  ? (
+                                      <InfoIcon fontSize="small" />
+                                    )
+                                  : (
+                                      <LinkIcon fontSize="small" />
+                                    )}
+                              </IconButton>
+                            </Tooltip>
+                          )}
+
+                          {listing.listing_detail_url && (
+                            <Tooltip title="Listing Details">
+                              <IconButton
+                                href={listing.listing_detail_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                size="small"
+                                color="primary"
+                                sx={{ ml: 0.5 }}
+                              >
+                                <LaunchIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={listing.exchange_code || 'Unknown'}
+                          size="small"
+                          variant="outlined"
+                          sx={{
+                            fontWeight: 'medium',
+                            color: theme.palette.primary.main,
+                            borderColor: theme.palette.primary.main,
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={listing.security_type || 'Equity'}
+                          size="small"
+                          sx={{
+                            backgroundColor:
+                          theme.palette.mode === 'dark'
+                            ? 'rgba(58, 65, 111, 0.2)'
+                            : 'rgba(58, 65, 111, 0.1)',
+                            borderColor: 'divider',
+                            color: 'text.primary',
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        {listing.listing_date ? dayjs(listing.listing_date).format('ll') : 'N/A'}
+                      </TableCell>
+                      <TableCell align="right">{listing.lot_size || 'N/A'}</TableCell>
+                      <TableCell>
+                        {listing.status === 'Trading' || listing.status?.includes('Trading')
+                          ? (
+                              <Box component="span" color="success.main">
+                                {listing.status}
+                              </Box>
+                            )
+                          : (
+                              listing.status
+                            )}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
           </TableBody>
         </Table>
       </TableContainer>
     </Box>
   );
-} 
+}

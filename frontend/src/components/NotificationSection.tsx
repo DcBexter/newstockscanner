@@ -1,15 +1,16 @@
-import { Snackbar, Alert, IconButton, Badge, Tooltip } from '@mui/material';
+import process from 'node:process';
 import { Notifications } from '@mui/icons-material';
-import { useAppContext } from '../context/AppContext';
+import { Alert, Badge, IconButton, Snackbar, Tooltip } from '@mui/material';
 import { NOTIFICATION_DURATION } from '../constants/exchanges';
+import { useAppContext } from '../context/useAppContext';
 
 // Helper function for logging that only runs in development mode
-const devLog = (message: string): void => {
+function devLog(message: string): void {
   if (process.env.NODE_ENV === 'development') {
     // eslint-disable-next-line no-console
     console.log(message);
   }
-};
+}
 
 /**
  * Component for handling notifications and notification permissions
@@ -37,7 +38,7 @@ export default function NotificationSection() {
    */
   const requestNotificationPermission = () => {
     if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
-      Notification.requestPermission().then(permission => {
+      Notification.requestPermission().then((permission) => {
         devLog(`Notification permission ${permission}`);
       });
     }
@@ -79,7 +80,12 @@ export default function NotificationSection() {
           variant="filled"
           sx={{ width: '100%' }}
         >
-          {newListingsCount} new listing{newListingsCount > 1 ? 's' : ''} detected!
+          {newListingsCount}
+          {' '}
+          new listing
+          {newListingsCount > 1 ? 's' : ''}
+          {' '}
+          detected!
         </Alert>
       </Snackbar>
     </>
