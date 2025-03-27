@@ -1,14 +1,25 @@
-import { Box, Container, Paper, Typography, Button, IconButton, Tooltip, useTheme, PaletteMode, Stack } from '@mui/material';
-import { LightMode, DarkMode, VisibilityOff, Visibility } from '@mui/icons-material';
-import ListingsTable from './ListingsTable';
-import StatisticsChart from './StatisticsChart';
-import ExchangeFilter from './ExchangeFilter';
-import MonthPagination from './MonthPagination';
-import ScanButton from './ScanButton';
-import NotificationSection from './NotificationSection';
-import { useAppContext } from '../context/AppContext';
-import { findCommonExchanges, isExchangeSelected } from '../utils/exchangeUtils';
+import type { PaletteMode } from '@mui/material';
+import { DarkMode, LightMode, Visibility, VisibilityOff } from '@mui/icons-material';
+import {
+  Box,
+  Button,
+  Container,
+  IconButton,
+  Paper,
+  Stack,
+  Tooltip,
+  Typography,
+  useTheme,
+} from '@mui/material';
 import { EXCHANGE_CODES } from '../constants/exchanges';
+import { useAppContext } from '../context/useAppContext';
+import { findCommonExchanges, isExchangeSelected } from '../utils/exchangeUtils';
+import ExchangeFilter from './ExchangeFilter';
+import ListingsTable from './ListingsTable';
+import MonthPagination from './MonthPagination';
+import NotificationSection from './NotificationSection';
+import ScanButton from './ScanButton';
+import StatisticsChart from './StatisticsChart';
 
 interface DashboardProps {
   toggleColorMode: () => void;
@@ -31,7 +42,7 @@ export default function Dashboard({ toggleColorMode, currentTheme }: DashboardPr
     statistics,
     isLoadingListings,
     error,
-    showStatistics
+    showStatistics,
   } = state;
 
   // Handle month change from the MonthPagination component
@@ -55,31 +66,34 @@ export default function Dashboard({ toggleColorMode, currentTheme }: DashboardPr
   // No scan handler needed - moved to ScanButton component
 
   const paperStyle = {
-    p: 3, 
+    p: 3,
     height: '100%',
     boxShadow: 3,
   };
 
   return (
     <Container maxWidth={false} sx={{ mt: 4, mb: 4 }}>
-      <Box sx={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        mb: 3, 
-        alignItems: 'center',
-        pb: 2
-      }}>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          mb: 3,
+          alignItems: 'center',
+          pb: 2,
+        }}
+      >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <img 
-            src="/logo.png" 
-            alt="New Listings Monitor Logo" 
-            style={{ 
-              height: '50px', 
+          <img
+            src="/logo.png"
+            alt="New Listings Monitor Logo"
+            style={{
+              height: '50px',
               width: 'auto',
               padding: '3px',
-              background: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.03)', 
-              borderRadius: '4px'
-            }} 
+              background:
+                theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.03)',
+              borderRadius: '4px',
+            }}
           />
           <Typography variant="h4" component="h1" fontWeight="bold">
             Financial Listings Monitor
@@ -112,15 +126,23 @@ export default function Dashboard({ toggleColorMode, currentTheme }: DashboardPr
         {/* Filters */}
         <Box>
           <Paper sx={{ p: 2, boxShadow: 2 }}>
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, alignItems: 'flex-start', justifyContent: 'flex-start' }}>
+            <Box
+              sx={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 3,
+                alignItems: 'flex-start',
+                justifyContent: 'flex-start',
+              }}
+            >
               <ExchangeFilter
                 exchanges={exchanges}
                 value={selectedExchange}
-                onChange={(value) => dispatch(actions.setSelectedExchange(value))}
+                onChange={value => dispatch(actions.setSelectedExchange(value))}
               />
 
-              <MonthPagination 
-                onMonthChange={handleMonthChange} 
+              <MonthPagination
+                onMonthChange={handleMonthChange}
                 onSwitchToDays={handleSwitchToDaysMode}
                 isPaginationMode={isPaginationMode}
               />
@@ -148,11 +170,17 @@ export default function Dashboard({ toggleColorMode, currentTheme }: DashboardPr
                   Listings Statistics by Exchange
                 </Typography>
                 <Box>
-                  {statistics?.exchange_stats?.map((stat) => (
+                  {statistics?.exchange_stats?.map(stat => (
                     <Box key={stat.code} sx={{ mb: 2 }}>
-                      <Typography variant="subtitle1" fontWeight="medium">{stat.name}</Typography>
-                      <Typography variant="h4" color="primary" fontWeight="bold">{stat.total_listings}</Typography>
-                      <Typography variant="caption" color="text.secondary">Total Listings</Typography>
+                      <Typography variant="subtitle1" fontWeight="medium">
+                        {stat.name}
+                      </Typography>
+                      <Typography variant="h4" color="primary" fontWeight="bold">
+                        {stat.total_listings}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Total Listings
+                      </Typography>
                     </Box>
                   ))}
                 </Box>
@@ -174,16 +202,19 @@ export default function Dashboard({ toggleColorMode, currentTheme }: DashboardPr
         {/* Listings Table - Full Width */}
         <Box>
           <Paper sx={{ p: 3, boxShadow: 3 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Box
+              sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}
+            >
               <Typography variant="h6" color="primary" fontWeight="bold">
-                {isPaginationMode 
-                  ? `Financial Listings (${startDate} to ${endDate})` 
-                  : `Recent Financial Listings (Last ${days} Days)`
-                }
+                {isPaginationMode
+                  ? `Financial Listings (${startDate} to ${endDate})`
+                  : `Recent Financial Listings (Last ${days} Days)`}
               </Typography>
 
               <Typography variant="subtitle2" color="text.secondary">
-                {listings.length} listings found
+                {listings.length}
+                {' '}
+                listings found
               </Typography>
             </Box>
             <ListingsTable data={listings} isLoading={isLoadingListings} />
@@ -192,4 +223,4 @@ export default function Dashboard({ toggleColorMode, currentTheme }: DashboardPr
       </Stack>
     </Container>
   );
-} 
+}

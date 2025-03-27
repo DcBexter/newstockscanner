@@ -21,21 +21,9 @@ repos:
     rev: v9.23.0
     hooks:
       - id: eslint
-        files: frontend/.*\.(js|ts|tsx)$
+        files: frontend/.*\.[jt]sx?$ # *.js, *.jsx, *.ts and *.tsx in frontend directory
         types: [file]
         args: [--config=frontend/eslint.config.js]
         additional_dependencies:
           - 'eslint@9.23.0'
-          - '@eslint/js@9.23.0'
-          - '@eslint/eslintrc@3.0.0'
-          - 'typescript-eslint@8.28.0'
-          - 'eslint-plugin-react@7.37.4'
-          - 'eslint-plugin-react-hooks@5.2.0'
-          - 'eslint-plugin-react-refresh@0.4.19'
-          - 'globals@16.0.0'
-
-  - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v3.0.0-alpha.9-for-vscode
-    hooks:
-      - id: prettier
-        types_or: [javascript, jsx, ts, tsx, json, css, scss, yaml]
+          - '@antfu/eslint-config@4.11.0'

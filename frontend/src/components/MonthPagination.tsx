@@ -1,22 +1,21 @@
+import type { SelectChangeEvent } from '@mui/material';
+import { CalendarMonth, ChevronLeft, ChevronRight, Today } from '@mui/icons-material';
 import {
-  Button,
   Box,
-  useTheme,
-  IconButton,
-  Select,
-  MenuItem,
+  Button,
   FormControl,
+  IconButton,
   InputLabel,
-  SelectChangeEvent,
+  MenuItem,
+  Select,
+  useTheme,
 } from '@mui/material';
-import { ChevronLeft, ChevronRight, Today, CalendarMonth } from '@mui/icons-material';
-import { useState, useEffect, useCallback } from 'react';
 import dayjs from 'dayjs';
+import { useCallback, useEffect, useState } from 'react';
 
 interface MonthPaginationProps {
-  // eslint-disable-next-line no-unused-vars
   onMonthChange: (startDate: string, endDate: string) => void;
-  // eslint-disable-next-line no-unused-vars
+
   onSwitchToDays: (days: number) => void;
   isPaginationMode: boolean;
 }
@@ -37,7 +36,7 @@ export default function MonthPagination({
       const endDate = month.endOf('month').format('YYYY-MM-DD');
       onMonthChange(startDate, endDate);
     },
-    [onMonthChange]
+    [onMonthChange],
   );
 
   // Update parent component when month changes OR when switching to pagination mode
@@ -67,8 +66,8 @@ export default function MonthPagination({
 
     // Compare year and month to prevent future date selection
     if (
-      nextMonth.year() < now.year() ||
-      (nextMonth.year() === now.year() && nextMonth.month() <= now.month())
+      nextMonth.year() < now.year()
+      || (nextMonth.year() === now.year() && nextMonth.month() <= now.month())
     ) {
       // Always update the date range directly when using month navigation
       updateDateRange(nextMonth);
@@ -97,21 +96,23 @@ export default function MonthPagination({
     if (days > 0) {
       // Switch to days mode
       onSwitchToDays(days);
-    } else if (days === 0) {
+    }
+    else if (days === 0) {
       // Switch to current month mode
       handleCurrentMonth();
     }
   };
 
   // Check if next month button should be disabled
-  const isNextMonthDisabled =
-    currentMonth.month() === dayjs().month() && currentMonth.year() === dayjs().year();
+  const isNextMonthDisabled
+    = currentMonth.month() === dayjs().month() && currentMonth.year() === dayjs().year();
 
   // Get the time range text to display
   const getTimeRangeText = () => {
     if (!isPaginationMode && selectedDays > 0) {
       return `Last ${selectedDays} Days`;
-    } else {
+    }
+    else {
       return currentMonth.format('MMMM YYYY');
     }
   };
@@ -189,14 +190,14 @@ export default function MonthPagination({
         <IconButton
           onClick={handlePrevMonth}
           sx={{
-            borderRadius: 0,
-            height: '56px',
-            width: '40px',
-            padding: 0,
+            'borderRadius': 0,
+            'height': '56px',
+            'width': '40px',
+            'padding': 0,
             '&:hover': {
               backgroundColor: 'rgba(0, 0, 0, 0.04)',
             },
-            margin: 0,
+            'margin': 0,
           }}
         >
           <ChevronLeft fontSize="small" />
@@ -207,23 +208,23 @@ export default function MonthPagination({
           disableRipple
           onClick={handleCurrentMonth}
           sx={{
-            borderLeft: `1px solid ${
+            'borderLeft': `1px solid ${
               theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.23)' : 'rgba(0, 0, 0, 0.23)'
             }`,
-            borderRight: `1px solid ${
+            'borderRight': `1px solid ${
               theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.23)' : 'rgba(0, 0, 0, 0.23)'
             }`,
-            borderRadius: 0,
-            height: '56px',
-            padding: '0 16px',
-            minWidth: '140px',
-            fontWeight: 'bold',
-            color: theme.palette.mode === 'dark' ? '#1db954' : '#2e7d32',
+            'borderRadius': 0,
+            'height': '56px',
+            'padding': '0 16px',
+            'minWidth': '140px',
+            'fontWeight': 'bold',
+            'color': theme.palette.mode === 'dark' ? '#1db954' : '#2e7d32',
             '&:hover': {
               backgroundColor: 'rgba(0, 0, 0, 0.04)',
             },
-            textTransform: 'none',
-            fontSize: '1rem',
+            'textTransform': 'none',
+            'fontSize': '1rem',
           }}
         >
           {getTimeRangeText()}
@@ -233,14 +234,14 @@ export default function MonthPagination({
           onClick={handleNextMonth}
           disabled={isNextMonthDisabled}
           sx={{
-            borderRadius: 0,
-            height: '56px',
-            width: '40px',
-            padding: 0,
+            'borderRadius': 0,
+            'height': '56px',
+            'width': '40px',
+            'padding': 0,
             '&:hover': {
               backgroundColor: 'rgba(0, 0, 0, 0.04)',
             },
-            margin: 0,
+            'margin': 0,
           }}
         >
           <ChevronRight fontSize="small" />

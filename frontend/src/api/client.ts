@@ -1,13 +1,14 @@
+import process from 'node:process';
 import axios from 'axios';
-import { API_URL, CACHE_SETTINGS, API_ENDPOINTS } from '../config/api.config';
+import { API_ENDPOINTS, API_URL, CACHE_SETTINGS } from '../config/api.config';
 
 // Helper function for logging that only runs in development mode
-const devLog = (message: string): void => {
+function devLog(message: string): void {
   if (process.env.NODE_ENV === 'development') {
     // eslint-disable-next-line no-console
     console.log(message);
   }
-};
+}
 
 /**
  * API Client for the Stock Scanner Application
@@ -33,19 +34,20 @@ const cache: Record<string, CacheEntry<unknown>> = {};
 const CACHE_TTL = CACHE_SETTINGS.TTL;
 
 // Helper to get cache key
-const getCacheKey = (endpoint: string, params?: Record<string, unknown>): string => {
+function getCacheKey(endpoint: string, params?: Record<string, unknown>): string {
   const paramsString = params ? JSON.stringify(params) : '';
   return `${endpoint}:${paramsString}`;
-};
+}
 
 // Helper to check if cache is valid
-const isCacheValid = (cacheKey: string): boolean => {
+function isCacheValid(cacheKey: string): boolean {
   const entry = cache[cacheKey];
-  if (!entry) return false;
+  if (!entry)
+    return false;
 
   const now = Date.now();
   return now - entry.timestamp < CACHE_TTL;
-};
+}
 
 export interface Listing {
   id: number;

@@ -5,7 +5,7 @@ export const EXCHANGE_CODES = {
   HKEX: 'HKEX',
   NASDAQ: 'NASDAQ',
   NYSE: 'NYSE',
-  FSE: 'FSE'
+  FSE: 'FSE',
 };
 
 // UI-related constants

@@ -1,6 +1,5 @@
 import { FormControl, InputLabel, MenuItem, Select } from '@mui/material';
 
-/* eslint-disable no-unused-vars */
 interface DateRangeFilterProps {
   value: number;
   onChange: (value: number) => void;
