@@ -282,14 +282,16 @@ class NasdaqScraper(BaseScraper):
             self.logger.debug(f"Error details: {str(e)}", exc_info=True)
             return None
 
-    def _parse_date_from_row(self, row: Dict[str, Any]) -> datetime:
+    @staticmethod
+    def _parse_date_from_row(row: Dict[str, Any]) -> datetime:
         """Parse the listing date from a row or use default date."""
         date_str = row.get("pricingDate", "") or row.get("expectedPriceDate", "")
 
         # Use DateUtils to parse the date string with a default of 30 days from now
         return DateUtils.parse_date(date_str, datetime.now() + timedelta(days=30))
 
-    def _determine_exchange_from_row(self, row: Dict[str, Any]) -> str:
+    @staticmethod
+    def _determine_exchange_from_row(row: Dict[str, Any]) -> str:
         """Determine exchange code from row data."""
         exchange_text = row.get("exchange", "") or row.get("proposedExchange", "")
         exchange_text = exchange_text.strip().upper()
@@ -301,7 +303,8 @@ class NasdaqScraper(BaseScraper):
         else:
             return "NASDAQ"  # Default
 
-    def _parse_lot_size_from_row(self, row: Dict[str, Any]) -> int:
+    @staticmethod
+    def _parse_lot_size_from_row(row: Dict[str, Any]) -> int:
         """Parse lot size from shares offered or use default."""
         shares_text = row.get("sharesOffered", "1000").strip()
 
@@ -398,7 +401,8 @@ class NasdaqScraper(BaseScraper):
             self.logger.warning(f"Error creating listing from HTML row: {str(e)}")
             return None
 
-    def _extract_date_from_html_cols(self, cols) -> datetime:
+    @staticmethod
+    def _extract_date_from_html_cols(cols) -> datetime:
         """Extract date from HTML table columns."""
         default_date = datetime.now() + timedelta(days=30)
 
@@ -426,7 +430,7 @@ class NasdaqScraper(BaseScraper):
             self.logger.debug("Found IPO data in script tag")
             try:
                 # Extract JSON data from script
-                match = re.search(r"(\[{.*}\])", script_text)
+                match = re.search(r"(\[{.*}])", script_text)
                 if not match:
                     continue
 
