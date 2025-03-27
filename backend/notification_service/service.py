@@ -1,13 +1,15 @@
-from typing import List, Optional, Dict, Any
-from datetime import datetime, timedelta, UTC
+from datetime import UTC, datetime, timedelta
+from typing import Any, Dict, List, Optional
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.core.exceptions import DatabaseError, NotifierError
 from backend.core.models import NotificationMessage
 from backend.database.models import NotificationLog
 from backend.notification_service.notifiers.base import BaseNotifier
 from backend.notification_service.notifiers.telegram import TelegramNotifier
-from backend.core.exceptions import NotifierError, DatabaseError
+
 
 class NotificationService:
     """Service for managing notifications."""
@@ -22,11 +24,7 @@ class NotificationService:
         if not self._initialized:
             await self._initialize_notifiers()
 
-    async def send(
-        self,
-        message: NotificationMessage,
-        notifier_type: str = "telegram"
-    ) -> bool:
+    async def send(self, message: NotificationMessage, notifier_type: str = "telegram") -> bool:
         """Send a notification using the specified notifier."""
         try:
             if not self._initialized:
@@ -43,11 +41,7 @@ class NotificationService:
             await self._handle_error(message, notifier_type, str(exception))
             raise NotifierError(f"Failed to send notification: {str(exception)}")
 
-    async def notify_new_listings(
-        self, 
-        listings: List[Dict[str, Any]], 
-        notifier_type: str = "telegram"
-    ) -> bool:
+    async def notify_new_listings(self, listings: List[Dict[str, Any]], notifier_type: str = "telegram") -> bool:
         """Send notifications about new listings."""
         try:
             if not self._initialized:
@@ -59,9 +53,7 @@ class NotificationService:
             summary_title = f"New Stock Listings Summary"
             summary_body = f"Found {len(listings)} new stock listings."
             summary_message = NotificationMessage(
-                title=summary_title,
-                body=summary_body,
-                metadata={"type": "summary", "listings_count": len(listings)}
+                title=summary_title, body=summary_body, metadata={"type": "summary", "listings_count": len(listings)}
             )
 
             # Create a log entry for the summary notification
@@ -69,7 +61,7 @@ class NotificationService:
 
             # Check if the notifier has a specialized method for listings
             success = False
-            if hasattr(notifier, 'notify_new_listings'):
+            if hasattr(notifier, "notify_new_listings"):
                 success = await notifier.notify_new_listings(listings)
             else:
                 # Fallback to generic notification
@@ -85,19 +77,14 @@ class NotificationService:
                 NotificationMessage(
                     title="New Stock Listings Error",
                     body=f"Error sending notifications for {len(listings)} listings",
-                    metadata={"listings_count": len(listings)}
+                    metadata={"listings_count": len(listings)},
                 ),
                 notifier_type,
-                str(exception)
+                str(exception),
             )
             raise NotifierError(f"Failed to send new listings notification: {str(exception)}")
 
-    async def get_logs(
-        self,
-        status: Optional[str] = None,
-        days: Optional[int] = None,
-        limit: int = 100
-    ) -> List[NotificationLog]:
+    async def get_logs(self, status: Optional[str] = None, days: Optional[int] = None, limit: int = 100) -> List[NotificationLog]:
         """Get notification logs with optional filters."""
         try:
             query = select(NotificationLog)
@@ -137,18 +124,14 @@ class NotificationService:
             raise NotifierError(f"Notifier {notifier_type} not found")
         return notifier
 
-    async def _create_log(
-        self,
-        message: NotificationMessage,
-        notifier_type: str
-    ) -> NotificationLog:
+    async def _create_log(self, message: NotificationMessage, notifier_type: str) -> NotificationLog:
         """Create a notification log entry."""
         log = NotificationLog(
             notification_type=notifier_type,
             title=message.title,
             body=message.body,
             status="pending",
-            notification_metadata=str(message.metadata) if message.metadata else None
+            notification_metadata=str(message.metadata) if message.metadata else None,
         )
         self.db.add(log)
         await self.db.flush()
@@ -165,12 +148,7 @@ class NotificationService:
             await self.db.rollback()
             print(f"Failed to update notification log: {str(db_error)}")
 
-    async def _handle_error(
-        self,
-        message: NotificationMessage,
-        notifier_type: str,
-        error: str
-    ) -> None:
+    async def _handle_error(self, message: NotificationMessage, notifier_type: str, error: str) -> None:
         """Handle and log a notification error."""
         try:
             await self.db.rollback()
@@ -180,7 +158,7 @@ class NotificationService:
                 body=message.body,
                 status="error",
                 error=error,
-                notification_metadata=str(message.metadata) if message.metadata else None
+                notification_metadata=str(message.metadata) if message.metadata else None,
             )
             self.db.add(log)
             await self.db.commit()
@@ -195,6 +173,6 @@ class NotificationService:
     async def cleanup(self) -> None:
         """Cleanup resources."""
         for notifier in self._notifiers.values():
-            if hasattr(notifier, '__aexit__'):
+            if hasattr(notifier, "__aexit__"):
                 await notifier.__aexit__(None, None, None)
-        self._initialized = False 
+        self._initialized = False

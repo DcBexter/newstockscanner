@@ -1,8 +1,7 @@
 """Database service for the scraper service."""
 
 import logging
-from typing import Callable, Any, Awaitable, TypeVar
-from typing import List, Dict
+from typing import Any, Awaitable, Callable, Dict, List, TypeVar
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,7 +13,8 @@ from backend.database.session import get_session_factory
 
 logger = logging.getLogger(__name__)
 
-T = TypeVar('T')
+T = TypeVar("T")
+
 
 class DatabaseHelper:
     """Helper class for database operations with proper session management."""
@@ -55,11 +55,7 @@ class DatabaseHelper:
 class DatabaseService:
     """Service for database operations related to stock listings."""
 
-    def __init__(self, 
-                 db_helper=None, 
-                 session_factory=None,
-                 exchange_service_factory=None,
-                 listing_service_factory=None):
+    def __init__(self, db_helper=None, session_factory=None, exchange_service_factory=None, listing_service_factory=None):
         """
         Initialize the DatabaseService with dependencies.
 
@@ -111,12 +107,7 @@ class DatabaseService:
 
                 # Return exchange information
                 if exchange:
-                    result = {
-                        "id": exchange.id,
-                        "name": exchange.name,
-                        "code": exchange.code,
-                        "url": exchange.url
-                    }
+                    result = {"id": exchange.id, "name": exchange.name, "code": exchange.code, "url": exchange.url}
 
                     # Commit the transaction
                     await db.commit()
@@ -132,16 +123,13 @@ class DatabaseService:
             return None
 
     async def _process_single_listing(
-        self,
-        db: AsyncSession, 
-        listing_data: Dict[str, Any], 
-        exchange_data: Dict[str, Dict[str, Any]]
+        self, db: AsyncSession, listing_data: Dict[str, Any], exchange_data: Dict[str, Dict[str, Any]]
     ) -> Dict[str, Any]:
         """Process a single listing - validate, create or update it."""
         try:
             # Extract key fields for logging
-            symbol = listing_data.get('symbol', 'unknown')
-            exchange_code = listing_data.get('exchange_code', 'unknown')
+            symbol = listing_data.get("symbol", "unknown")
+            exchange_code = listing_data.get("exchange_code", "unknown")
 
             logger.debug(f"Processing listing: {symbol} ({exchange_code})")
 
@@ -170,9 +158,7 @@ class DatabaseService:
             service = self.listing_service_factory(db)
 
             # Check if listing exists
-            existing = await service.get_by_symbol_and_exchange(
-                symbol, exchange_code
-            )
+            existing = await service.get_by_symbol_and_exchange(symbol, exchange_code)
 
             # Determine if this is a new listing or an update
             is_new = False
@@ -196,20 +182,14 @@ class DatabaseService:
                     exchange_code=listing_data.get("exchange_code", ""),
                     security_type=listing_data.get("security_type", "Equity"),
                     url=listing_data.get("url"),
-                    listing_detail_url=listing_data.get("listing_detail_url")
+                    listing_detail_url=listing_data.get("listing_detail_url"),
                 )
 
                 # Create the listing
                 await service.create(create_model)
 
             # Return result
-            result = {
-                "success": True,
-                "is_new": is_new,
-                "symbol": symbol,
-                "exchange_code": exchange_code,
-                "data": listing_data
-            }
+            result = {"success": True, "is_new": is_new, "symbol": symbol, "exchange_code": exchange_code, "data": listing_data}
 
             if is_new:
                 logger.info(f"New listing added: {symbol} ({exchange_code})")
@@ -221,7 +201,6 @@ class DatabaseService:
         except Exception as e:
             logger.warning(f"Failed to save listing {listing_data.get('symbol', 'unknown')}: {type(e).__name__}: {str(e)}")
             return {"success": False, "reason": "exception", "error": str(e)}
-
 
     async def save_listings(self, listings: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
@@ -241,11 +220,7 @@ class DatabaseService:
             return {"saved_count": 0, "total": 0, "new_listings": []}
 
         # Collect unique exchange codes to ensure they exist
-        exchange_codes = set(
-            listing.get("exchange_code") 
-            for listing in listings 
-            if listing.get("exchange_code")
-        )
+        exchange_codes = set(listing.get("exchange_code") for listing in listings if listing.get("exchange_code"))
 
         # Cache for exchange data to avoid repeated database lookups
         exchange_data = {}
@@ -296,11 +271,7 @@ class DatabaseService:
                     logger.info(f"Successfully saved {saved_count} out of {len(listings)} listings to the database")
                     logger.info(f"Found {len(new_listings)} new listings that weren't in the database before")
 
-                    return {
-                        "saved_count": saved_count, 
-                        "total": len(listings),
-                        "new_listings": new_listings
-                    }
+                    return {"saved_count": saved_count, "total": len(listings), "new_listings": new_listings}
 
                 except Exception as e:
                     # Ensure transaction is rolled back
@@ -315,4 +286,3 @@ class DatabaseService:
         except Exception as e:
             logger.error(f"Error processing listings: {str(e)}")
             return {"saved_count": 0, "total": len(listings), "new_listings": []}
-

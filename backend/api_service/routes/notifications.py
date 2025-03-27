@@ -8,7 +8,7 @@ NotificationService to interact with the notification system and database.
 
 import logging
 from functools import wraps
-from typing import Dict, List, Any, Optional, Callable
+from typing import Any, Callable, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -25,6 +25,7 @@ DEFAULT_LOG_DAYS = 7
 DEFAULT_LOG_LIMIT = 100
 MAX_LOG_LIMIT = 1000
 
+
 # Error handling decorator
 def handle_route_errors(operation_name: str):
     """
@@ -36,6 +37,7 @@ def handle_route_errors(operation_name: str):
     Returns:
         Callable: Decorated function with error handling
     """
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         async def wrapper(*args, **kwargs) -> Any:
@@ -50,24 +52,23 @@ def handle_route_errors(operation_name: str):
             except Exception as e:
                 # Log unexpected errors and return a generic message
                 logger.error(f"Unexpected error in {operation_name}: {str(e)}", exc_info=True)
-                raise HTTPException(
-                    status_code=500, 
-                    detail=f"An unexpected error occurred while {operation_name}"
-                )
+                raise HTTPException(status_code=500, detail=f"An unexpected error occurred while {operation_name}")
+
         return wrapper
+
     return decorator
+
 
 router = APIRouter(
     prefix="/notifications",
     tags=["notifications"],
 )
 
+
 @router.post("/send", response_model=Dict[str, Any])
 @handle_route_errors("sending notification")
 async def send_notification(
-    message: NotificationMessage,
-    notifier_type: str = DEFAULT_NOTIFIER_TYPE,
-    db: AsyncSession = Depends(get_db)
+    message: NotificationMessage, notifier_type: str = DEFAULT_NOTIFIER_TYPE, db: AsyncSession = Depends(get_db)
 ) -> Dict[str, Any]:
     """
     Send a notification.
@@ -92,13 +93,11 @@ async def send_notification(
     logger.info(f"Notification sent successfully: {result}")
     return result
 
+
 @router.get("/logs", response_model=List[Dict[str, Any]])
 @handle_route_errors("retrieving notification logs")
 async def get_notification_logs(
-    status: Optional[str] = None,
-    days: int = DEFAULT_LOG_DAYS,
-    limit: int = DEFAULT_LOG_LIMIT,
-    db: AsyncSession = Depends(get_db)
+    status: Optional[str] = None, days: int = DEFAULT_LOG_DAYS, limit: int = DEFAULT_LOG_LIMIT, db: AsyncSession = Depends(get_db)
 ) -> List[Dict[str, Any]]:
     """
     Get notification logs with optional filters.

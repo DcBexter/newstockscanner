@@ -1,23 +1,22 @@
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import List
 
-from sqlalchemy import Integer, String, DateTime, ForeignKey, Text
-from sqlalchemy.orm import declarative_base, relationship, Mapped, mapped_column
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy.orm import Mapped, declarative_base, mapped_column, relationship
 
 Base = declarative_base()
 
+
 class TimestampMixin:
     """Mixin for adding created_at and updated_at timestamps."""
+
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime, 
-        default=datetime.now,
-        onupdate=datetime.now,
-        nullable=False
-    )
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, onupdate=datetime.now, nullable=False)
+
 
 class Exchange(TimestampMixin, Base):
     """Model for stock exchanges."""
+
     __tablename__ = "exchanges"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -27,17 +26,15 @@ class Exchange(TimestampMixin, Base):
     description: Mapped[str] = mapped_column(Text, nullable=True)
 
     # Relationships
-    listings: Mapped[List["StockListing"]] = relationship(
-        "StockListing",
-        back_populates="exchange",
-        cascade="all, delete-orphan"
-    )
+    listings: Mapped[List["StockListing"]] = relationship("StockListing", back_populates="exchange", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
         return f"<Exchange(code={self.code}, name={self.name})>"
 
+
 class StockListing(TimestampMixin, Base):
     """Model for stock listings."""
+
     __tablename__ = "stock_listings"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -61,8 +58,10 @@ class StockListing(TimestampMixin, Base):
     def __repr__(self) -> str:
         return f"<StockListing(symbol={self.symbol}, name={self.name})>"
 
+
 class NotificationLog(TimestampMixin, Base):
     """Model for tracking notifications sent."""
+
     __tablename__ = "notification_logs"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -74,4 +73,4 @@ class NotificationLog(TimestampMixin, Base):
     notification_metadata: Mapped[str] = mapped_column(Text, nullable=True)  # JSON string
 
     def __repr__(self) -> str:
-        return f"<NotificationLog(type={self.notification_type}, status={self.status})>" 
+        return f"<NotificationLog(type={self.notification_type}, status={self.status})>"

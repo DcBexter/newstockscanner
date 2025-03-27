@@ -2,7 +2,7 @@ import logging
 import threading
 from typing import AsyncGenerator, Dict, Optional
 
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, AsyncEngine, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
 
 from backend.config.settings import get_settings
 from backend.database.models import Base
@@ -15,6 +15,7 @@ settings = get_settings()
 _thread_local = threading.local()
 _engines_lock = threading.Lock()
 _engines: Dict[int, AsyncEngine] = {}
+
 
 def get_engine() -> AsyncEngine:
     """Get or create an engine for the current thread."""
@@ -31,23 +32,19 @@ def get_engine() -> AsyncEngine:
                 pool_timeout=30,
                 pool_pre_ping=True,
                 pool_use_lifo=True,
-                echo=False  # Disable SQL trace logging to reduce log verbosity
+                echo=False,  # Disable SQL trace logging to reduce log verbosity
             )
 
     return _engines[thread_id]
+
 
 def get_session_factory(engine: Optional[AsyncEngine] = None) -> async_sessionmaker:
     """Get a session factory for the given engine or current thread."""
     if engine is None:
         engine = get_engine()
 
-    return async_sessionmaker(
-        engine,
-        class_=AsyncSession,
-        expire_on_commit=False,
-        autocommit=False,
-        autoflush=False
-    )
+    return async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False, autocommit=False, autoflush=False)
+
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """Dependency for getting async database sessions."""
@@ -64,11 +61,13 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
     finally:
         await session.close()
 
+
 async def init_db() -> None:
     """Initialize database tables."""
     engine = get_engine()
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
 
 async def close_db() -> None:
     """Close database connections."""
@@ -91,4 +90,4 @@ async def close_db() -> None:
                 except Exception as e:
                     logger.error(f"Error closing connections: {e}", exc_info=True)
         # Clear the engines dictionary
-        _engines.clear() 
+        _engines.clear()

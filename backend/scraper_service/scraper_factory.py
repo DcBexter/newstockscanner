@@ -5,13 +5,14 @@ This module provides a factory for creating scraper instances based on exchange 
 It implements the ScraperFactoryInterface to support dependency injection.
 """
 
-from typing import Dict, Type, Optional, List
+from typing import Dict, List, Optional, Type
 
 from backend.core.interfaces import ScraperFactoryInterface
 from backend.scraper_service.scrapers.base import BaseScraper
+from backend.scraper_service.scrapers.frankfurt_scraper import FrankfurtScraper
 from backend.scraper_service.scrapers.hkex_scraper import HKEXScraper
 from backend.scraper_service.scrapers.nasdaq_scraper import NasdaqScraper
-from backend.scraper_service.scrapers.frankfurt_scraper import FrankfurtScraper
+
 
 class ScraperFactory(ScraperFactoryInterface):
     """Factory for creating scraper instances."""
@@ -28,7 +29,7 @@ class ScraperFactory(ScraperFactoryInterface):
             "hkex": HKEXScraper,
             "nasdaq": NasdaqScraper,
             "nyse": NasdaqScraper,  # Using NasdaqScraper for NYSE as it can extract NYSE listings too
-            "fse": FrankfurtScraper  # Frankfurt Stock Exchange
+            "fse": FrankfurtScraper,  # Frankfurt Stock Exchange
         }
 
     def get_scraper(self, exchange_code: str) -> BaseScraper:

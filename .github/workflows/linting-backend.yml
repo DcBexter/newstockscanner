@@ -1,0 +1,36 @@
+name: Backend Linting
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+
+jobs:
+  linting-backend:
+    name: Backend Linting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'pip'
+
+      - name: Install linting tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install black==24.3.0 isort==5.13.2
+
+      - name: Run black
+        run: |
+          cd backend
+          black --check .
+
+      - name: Run isort
+        run: |
+          cd backend
+          isort --check-only --profile black .

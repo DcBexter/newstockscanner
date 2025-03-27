@@ -3,15 +3,16 @@ Tests for the notification service.
 """
 
 import json
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from backend.scraper_service.services.notification_service import NotificationService, CircuitBreaker
+from backend.scraper_service.services.notification_service import CircuitBreaker, NotificationService
 
 
 class AsyncContextManagerMock:
     """A custom async context manager for mocking responses."""
+
     def __init__(self, mock_response):
         self.mock_response = mock_response
 
@@ -21,8 +22,10 @@ class AsyncContextManagerMock:
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         return None
 
+
 class AsyncContextManagerResponse:
     """Mock response that implements async context manager protocol."""
+
     def __init__(self, status=200, json_response=None, text_response=None):
         self.status = status
         self._json_response = json_response
@@ -36,8 +39,10 @@ class AsyncContextManagerResponse:
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         return None
 
+
 class AsyncContextManagerSession:
     """Mock session that implements async context manager protocol."""
+
     def __init__(self, mock_response):
         self.mock_response = mock_response
         self.post_call_count = 0
@@ -52,6 +57,7 @@ class AsyncContextManagerSession:
         """Returns a context manager that tracks calls and returns the mock response."""
         self.post_call_count += 1
         return self.mock_response
+
 
 class MockResponse:
     def __init__(self, status, json_response=None, text_response=None):
@@ -75,6 +81,7 @@ class MockResponse:
         self.text_called += 1
         return self._text_response
 
+
 class MockSession:
     def __init__(self, mock_response):
         self.mock_response = mock_response
@@ -89,6 +96,7 @@ class MockSession:
     async def post(self, url, json=None):
         self.post_called += 1
         return self.mock_response
+
 
 # Test the CircuitBreaker class
 class TestCircuitBreaker:
@@ -121,7 +129,7 @@ class TestCircuitBreaker:
 
         # Mock time.time() to control the timing
         current_time = 0
-        monkeypatch.setattr('time.time', lambda: current_time)
+        monkeypatch.setattr("time.time", lambda: current_time)
 
         # Trigger circuit open
         for _ in range(3):
@@ -157,6 +165,7 @@ class TestCircuitBreaker:
         cb.record_failure()
         assert cb.state == CircuitBreaker.OPEN
 
+
 # Test the NotificationService class
 @pytest.mark.asyncio
 class TestNotificationService:
@@ -182,7 +191,7 @@ class TestNotificationService:
         mock_session.__aexit__ = AsyncMock(return_value=None)
 
         # Mock the ClientSession class
-        with patch('aiohttp.ClientSession', return_value=mock_session):
+        with patch("aiohttp.ClientSession", return_value=mock_session):
             result = await notification_service.send_listing_notifications(sample_listings_data)
 
             # Verify the result
@@ -218,7 +227,7 @@ class TestNotificationService:
         notification_service._handle_fallback = AsyncMock(return_value=True)
 
         # Mock the ClientSession class
-        with patch('aiohttp.ClientSession', return_value=mock_session):
+        with patch("aiohttp.ClientSession", return_value=mock_session):
             result = await notification_service.send_listing_notifications(sample_listings_data)
 
             # Verify the result
@@ -248,7 +257,7 @@ class TestNotificationService:
         assert len(files) == 1
 
         # Verify file contents
-        with open(files[0], 'r') as f:
+        with open(files[0], "r") as f:
             saved_data = json.load(f)
             assert len(saved_data) == 2
             assert saved_data[0]["symbol"] == "TEST1"

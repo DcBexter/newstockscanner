@@ -8,17 +8,18 @@ for handling temporary failures.
 """
 
 import asyncio
-from typing import List, Dict, Any, Optional
 import logging
 import os
+from typing import Any, Dict, List, Optional
 
 from backend.api_service.services import ListingService
 from backend.config.log_config import setup_logging
-from backend.core.interfaces import DatabaseServiceInterface, NotificationServiceInterface, DatabaseHelperInterface, ScraperFactoryInterface
+from backend.core.interfaces import DatabaseHelperInterface, DatabaseServiceInterface, NotificationServiceInterface, ScraperFactoryInterface
 from backend.scraper_service.scraper_factory import ScraperFactory
-from backend.scraper_service.services import DatabaseService, DatabaseHelper, NotificationService
+from backend.scraper_service.services import DatabaseHelper, DatabaseService, NotificationService
 
 logger = logging.getLogger(__name__)
+
 
 class StockScanner:
     """
@@ -33,14 +34,17 @@ class StockScanner:
         MAX_RETRIES (int): Maximum number of retry attempts for failed scraping operations.
         RETRY_DELAY (int): Delay in seconds between retry attempts.
     """
+
     MAX_RETRIES = 3
     RETRY_DELAY = 5  # seconds
 
-    def __init__(self, 
-                 db_service: Optional[DatabaseServiceInterface] = None,
-                 notification_service: Optional[NotificationServiceInterface] = None,
-                 scraper_factory: Optional[ScraperFactoryInterface] = None,
-                 db_helper: Optional[DatabaseHelperInterface] = None):
+    def __init__(
+        self,
+        db_service: Optional[DatabaseServiceInterface] = None,
+        notification_service: Optional[NotificationServiceInterface] = None,
+        scraper_factory: Optional[ScraperFactoryInterface] = None,
+        db_helper: Optional[DatabaseHelperInterface] = None,
+    ):
         """
         Initialize the StockScanner with dependencies.
 
@@ -122,13 +126,13 @@ class StockScanner:
                         scraper = self.scraper_factory.get_scraper(name)
                         async with scraper as scraper:
                             # Get date range for incremental scraping
-                            incremental_scraping = os.getenv('INCREMENTAL_SCRAPING_ENABLED', 'false').lower() == 'true'
+                            incremental_scraping = os.getenv("INCREMENTAL_SCRAPING_ENABLED", "false").lower() == "true"
                             if incremental_scraping:
                                 start_date, end_date = scraper.get_incremental_date_range(name)
                                 logger.info(f"Using incremental scraping for {name} from {start_date} to {end_date}")
 
                                 # Pass date range to scraper if it supports it
-                                if hasattr(scraper, 'scrape_with_date_range'):
+                                if hasattr(scraper, "scrape_with_date_range"):
                                     result = await scraper.scrape_with_date_range(start_date, end_date)
                                 else:
                                     # Fall back to regular scraping
@@ -174,7 +178,6 @@ class StockScanner:
         logger.info(f"Total listings found across all scrapers: {len(all_listings)}")
         return all_listings
 
-
     async def save_to_database(self, listings: List[Any]) -> Dict[str, Any]:
         """
         Save listings to the database using the database service.
@@ -198,8 +201,8 @@ class StockScanner:
             if not listing_dict.get("exchange_code"):
                 if hasattr(listing, "exchange_code"):
                     listing_dict["exchange_code"] = listing.exchange_code
-                elif isinstance(listing, dict) and 'exchange' in listing and 'code' in listing['exchange']:
-                    listing_dict["exchange_code"] = listing['exchange']['code']
+                elif isinstance(listing, dict) and "exchange" in listing and "code" in listing["exchange"]:
+                    listing_dict["exchange_code"] = listing["exchange"]["code"]
 
             listing_dicts.append(listing_dict)
 
@@ -267,7 +270,7 @@ class StockScanner:
             "all_listings": len(all_listings),
             "saved_count": result.get("saved_count", 0),
             "new_listings": len(result.get("new_listings", [])),
-            "unnotified_sent": unnotified
+            "unnotified_sent": unnotified,
         }
 
     async def check_and_notify_unnotified(self) -> int:
@@ -282,6 +285,7 @@ class StockScanner:
                  Returns 0 if no unnotified listings were found or if notifications failed.
         """
         try:
+
             async def get_and_process_unnotified(db):
                 service = ListingService(db)
 
@@ -298,18 +302,21 @@ class StockScanner:
                 logger.info(f"Found {len(unnotified_listings)} unnotified listings from previous runs")
 
                 # Convert to dictionaries for notification service
-                listings_to_notify = [{
-                    "id": listing.id,
-                    "name": listing.name,
-                    "symbol": listing.symbol,
-                    "listing_date": listing.listing_date,
-                    "lot_size": listing.lot_size,
-                    "status": listing.status,
-                    "exchange_code": listing.exchange.code,
-                    "url": listing.url,
-                    "security_type": listing.security_type,
-                    "listing_detail_url": listing.listing_detail_url
-                } for listing in unnotified_listings]
+                listings_to_notify = [
+                    {
+                        "id": listing.id,
+                        "name": listing.name,
+                        "symbol": listing.symbol,
+                        "listing_date": listing.listing_date,
+                        "lot_size": listing.lot_size,
+                        "status": listing.status,
+                        "exchange_code": listing.exchange.code,
+                        "url": listing.url,
+                        "security_type": listing.security_type,
+                        "listing_detail_url": listing.listing_detail_url,
+                    }
+                    for listing in unnotified_listings
+                ]
 
                 # Send notifications
                 if await self.send_notifications(listings_to_notify):
@@ -328,6 +335,7 @@ class StockScanner:
         except Exception as e:
             logger.error(f"Error checking unnotified listings: {str(e)}")
             return 0
+
 
 async def start_continuous_scanning_loop():
     """
@@ -357,6 +365,7 @@ async def start_continuous_scanning_loop():
             logger.info("Scanner stopped by user")
             break
 
+
 if __name__ == "__main__":
     # Use a dedicated event loop
     loop = asyncio.new_event_loop()
@@ -379,4 +388,4 @@ if __name__ == "__main__":
                 logger.error(f"Error during cleanup: {str(ex)}")
 
         # Close the loop
-        loop.close() 
+        loop.close()

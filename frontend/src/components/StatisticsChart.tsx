@@ -1,14 +1,6 @@
 import { Box, useTheme } from '@mui/material';
 import dayjs from 'dayjs';
-import {
-  CartesianGrid,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 interface StatisticsChartProps {
   data: {

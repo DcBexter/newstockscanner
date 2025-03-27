@@ -6,13 +6,12 @@ to support dependency injection and reduce tight coupling between components.
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any, Optional, TypeVar, Callable, Awaitable
+from typing import Any, Awaitable, Callable, Dict, List, TypeVar
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.core.models import NotificationMessage, ListingBase
+T = TypeVar("T")
 
-T = TypeVar('T')
 
 class DatabaseHelperInterface(ABC):
     """Interface for database helper operations."""
@@ -33,6 +32,7 @@ class DatabaseHelperInterface(ABC):
         """
         pass
 
+
 class DatabaseServiceInterface(ABC):
     """Interface for database operations related to stock listings."""
 
@@ -52,6 +52,7 @@ class DatabaseServiceInterface(ABC):
         """
         pass
 
+
 class NotificationServiceInterface(ABC):
     """Interface for notification operations."""
 
@@ -67,6 +68,7 @@ class NotificationServiceInterface(ABC):
             bool: True if notifications were sent successfully, False otherwise.
         """
         pass
+
 
 class ScraperFactoryInterface(ABC):
     """Interface for scraper factory."""

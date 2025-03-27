@@ -1,11 +1,11 @@
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.core.exceptions import DatabaseQueryError, DatabaseCreateError, DatabaseUpdateError, DatabaseDeleteError
-from backend.core.models import ExchangeCreate
 from backend.core.cache import cache
+from backend.core.exceptions import DatabaseCreateError, DatabaseDeleteError, DatabaseQueryError, DatabaseUpdateError
+from backend.core.models import ExchangeCreate
 from backend.database.models import Exchange
 
 
@@ -96,10 +96,7 @@ class ExchangeService:
 
             # Create new exchange
             exchange = Exchange(
-                name=exchange_data["name"],
-                code=exchange_data["code"],
-                url=exchange_data["url"],
-                description=exchange_data.get("description", None)
+                name=exchange_data["name"], code=exchange_data["code"], url=exchange_data["url"], description=exchange_data.get("description", None)
             )
 
             self.db.add(exchange)
@@ -138,10 +135,7 @@ class ExchangeService:
 
             # Create new exchange
             db_exchange = Exchange(
-                name=exchange_data["name"],
-                code=exchange_data["code"],
-                url=exchange_data["url"],
-                description=exchange_data.get("description", None)
+                name=exchange_data["name"], code=exchange_data["code"], url=exchange_data["url"], description=exchange_data.get("description", None)
             )
 
             self.db.add(db_exchange)
