@@ -1,4 +1,3 @@
-import process from 'node:process';
 import { Refresh } from '@mui/icons-material';
 import { Button } from '@mui/material';
 import { api } from '../api/client';
@@ -6,7 +5,7 @@ import { useAppContext } from '../context/useAppContext';
 
 // Helper function for logging errors that only runs in development mode
 function devError(error: unknown): void {
-  if (process.env.NODE_ENV === 'development') {
+  if (import.meta.env.DEV) {
     console.error(error);
   }
 }
@@ -69,10 +68,15 @@ export default function ScanButton({ exchangeCode, isSelected }: ScanButtonProps
     }
   };
 
+  // Wrapper function to handle the async function without returning its promise
+  const handleClick = () => {
+    void handleExchangeScan();
+  };
+
   return (
     <Button
       variant="contained"
-      onClick={handleExchangeScan}
+      onClick={handleClick}
       disabled={isScanning}
       startIcon={<Refresh />}
       size="large"

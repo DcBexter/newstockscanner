@@ -8,14 +8,14 @@ from abc import ABC, abstractmethod
 from collections import defaultdict
 from contextlib import suppress
 from datetime import datetime, timedelta
-from typing import Optional, Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import aiohttp
 
 from backend.config.log_config import get_logger
 from backend.config.settings import get_settings
-from backend.core.exceptions import HTTPError, ScraperError, RateLimitError
-from backend.core.models import ScrapingResult, ListingBase
+from backend.core.exceptions import HTTPError, RateLimitError, ScraperError
+from backend.core.models import ListingBase, ScrapingResult
 
 settings = get_settings()
 logger = get_logger(__name__)
@@ -109,11 +109,7 @@ class RateLimiter:
                 self.request_counts[domain] = 0
             else:
                 # If the wait time is too long, raise an error
-                raise RateLimitError(
-                    message=f"Rate limit exceeded for {domain}",
-                    retry_after=int(time_until_reset),
-                    url=url
-                )
+                raise RateLimitError(message=f"Rate limit exceeded for {domain}", retry_after=int(time_until_reset), url=url)
 
         # Calculate minimum delay between requests (ensures even distribution)
         min_delay = 60 / self.requests_per_minute
@@ -133,12 +129,11 @@ class CircuitBreaker:
     """Circuit breaker pattern implementation to prevent overwhelming failing services."""
 
     # Circuit breaker states
-    CLOSED = 'closed'      # Normal operation, requests flow through
-    OPEN = 'open'          # Service is failing, requests are blocked
-    HALF_OPEN = 'half_open'  # Testing if service has recovered
+    CLOSED = "closed"  # Normal operation, requests flow through
+    OPEN = "open"  # Service is failing, requests are blocked
+    HALF_OPEN = "half_open"  # Testing if service has recovered
 
-    def __init__(self, failure_threshold: int = 5, recovery_timeout: int = 30, 
-                 half_open_max_calls: int = 1):
+    def __init__(self, failure_threshold: int = 5, recovery_timeout: int = 30, half_open_max_calls: int = 1):
         self.failure_threshold = failure_threshold
         self.recovery_timeout = recovery_timeout
         self.half_open_max_calls = half_open_max_calls
@@ -206,10 +201,9 @@ class BaseScraper(ABC):
         self.logger = logger
         self.circuit_breaker = CircuitBreaker()
         self.rate_limiter = RateLimiter(
-            requests_per_minute=self.settings.RATE_LIMIT_REQUESTS_PER_MINUTE,
-            domain_specific=self.settings.RATE_LIMIT_DOMAIN_SPECIFIC
+            requests_per_minute=self.settings.RATE_LIMIT_REQUESTS_PER_MINUTE, domain_specific=self.settings.RATE_LIMIT_DOMAIN_SPECIFIC
         )
-        self.fallback_enabled = self.settings.ENABLE_FALLBACK_SCRAPING if hasattr(self.settings, 'ENABLE_FALLBACK_SCRAPING') else True
+        self.fallback_enabled = self.settings.ENABLE_FALLBACK_SCRAPING if hasattr(self.settings, "ENABLE_FALLBACK_SCRAPING") else True
         self.last_successful_data: List[ListingBase] = []
         self.last_successful_time: Optional[datetime] = None
         self.last_scrape_time: Dict[str, datetime] = {}
@@ -246,19 +240,15 @@ class BaseScraper(ABC):
         """Cache a successful response."""
         try:
             cache_key = self._get_cache_key(url)
-            cache_dir = getattr(self.settings, 'SCRAPER_CACHE_DIR', './scraper_cache')
+            cache_dir = getattr(self.settings, "SCRAPER_CACHE_DIR", "./scraper_cache")
             os.makedirs(cache_dir, exist_ok=True)
             cache_file = os.path.join(cache_dir, f"{cache_key}.json")
 
-            cache_data = {
-                "url": url,
-                "timestamp": datetime.now().isoformat(),
-                "content": content
-            }
+            cache_data = {"url": url, "timestamp": datetime.now().isoformat(), "content": content}
 
             # Convert to JSON string first, then write to file to avoid type issues
             json_str = json.dumps(cache_data)
-            with open(cache_file, 'w', encoding='utf-8') as f:
+            with open(cache_file, "w", encoding="utf-8") as f:
                 f.write(json_str)
 
             self.logger.debug(f"Cached response for {url}")
@@ -269,19 +259,19 @@ class BaseScraper(ABC):
         """Get a cached response if available and not too old."""
         try:
             cache_key = self._get_cache_key(url)
-            cache_dir = getattr(self.settings, 'SCRAPER_CACHE_DIR', './scraper_cache')
+            cache_dir = getattr(self.settings, "SCRAPER_CACHE_DIR", "./scraper_cache")
             cache_file = os.path.join(cache_dir, f"{cache_key}.json")
 
             if not os.path.exists(cache_file):
                 return None
 
             # Check if cache is too old (default: 24 hours)
-            max_age = getattr(self.settings, 'SCRAPER_CACHE_MAX_AGE', 86400)  # 24 hours in seconds
+            max_age = getattr(self.settings, "SCRAPER_CACHE_MAX_AGE", 86400)  # 24 hours in seconds
             if os.path.getmtime(cache_file) + max_age < time.time():
                 self.logger.debug(f"Cache for {url} is too old")
                 return None
 
-            with open(cache_file, 'r', encoding='utf-8') as f:
+            with open(cache_file, "r", encoding="utf-8") as f:
                 cache_data = json.load(f)
 
             return cache_data.get("content")
@@ -296,7 +286,7 @@ class BaseScraper(ABC):
         headers: Optional[Dict[str, str]] = None,
         params: Optional[Dict[str, Any]] = None,
         data: Optional[Dict[str, Any]] = None,
-        timeout: Optional[int] = None
+        timeout: Optional[int] = None,
     ) -> str:
         """Make an HTTP request with retry logic and exponential backoff.
 
@@ -318,11 +308,7 @@ class BaseScraper(ABC):
         """
         # Check circuit breaker first
         if not self.circuit_breaker.allow_request():
-            raise ScraperError(
-                "Circuit breaker is OPEN - target service appears to be down",
-                status_code=503,
-                url=url
-            )
+            raise ScraperError("Circuit breaker is OPEN - target service appears to be down", status_code=503, url=url)
 
         # Apply rate limiting
         try:
@@ -340,12 +326,7 @@ class BaseScraper(ABC):
         for attempt in range(self.settings.MAX_RETRIES):
             try:
                 async with self.session.request(
-                    method=method,
-                    url=url,
-                    headers=default_headers,
-                    params=params,
-                    json=data,
-                    timeout=timeout_obj
+                    method=method, url=url, headers=default_headers, params=params, json=data, timeout=timeout_obj
                 ) as response:
                     response.raise_for_status()
                     content = await response.text()
@@ -360,13 +341,13 @@ class BaseScraper(ABC):
 
                 if attempt < self.settings.MAX_RETRIES - 1:
                     # Use exponential backoff with jitter
-                    delay = min(2 ** attempt + (attempt * 0.1), 30)
+                    delay = min(2**attempt + (attempt * 0.1), 30)
                     self.logger.warning(f"Retrying in {delay:.1f}s (Attempt {attempt + 1}/{self.settings.MAX_RETRIES})")
                     await asyncio.sleep(delay)
                 else:
                     raise HTTPError(
                         status_code=503,  # Service Unavailable
-                        message=f"Failed to connect to {url} after {self.settings.MAX_RETRIES} attempts: {str(e)}"
+                        message=f"Failed to connect to {url} after {self.settings.MAX_RETRIES} attempts: {str(e)}",
                     )
 
             except aiohttp.ServerDisconnectedError as e:
@@ -383,12 +364,12 @@ class BaseScraper(ABC):
                 else:
                     raise HTTPError(
                         status_code=503,  # Service Unavailable
-                        message=f"Server disconnected from {url} after {self.settings.MAX_RETRIES} attempts: {str(e)}"
+                        message=f"Server disconnected from {url} after {self.settings.MAX_RETRIES} attempts: {str(e)}",
                     )
 
             except aiohttp.ClientResponseError as e:
                 # Response errors - might be temporary
-                status = getattr(e, 'status', 500)
+                status = getattr(e, "status", 500)
                 error_msg = f"Response error from {url}: {status} - {str(e)}"
                 self.logger.error(error_msg)
 
@@ -397,7 +378,7 @@ class BaseScraper(ABC):
 
                 if status == 429:  # Too Many Requests
                     # Rate limiting - always retry with longer backoff
-                    retry_after = getattr(e, 'headers', {}).get('Retry-After')
+                    retry_after = getattr(e, "headers", {}).get("Retry-After")
                     delay = int(retry_after) if retry_after and retry_after.isdigit() else 2 ** (attempt + 2)
                     delay = min(delay, 60)  # Cap at 60 seconds
                     self.logger.warning(f"Rate limited by {url}. Retry after {delay}s")
@@ -406,27 +387,19 @@ class BaseScraper(ABC):
 
                 if attempt < self.settings.MAX_RETRIES - 1 and status >= 500:
                     # Only retry server errors
-                    delay = min(2 ** attempt, 30)
+                    delay = min(2**attempt, 30)
                     self.logger.warning(f"Retrying in {delay}s (Attempt {attempt + 1}/{self.settings.MAX_RETRIES})")
                     await asyncio.sleep(delay)
                 else:
-                    raise HTTPError(
-                        status_code=status,
-                        message=f"HTTP error from {url}: {status} - {str(e)}"
-                    )
+                    raise HTTPError(status_code=status, message=f"HTTP error from {url}: {status} - {str(e)}")
 
             except aiohttp.ClientError as e:
                 # Other client errors
-                self.logger.warning(
-                    f"Request to {url} failed (attempt {attempt + 1}/{self.settings.MAX_RETRIES}): {str(e)}"
-                )
+                self.logger.warning(f"Request to {url} failed (attempt {attempt + 1}/{self.settings.MAX_RETRIES}): {str(e)}")
                 if attempt == self.settings.MAX_RETRIES - 1:
                     self.circuit_breaker.record_failure()
-                    raise HTTPError(
-                        status_code=getattr(e, 'status', 500),
-                        message=f"Failed after {self.settings.MAX_RETRIES} attempts: {str(e)}"
-                    )
-                await asyncio.sleep(min(2 ** attempt, 30))  # Exponential backoff with maximum delay
+                    raise HTTPError(status_code=getattr(e, "status", 500), message=f"Failed after {self.settings.MAX_RETRIES} attempts: {str(e)}")
+                await asyncio.sleep(min(2**attempt, 30))  # Exponential backoff with maximum delay
 
             except asyncio.TimeoutError:
                 # Timeout errors
@@ -435,14 +408,13 @@ class BaseScraper(ABC):
 
                 if attempt < self.settings.MAX_RETRIES - 1:
                     # Use exponential backoff
-                    delay = min(2 ** attempt, 30)
+                    delay = min(2**attempt, 30)
                     self.logger.warning(f"Retrying in {delay}s (Attempt {attempt + 1}/{self.settings.MAX_RETRIES})")
                     await asyncio.sleep(delay)
                 else:
                     self.circuit_breaker.record_failure()
                     raise HTTPError(
-                        status_code=408,  # Request Timeout
-                        message=f"Request to {url} timed out after {self.settings.MAX_RETRIES} attempts"
+                        status_code=408, message=f"Request to {url} timed out after {self.settings.MAX_RETRIES} attempts"  # Request Timeout
                     )
 
             except Exception as e:
@@ -452,16 +424,12 @@ class BaseScraper(ABC):
 
                 if attempt < self.settings.MAX_RETRIES - 1:
                     # Use exponential backoff
-                    delay = min(2 ** attempt, 30)
+                    delay = min(2**attempt, 30)
                     self.logger.warning(f"Retrying in {delay}s (Attempt {attempt + 1}/{self.settings.MAX_RETRIES})")
                     await asyncio.sleep(delay)
                 else:
                     self.circuit_breaker.record_failure()
-                    raise ScraperError(
-                        message=f"Unexpected error after {self.settings.MAX_RETRIES} attempts: {str(e)}",
-                        status_code=500,
-                        url=url
-                    )
+                    raise ScraperError(message=f"Unexpected error after {self.settings.MAX_RETRIES} attempts: {str(e)}", status_code=500, url=url)
 
     @abstractmethod
     async def scrape(self) -> ScrapingResult:
@@ -484,7 +452,7 @@ class BaseScraper(ABC):
         """
         return self.last_scrape_time.get(source_id)
 
-    def set_last_scrape_time(self, source_id: str, time: datetime = None) -> None:
+    async def set_last_scrape_time(self, source_id: str, time: datetime = None) -> None:
         """Set the last time this source was scraped.
 
         Args:
@@ -549,15 +517,14 @@ class BaseScraper(ABC):
         # Check if we have cached data to use as fallback
         if self.fallback_enabled and self.last_successful_data:
             # Only use cached data if it's not too old (default: 24 hours)
-            max_age_hours = getattr(self.settings, 'FALLBACK_MAX_AGE_HOURS', 24)
-            if (self.last_successful_time and 
-                (datetime.now() - self.last_successful_time).total_seconds() < max_age_hours * 3600):
+            max_age_hours = getattr(self.settings, "FALLBACK_MAX_AGE_HOURS", 24)
+            if self.last_successful_time and (datetime.now() - self.last_successful_time).total_seconds() < max_age_hours * 3600:
                 self.logger.warning(f"Using fallback data from previous successful run ({len(self.last_successful_data)} items)")
                 return ScrapingResult(
                     success=True,  # Mark as success but with a warning
                     message=f"Used fallback data due to error: {error_msg}",
                     data=self.last_successful_data,
-                    is_fallback=True
+                    is_fallback=True,
                 )
 
         # No fallback data available
@@ -602,7 +569,7 @@ class BaseScraper(ABC):
                             success=True,
                             message=f"Used fallback data due to issues: {result.message}",
                             data=self.last_successful_data,
-                            is_fallback=True
+                            is_fallback=True,
                         )
 
                 return result

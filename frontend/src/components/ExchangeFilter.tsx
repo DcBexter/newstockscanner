@@ -21,6 +21,9 @@ interface ExchangeFilterProps {
  * Includes an "All Exchanges" option and a list of available exchanges.
  *
  * @param props - Component props
+ * @param props.exchanges - List of available exchanges to display in the dropdown
+ * @param props.value - Currently selected exchange code (empty string means "All Exchanges")
+ * @param props.onChange - Callback function triggered when the user selects a different exchange
  * @returns A FormControl component with a Select dropdown for exchanges
  */
 export default function ExchangeFilter({ exchanges, value, onChange }: ExchangeFilterProps) {

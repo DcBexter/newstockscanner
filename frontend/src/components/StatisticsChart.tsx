@@ -40,12 +40,12 @@ export function StatisticsChart({ data }: StatisticsChartProps) {
           <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
           <XAxis
             dataKey="date"
-            tickFormatter={date => dayjs(date).format('MMM D')}
+            tickFormatter={(date: string) => dayjs(date).format('MMM D')}
             stroke={theme.palette.text.secondary}
           />
           <YAxis stroke={theme.palette.text.secondary} />
           <Tooltip
-            labelFormatter={date => dayjs(date).format('YYYY-MM-DD')}
+            labelFormatter={(date: string) => dayjs(date).format('YYYY-MM-DD')}
             formatter={value => [value, 'Listings']}
             contentStyle={{
               backgroundColor: theme.palette.background.paper,

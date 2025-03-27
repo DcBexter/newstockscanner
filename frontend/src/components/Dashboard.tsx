@@ -14,6 +14,7 @@ import {
 import { EXCHANGE_CODES } from '../constants/exchanges';
 import { useAppContext } from '../context/useAppContext';
 import { findCommonExchanges, isExchangeSelected } from '../utils/exchangeUtils';
+import DateRangeFilter from './DateRangeFilter';
 import ExchangeFilter from './ExchangeFilter';
 import ListingsTable from './ListingsTable';
 import MonthPagination from './MonthPagination';
@@ -116,7 +117,7 @@ export default function Dashboard({ toggleColorMode, currentTheme }: DashboardPr
 
       {/* Notification handling moved to NotificationSection component */}
 
-      {error && (
+      {error !== undefined && error !== null && error !== '' && (
         <Paper sx={{ p: 2, mb: 3, bgcolor: 'error.light', color: 'error.contrastText' }}>
           <Typography fontWeight="medium">{error}</Typography>
         </Paper>
@@ -140,6 +141,13 @@ export default function Dashboard({ toggleColorMode, currentTheme }: DashboardPr
                 value={selectedExchange}
                 onChange={value => dispatch(actions.setSelectedExchange(value))}
               />
+
+              {!isPaginationMode && (
+                <DateRangeFilter
+                  value={days}
+                  onChange={value => dispatch(actions.setDays(value))}
+                />
+              )}
 
               <MonthPagination
                 onMonthChange={handleMonthChange}
