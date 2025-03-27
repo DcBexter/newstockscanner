@@ -16,7 +16,7 @@ RUN apt-get update && \
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 
-# Install Python dependencies
+# Copy and install requirements first (better caching)
 COPY ./requirements.txt .
 RUN pip wheel --no-cache-dir --no-deps --wheel-dir /app/wheels -r requirements.txt
 
@@ -35,12 +35,18 @@ RUN apt-get update && \
     libpq5 && \
     rm -rf /var/lib/apt/lists/*
 
-# Copy wheels from builder stage
+# Copy wheels from builder stage and install
 COPY --from=builder /app/wheels /wheels
 RUN pip install --no-cache /wheels/*
 
-# Copy application code
-COPY . .
+# Copy only necessary application code
+COPY ./api_service ./api_service
+COPY ./config ./config
+COPY ./core ./core
+COPY ./database ./database
+COPY ./notification_service ./notification_service
+COPY ./scraper_service ./scraper_service
+COPY ./pyproject.toml .
 
 # Set permissions
 RUN chown -R app:app /app

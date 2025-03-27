@@ -20,9 +20,7 @@ services:
 
   # Test Runner: Service to run the tests
   test_runner:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile.dev
+    image: test_runner:latest
     command: pytest -v
     env_file: .env.test
     depends_on:
