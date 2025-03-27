@@ -52,7 +52,6 @@ The application consists of four main components:
 │
 ├── docker-compose.yml     # Docker Compose configuration for production
 ├── docker-compose.dev.yml # Docker Compose configuration for development
-├── docker-compose.test.yml # Docker Compose configuration for testing
 ├── start-dev.bat          # Script to start the application in development mode
 ├── start-prod.bat         # Script to start the application in production mode
 ├── run-tests.bat          # Script to run tests on Windows
@@ -98,10 +97,9 @@ The production frontend will be available at `http://localhost:80`.
 
 ### Test Environment
 The test environment is designed for running automated tests:
-- Separate PostgreSQL database for testing
 - Mock environment variables for external services
-- Volume mounts for accessing test files
 - Pytest configuration for running tests
+- Code coverage reporting
 
 To run the tests:
 ```bash
@@ -109,10 +107,10 @@ To run the tests:
 # or
 ./run-tests.sh   # On Unix-like systems
 # or
-docker-compose -f docker-compose.test.yml up --build  # On any platform
+cd backend && pytest --cov --cov-branch --cov-report=xml  # Run directly with pytest
 ```
 
-The tests will run in the Docker container and the results will be displayed in the console.
+The test results and coverage report will be displayed in the console.
 
 ## Progress Tracking
 
