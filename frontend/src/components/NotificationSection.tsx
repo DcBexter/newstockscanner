@@ -3,6 +3,14 @@ import { Notifications } from '@mui/icons-material';
 import { useAppContext } from '../context/AppContext';
 import { NOTIFICATION_DURATION } from '../constants/exchanges';
 
+// Helper function for logging that only runs in development mode
+const devLog = (message: string): void => {
+  if (process.env.NODE_ENV === 'development') {
+    // eslint-disable-next-line no-console
+    console.log(message);
+  }
+};
+
 /**
  * Component for handling notifications and notification permissions
  */
@@ -30,7 +38,7 @@ export default function NotificationSection() {
   const requestNotificationPermission = () => {
     if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
       Notification.requestPermission().then(permission => {
-        console.log(`Notification permission ${permission}`);
+        devLog(`Notification permission ${permission}`);
       });
     }
   };
@@ -39,7 +47,9 @@ export default function NotificationSection() {
     <>
       {/* Notification Icons */}
       {hasNewListings && (
-        <Tooltip title={`${newListingsCount} new listing${newListingsCount > 1 ? 's' : ''} detected`}>
+        <Tooltip
+          title={`${newListingsCount} new listing${newListingsCount > 1 ? 's' : ''} detected`}
+        >
           <Badge badgeContent={newListingsCount} color="error" overlap="circular">
             <IconButton color="primary" onClick={acknowledgeNewListings}>
               <Notifications />
@@ -47,7 +57,7 @@ export default function NotificationSection() {
           </Badge>
         </Tooltip>
       )}
-      
+
       {Notification.permission !== 'granted' && Notification.permission !== 'denied' && (
         <Tooltip title="Enable notifications">
           <IconButton color="primary" onClick={requestNotificationPermission}>
@@ -57,15 +67,15 @@ export default function NotificationSection() {
       )}
 
       {/* New Listings Notification */}
-      <Snackbar 
-        open={notificationOpen} 
-        autoHideDuration={NOTIFICATION_DURATION} 
+      <Snackbar
+        open={notificationOpen}
+        autoHideDuration={NOTIFICATION_DURATION}
         onClose={handleNotificationClose}
         anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
       >
-        <Alert 
-          onClose={handleNotificationClose} 
-          severity="success" 
+        <Alert
+          onClose={handleNotificationClose}
+          severity="success"
           variant="filled"
           sx={{ width: '100%' }}
         >

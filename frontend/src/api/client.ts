@@ -1,9 +1,17 @@
 import axios from 'axios';
 import { API_URL, CACHE_SETTINGS, API_ENDPOINTS } from '../config/api.config';
 
+// Helper function for logging that only runs in development mode
+const devLog = (message: string): void => {
+  if (process.env.NODE_ENV === 'development') {
+    // eslint-disable-next-line no-console
+    console.log(message);
+  }
+};
+
 /**
  * API Client for the Stock Scanner Application
- * 
+ *
  * Note on naming conventions:
  * - The backend API uses snake_case for all field names and parameters
  * - The frontend uses camelCase for variables and functions
@@ -90,18 +98,20 @@ export const api = {
 
     // Check cache first
     if (isCacheValid(cacheKey)) {
-      console.log('Using cached listings data');
+      devLog('Using cached listings data');
       return cache[cacheKey].data as Listing[];
     }
 
     // If not in cache or expired, make the API call
-    const { data } = await axios.get<PaginatedListings>(`${API_URL}/${API_ENDPOINTS.LISTINGS}/`, { params });
+    const { data } = await axios.get<PaginatedListings>(`${API_URL}/${API_ENDPOINTS.LISTINGS}/`, {
+      params,
+    });
 
     // Store in cache
     cache[cacheKey] = {
       data: data.items,
       timestamp: Date.now(),
-      params: JSON.stringify(params)
+      params: JSON.stringify(params),
     } as CacheEntry<Listing[]>;
 
     return data.items;
@@ -112,7 +122,7 @@ export const api = {
 
     // Check cache first
     if (isCacheValid(cacheKey)) {
-      console.log('Using cached exchanges data');
+      devLog('Using cached exchanges data');
       return cache[cacheKey].data as Exchange[];
     }
 
@@ -122,7 +132,7 @@ export const api = {
     // Store in cache
     cache[cacheKey] = {
       data,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     } as CacheEntry<Exchange[]>;
 
     return data;
@@ -133,7 +143,7 @@ export const api = {
 
     // Check cache first
     if (isCacheValid(cacheKey)) {
-      console.log('Using cached statistics data');
+      devLog('Using cached statistics data');
       return cache[cacheKey].data as Statistics;
     }
 
@@ -146,7 +156,7 @@ export const api = {
     cache[cacheKey] = {
       data,
       timestamp: Date.now(),
-      params: JSON.stringify({ days })
+      params: JSON.stringify({ days }),
     } as CacheEntry<Statistics>;
 
     return data;
@@ -154,8 +164,8 @@ export const api = {
 
   triggerScrape: async (exchange?: string): Promise<unknown> => {
     const { data } = await axios.post(`${API_URL}/${API_ENDPOINTS.SCRAPE}/`, null, {
-      params: exchange ? { exchange } : undefined
+      params: exchange ? { exchange } : undefined,
     });
     return data;
-  }
-}; 
+  },
+};
