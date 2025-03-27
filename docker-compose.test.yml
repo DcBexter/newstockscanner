@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: ${POSTGRES_DB:-backend_test}
     volumes:
-      - postgres_test_data:/var/lib/postgresql/data
+      - ./.postgres-data:/var/lib/postgresql/data
       - ./backend/database/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "5432:5432"
@@ -29,6 +29,3 @@ services:
     volumes:
       - ./backend:/app/backend
       - ./frontend/pytest.ini:/app/pytest.ini
-
-volumes:
-  postgres_test_data:

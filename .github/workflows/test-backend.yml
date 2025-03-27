@@ -23,6 +23,24 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Cache pytest results
+        uses: actions/cache@v4
+        with:
+          path: |
+            .pytest_cache
+            backend/.pytest_cache
+          key: ${{ runner.os }}-pytest-${{ hashFiles('backend/tests/**/*.py') }}
+          restore-keys: |
+            ${{ runner.os }}-pytest-
+
+      - name: Cache PostgreSQL data
+        uses: actions/cache@v4
+        with:
+          path: .postgres-data
+          key: ${{ runner.os }}-postgres-${{ hashFiles('backend/database/init.sql', 'backend/database/models.py') }}
+          restore-keys: |
+            ${{ runner.os }}-postgres-
+
       - name: Run backend tests
         run: |
           # Create a .env file with test values
@@ -34,6 +52,9 @@ jobs:
           echo "DEBUG=True" >> .env
           echo "NOTIFICATION_SERVICE_URL=http://notification_service:8001" >> .env.test
           echo "SCRAPER_SERVICE_URL=http://scraper_service:8002" >> .env.test
+
+          # Ensure the PostgreSQL data directory exists
+          mkdir -p .postgres-data
 
           # Build test_runner image with cache
           docker buildx build \
