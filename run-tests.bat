@@ -1,4 +1,5 @@
 @echo off
-cd backend
+pushd backend
+if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 python -m pytest --cov --cov-branch --cov-report=xml
-cd ..
+popd
