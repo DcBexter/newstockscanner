@@ -51,11 +51,13 @@ jobs:
 
       - name: Run black
         run: |
-          black --check ./backend
+          cd backend
+          black --check .
 
       - name: Run isort
         run: |
-          isort --check-only --profile black ./backend
+          cd backend
+          isort --check-only --profile black .
 
   test-backend:
     name: Backend Tests

@@ -11,11 +11,15 @@ repos:
     rev: 24.3.0
     hooks:
       - id: black
+        files: ^backend/
+        args: [--config=backend/pyproject.toml]
 
   - repo: https://github.com/pycqa/isort
     rev: 5.13.2
     hooks:
       - id: isort
+        files: ^backend/
+        args: [--settings-path=backend/pyproject.toml]
 
   - repo: https://github.com/pre-commit/mirrors-eslint
     rev: v9.23.0
