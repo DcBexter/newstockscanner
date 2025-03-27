@@ -4,11 +4,12 @@ Tests for the NASDAQ scraper functionality.
 
 import json
 from datetime import datetime, timedelta
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 import pytest_asyncio
 
+from backend.core.models import ListingBase, ScrapingResult
 from backend.scraper_service.scrapers.nasdaq_scraper import NasdaqScraper
 
 
