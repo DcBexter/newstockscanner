@@ -6,24 +6,24 @@ export interface AppState {
   listings: Listing[];
   exchanges: Exchange[];
   statistics: Statistics | null;
-  
+
   // Filters
   selectedExchange: string;
   days: number;
   startDate: string | null;
   endDate: string | null;
   isPaginationMode: boolean;
-  
+
   // UI state
   isLoadingListings: boolean;
   isLoadingExchanges: boolean;
   isLoadingStatistics: boolean;
   isScanning: boolean;
   showStatistics: boolean;
-  
+
   // Error state
   error: string | null;
-  
+
   // Notification state
   hasNewListings: boolean;
   notificationOpen: boolean;
@@ -32,34 +32,36 @@ export interface AppState {
 }
 
 // Action types
+/* eslint-disable no-unused-vars */
 export enum ActionType {
   // Data actions
   SET_LISTINGS = 'SET_LISTINGS',
   SET_EXCHANGES = 'SET_EXCHANGES',
   SET_STATISTICS = 'SET_STATISTICS',
-  
+
   // Filter actions
   SET_SELECTED_EXCHANGE = 'SET_SELECTED_EXCHANGE',
   SET_DAYS = 'SET_DAYS',
   SET_DATE_RANGE = 'SET_DATE_RANGE',
   SET_PAGINATION_MODE = 'SET_PAGINATION_MODE',
-  
+
   // UI actions
   SET_LOADING_LISTINGS = 'SET_LOADING_LISTINGS',
   SET_LOADING_EXCHANGES = 'SET_LOADING_EXCHANGES',
   SET_LOADING_STATISTICS = 'SET_LOADING_STATISTICS',
   SET_SCANNING = 'SET_SCANNING',
   TOGGLE_STATISTICS = 'TOGGLE_STATISTICS',
-  
+
   // Error actions
   SET_ERROR = 'SET_ERROR',
   CLEAR_ERROR = 'CLEAR_ERROR',
-  
+
   // Notification actions
   SET_NEW_LISTINGS = 'SET_NEW_LISTINGS',
   SET_NOTIFICATION_OPEN = 'SET_NOTIFICATION_OPEN',
   ACKNOWLEDGE_NEW_LISTINGS = 'ACKNOWLEDGE_NEW_LISTINGS',
 }
+/* eslint-enable no-unused-vars */
 
 // Action interfaces
 export interface SetListingsAction {
