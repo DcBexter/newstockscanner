@@ -6,7 +6,8 @@ import asyncio
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from fastapi import FastAPI, APIRouter
+import pytest_asyncio
+from fastapi import APIRouter, FastAPI
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,10 +21,12 @@ def test_module_level():
     """Simple test to help pytest discover this module."""
     assert True
 
+
 @pytest.fixture
 def test_client():
     """Create a test client for the FastAPI application."""
     return TestClient(app)
+
 
 def create_test_app() -> FastAPI:
     """Create a test app instance with the same configuration as the main app."""
@@ -35,7 +38,8 @@ def create_test_app() -> FastAPI:
     )
     return test_app
 
-@pytest.fixture(scope="function")
+
+@pytest_asyncio.fixture(scope="function")
 async def cleanup_connections():
     """Fixture to ensure database connections are properly closed."""
     yield
@@ -62,11 +66,13 @@ async def cleanup_connections():
             if task is not asyncio.current_task() and not task.done():
                 task.cancel()
 
+
 @pytest.fixture(scope="function")
 async def mock_db():
     """Fixture to provide a mock database session."""
     mock_session = AsyncMock(spec=AsyncSession)
     yield mock_session
+
 
 class TestAPIService:
     def test_root_endpoint(self, test_client):
@@ -89,9 +95,8 @@ class TestAPIService:
 
         # Apply the mock
         from backend.database.session import get_db
-        app.dependency_overrides = {
-            get_db: override_get_db
-        }
+
+        app.dependency_overrides = {get_db: override_get_db}
 
         # Make the request
         response = test_client.get("/health")
@@ -124,6 +129,7 @@ class TestAPIService:
         assert response.json()["error"] == "Test error"
         assert response.json()["type"] == "StockScannerError"
 
+
 @pytest.mark.asyncio
 class TestAPIServiceAsync:
     @pytest.mark.asyncio
@@ -135,12 +141,12 @@ class TestAPIServiceAsync:
         mock_close_db = AsyncMock()
 
         # Apply the mocks
-        monkeypatch.setattr('backend.database.session.init_db', mock_init_db)
-        monkeypatch.setattr('backend.database.session.close_db', mock_close_db)
-        monkeypatch.setattr('backend.config.log_config.setup_logging', mock_setup_logging)
-        monkeypatch.setattr('backend.api_service.app.setup_logging', mock_setup_logging)
-        monkeypatch.setattr('backend.api_service.app.init_db', mock_init_db)
-        monkeypatch.setattr('backend.api_service.app.close_db', mock_close_db)
+        monkeypatch.setattr("backend.database.session.init_db", mock_init_db)
+        monkeypatch.setattr("backend.database.session.close_db", mock_close_db)
+        monkeypatch.setattr("backend.config.log_config.setup_logging", mock_setup_logging)
+        monkeypatch.setattr("backend.api_service.app.setup_logging", mock_setup_logging)
+        monkeypatch.setattr("backend.api_service.app.init_db", mock_init_db)
+        monkeypatch.setattr("backend.api_service.app.close_db", mock_close_db)
 
         # Create a test app
         test_app = create_test_app()
@@ -167,10 +173,10 @@ class TestAPIServiceAsync:
         mock_init_db = AsyncMock()
 
         # Apply the mocks
-        monkeypatch.setattr('backend.database.session.close_db', mock_close_db)
-        monkeypatch.setattr('backend.database.session.init_db', mock_init_db)
-        monkeypatch.setattr('backend.api_service.app.close_db', mock_close_db)
-        monkeypatch.setattr('backend.api_service.app.init_db', mock_init_db)
+        monkeypatch.setattr("backend.database.session.close_db", mock_close_db)
+        monkeypatch.setattr("backend.database.session.init_db", mock_init_db)
+        monkeypatch.setattr("backend.api_service.app.close_db", mock_close_db)
+        monkeypatch.setattr("backend.api_service.app.init_db", mock_init_db)
 
         # Create a test app
         test_app = create_test_app()
