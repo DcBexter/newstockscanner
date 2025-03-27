@@ -22,7 +22,7 @@ class NasdaqScraper(BaseScraper):
         # Main URLs for data sources
         self.html_url = "https://www.nasdaq.com/market-activity/ipos"
         self.api_url = "https://api.nasdaq.com/api/ipo/calendar"
-        self.api_url_alt = "https://api.nasdaq.com/api/ipo/calendar?date=2025-03"  # Include a date parameter
+        self.api_url_alt = "https://api.nasdaq.com/api/ipo/calendar?date="  # Base URL for date-specific API
         self.base_url = "https://www.nasdaq.com"
 
         # Common headers for API requests
@@ -82,41 +82,44 @@ class NasdaqScraper(BaseScraper):
 
             # If same month, just use one API call
             if start_str == end_str:
-                self.api_url_alt = f"https://api.nasdaq.com/api/ipo/calendar?date={start_str}"
-                return await self._try_alternative_api()
+                api_url = f"https://api.nasdaq.com/api/ipo/calendar?date={start_str}"
+                try:
+                    self.logger.info(f"Trying API endpoint with date: {api_url}")
+                    content = await self._make_request(api_url, headers=self.api_headers, timeout=60)
 
-            # Otherwise, try multiple months
-            all_listings = []
-            current_date = start_date
+                    self.logger.debug("Successfully retrieved data from NASDAQ API endpoint")
+                    listings = self.parse_api_data(content)
 
-            while current_date <= end_date:
-                month_str = current_date.strftime("%Y-%m")
-                self.logger.info(f"Scraping NASDAQ IPOs for {month_str}")
+                    if listings:
+                        self._log_listings_found(listings, "date-specific API")
+                        return ScrapingResult(
+                            success=True, message=f"Successfully scraped {len(listings)} listings from NASDAQ using date API", data=listings
+                        )
+                except (asyncio.TimeoutError, Exception) as e:
+                    self.logger.warning(f"Failed to fetch from date-specific NASDAQ API: {type(e).__name__}")
+                    return await self._scrape_html()
 
-                # Update API URL for this month
-                self.api_url_alt = f"https://api.nasdaq.com/api/ipo/calendar?date={month_str}"
+            # Make a direct API call with the start date parameter first
+            api_url = f"https://api.nasdaq.com/api/ipo/calendar?date={start_str}"
+            try:
+                self.logger.info(f"Trying API endpoint with date: {api_url}")
+                content = await self._make_request(api_url, headers=self.api_headers, timeout=60)
 
-                # Try to get data for this month
-                result = await self._try_alternative_api()
-                if result and result.success and result.data:
-                    self.logger.info(f"Found {len(result.data)} listings for {month_str}")
-                    all_listings.extend(result.data)
+                self.logger.debug(f"Successfully retrieved data from NASDAQ API endpoint for {start_str}")
+                listings = self.parse_api_data(content)
 
-                # Move to next month
-                if current_date.month == 12:
-                    current_date = current_date.replace(year=current_date.year + 1, month=1)
-                else:
-                    current_date = current_date.replace(month=current_date.month + 1)
+                if listings:
+                    self._log_listings_found(listings, f"date-specific API for {start_str}")
+                    return ScrapingResult(
+                        success=True, message=f"Successfully scraped {len(listings)} listings from NASDAQ using date API", data=listings
+                    )
+            except (asyncio.TimeoutError, Exception) as e:
+                self.logger.warning(f"Failed to fetch from date-specific NASDAQ API for {start_str}: {type(e).__name__}")
+                # Continue to try other months if this fails
 
-            if all_listings:
-                return ScrapingResult(
-                    success=True,
-                    message=f"Successfully scraped {len(all_listings)} listings from NASDAQ using incremental scraping",
-                    data=all_listings,
-                )
-
-            # If no data found, fall back to HTML scraping
-            self.logger.warning("No data found with incremental API scraping, falling back to HTML")
+            # If we get here, the start date API call failed or returned no listings
+            # Fall back to HTML scraping
+            self.logger.warning("No data found with API scraping, falling back to HTML")
             return await self._scrape_html()
 
         except Exception as e:
@@ -183,7 +186,7 @@ class NasdaqScraper(BaseScraper):
                 return ScrapingResult(success=False, message="No listings found in NASDAQ HTML", data=[])
         except Exception as html_err:
             self.logger.error(f"HTML scraping fallback also failed: {type(html_err).__name__}")
-            return ScrapingResult(success=False, message=f"All scraping methods failed for NASDAQ", data=[])
+            return ScrapingResult(success=False, message=f"Error scraping NASDAQ: All scraping methods failed", data=[])
 
     def _log_listings_found(self, listings: List[ListingBase], source: str) -> None:
         """Log information about found listings."""
