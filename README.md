@@ -64,16 +64,13 @@ The application consists of four main components:
 The application supports two environments: development and production.
 
 ### Development Environment
-
 The development environment is designed for developers and includes:
-
 - Hot reloading for both frontend and backend
 - Volume mounts for live code updates
 - Debug mode enabled
 - Source maps and detailed error messages
 
 To start the application in development mode:
-
 ```bash
 ./start-dev.bat  # On Windows
 # or
@@ -83,16 +80,13 @@ docker-compose -f docker-compose.dev.yml up --build  # On any platform
 The development frontend will be available at `http://localhost:5173`.
 
 ### Production Environment
-
 The production environment is optimized for performance and security:
-
 - Compiled frontend assets served by Nginx
 - No hot reloading or volume mounts
 - Optimized Docker images
 - Non-root users for services
 
 To start the application in production mode:
-
 ```bash
 ./start-prod.bat  # On Windows
 # or
@@ -102,15 +96,12 @@ docker-compose up --build  # On any platform
 The production frontend will be available at `http://localhost:80`.
 
 ### Test Environment
-
 The test environment is designed for running automated tests:
-
 - Mock environment variables for external services
 - Pytest configuration for running tests
 - Code coverage reporting
 
 To run the tests:
-
 ```bash
 ./run-tests.bat  # On Windows
 # or
