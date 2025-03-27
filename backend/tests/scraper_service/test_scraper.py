@@ -5,14 +5,15 @@ Tests for the stock scanner functionality.
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+import pytest_asyncio
 
-from backend.core.models import ScrapingResult, ListingBase
+from backend.core.models import ListingBase, ScrapingResult
 from backend.scraper_service.scraper import StockScanner
 
 
 @pytest.mark.asyncio
 class TestStockScanner:
-    @pytest.fixture
+    @pytest_asyncio.fixture
     async def stock_scanner(self):
         """Create a stock scanner instance for testing."""
         scanner = StockScanner()
@@ -40,11 +41,7 @@ class TestStockScanner:
             mock_instance.__aexit__.return_value = None
 
             # Set up the scrape method to return success with sample data
-            mock_instance.scrape.return_value = ScrapingResult(
-                success=True,
-                message=f"Successfully scraped {name}",
-                data=sample_listings
-            )
+            mock_instance.scrape.return_value = ScrapingResult(success=True, message=f"Successfully scraped {name}", data=sample_listings)
 
             # Make the mock class return the mock instance
             mock_class.return_value = mock_instance
@@ -75,11 +72,7 @@ class TestStockScanner:
             mock_instance.__aexit__.return_value = None
 
             # Set up the scrape method to return success with sample data
-            mock_instance.scrape.return_value = ScrapingResult(
-                success=True,
-                message=f"Successfully scraped {name}",
-                data=sample_listings
-            )
+            mock_instance.scrape.return_value = ScrapingResult(success=True, message=f"Successfully scraped {name}", data=sample_listings)
 
             # Make the mock class return the mock instance
             mock_class.return_value = mock_instance
@@ -103,11 +96,9 @@ class TestStockScanner:
     async def test_save_to_database(self, stock_scanner, sample_listings_data):
         """Test saving listings to the database."""
         # Mock the database service
-        stock_scanner.db_service.save_listings = AsyncMock(return_value={
-            "saved_count": len(sample_listings_data),
-            "total": len(sample_listings_data),
-            "new_listings": sample_listings_data
-        })
+        stock_scanner.db_service.save_listings = AsyncMock(
+            return_value={"saved_count": len(sample_listings_data), "total": len(sample_listings_data), "new_listings": sample_listings_data}
+        )
 
         # Call the method under test
         result = await stock_scanner.save_to_database(sample_listings_data)
@@ -139,11 +130,9 @@ class TestStockScanner:
         """Test the full scan and process workflow."""
         # Mock the component methods
         stock_scanner.scan_listings = AsyncMock(return_value=sample_listings_data)
-        stock_scanner.save_to_database = AsyncMock(return_value={
-            "saved_count": len(sample_listings_data),
-            "total": len(sample_listings_data),
-            "new_listings": sample_listings_data
-        })
+        stock_scanner.save_to_database = AsyncMock(
+            return_value={"saved_count": len(sample_listings_data), "total": len(sample_listings_data), "new_listings": sample_listings_data}
+        )
         stock_scanner.check_and_notify_unnotified = AsyncMock(return_value=0)
         stock_scanner.send_notifications = AsyncMock(return_value=True)
 
@@ -174,10 +163,7 @@ class TestStockScanner:
             return 2  # Return 2 unnotified listings processed
 
         # Apply the mock
-        monkeypatch.setattr(
-            'backend.scraper_service.services.DatabaseHelper.execute_db_operation',
-            mock_execute_db_operation
-        )
+        monkeypatch.setattr("backend.scraper_service.services.DatabaseHelper.execute_db_operation", mock_execute_db_operation)
 
         # Call the method under test
         result = await stock_scanner.check_and_notify_unnotified()

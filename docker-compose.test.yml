@@ -30,7 +30,7 @@ services:
         condition: service_healthy
     volumes:
       - ./backend:/app/backend
-      - ./pytest.ini:/app/pytest.ini
+      - ./frontend/pytest.ini:/app/pytest.ini
 
 volumes:
   postgres_test_data:
