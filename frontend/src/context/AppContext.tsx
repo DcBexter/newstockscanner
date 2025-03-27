@@ -37,10 +37,7 @@ const useFetchExchanges = (dispatch: React.Dispatch<AppAction>) => {
   }, [dispatch]);
 };
 
-const useFetchListings = (
-  state: AppState,
-  dispatch: React.Dispatch<AppAction>
-) => {
+const useFetchListings = (state: AppState, dispatch: React.Dispatch<AppAction>) => {
   useEffect(() => {
     const fetchListings = async () => {
       dispatch(actions.setLoadingListings(true));
@@ -52,9 +49,9 @@ const useFetchListings = (
 
         // Reset notification state when filters change
         dispatch(actions.setNewListings(false, 0));
-      } catch (err) {
+      } catch {
         dispatch(actions.setError('Failed to load listings'));
-        console.error(err);
+        // console.error(err);
       } finally {
         dispatch(actions.setLoadingListings(false));
       }
@@ -64,8 +61,9 @@ const useFetchListings = (
     const fetchData = () => {
       const promise = fetchListings();
       // Handle any uncaught errors
-      promise.catch(err => {
-        console.error('Unhandled promise rejection in fetchListings:', err);
+      promise.catch(() => {
+        console.error('Unhandled promise rejection in fetchListings');
+        //console.error(err)
       });
     };
 
@@ -73,10 +71,7 @@ const useFetchListings = (
   }, [state, dispatch]);
 };
 
-const useFetchStatistics = (
-  state: AppState,
-  dispatch: React.Dispatch<AppAction>
-) => {
+const useFetchStatistics = (state: AppState, dispatch: React.Dispatch<AppAction>) => {
   useEffect(() => {
     const fetchStatistics = async () => {
       try {
@@ -107,10 +102,7 @@ const useFetchStatistics = (
   }, [state.days, state.isPaginationMode, dispatch]);
 };
 
-const useListingPolling = (
-  state: AppState,
-  dispatch: React.Dispatch<AppAction>
-) => {
+const useListingPolling = (state: AppState, dispatch: React.Dispatch<AppAction>) => {
   const pollingIntervalRef = useRef<number | null>(null);
 
   const fetchListingsForNotification = useCallback(async () => {
@@ -128,7 +120,7 @@ const useListingPolling = (
         if (Notification.permission === 'granted') {
           new Notification('New Financial Listings', {
             body: `${newCount} new listing${newCount > 1 ? 's' : ''} detected!`,
-            icon: '/logo.png'
+            icon: '/logo.png',
           });
         }
 
@@ -164,7 +156,12 @@ const useListingPolling = (
         pollingIntervalRef.current = null;
       }
     };
-  }, [state.days, state.selectedExchange, state.previousListingsCount, fetchListingsForNotification]);
+  }, [
+    state.days,
+    state.selectedExchange,
+    state.previousListingsCount,
+    fetchListingsForNotification,
+  ]);
 };
 
 // Helper function to create listing params
@@ -207,9 +204,5 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     actions,
   };
 
-  return (
-    <AppContext.Provider value={contextValue}>
-      {children}
-    </AppContext.Provider>
-  );
+  return <AppContext.Provider value={contextValue}>{children}</AppContext.Provider>;
 };
