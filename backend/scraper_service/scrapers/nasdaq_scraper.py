@@ -64,9 +64,7 @@ class NasdaqScraper(BaseScraper):
                 data=[],
             )
 
-    async def scrape_with_date_range(
-        self, start_date: datetime, end_date: datetime
-    ) -> ScrapingResult:
+    async def scrape_with_date_range(self, start_date: datetime, end_date: datetime) -> ScrapingResult:
         """Scrape NASDAQ IPO listings within a specific date range.
 
         This method modifies the API URL to include date parameters for incremental scraping.
@@ -80,9 +78,7 @@ class NasdaqScraper(BaseScraper):
         Returns:
             ScrapingResult: The result of the scraping operation.
         """
-        self.logger.info(
-            f"Starting NASDAQ IPO incremental scraping from {start_date} to {end_date}"
-        )
+        self.logger.info(f"Starting NASDAQ IPO incremental scraping from {start_date} to {end_date}")
 
         try:
             # Format dates for API
@@ -94,13 +90,9 @@ class NasdaqScraper(BaseScraper):
                 api_url = f"https://api.nasdaq.com/api/ipo/calendar?date={start_str}"
                 try:
                     self.logger.info(f"Trying API endpoint with date: {api_url}")
-                    content = await self._make_request(
-                        api_url, headers=self.api_headers, timeout=60
-                    )
+                    content = await self._make_request(api_url, headers=self.api_headers, timeout=60)
 
-                    self.logger.debug(
-                        "Successfully retrieved data from NASDAQ API endpoint"
-                    )
+                    self.logger.debug("Successfully retrieved data from NASDAQ API endpoint")
                     listings = self.parse_api_data(content)
 
                     if listings:
@@ -111,37 +103,27 @@ class NasdaqScraper(BaseScraper):
                             data=listings,
                         )
                 except (asyncio.TimeoutError, Exception) as e:
-                    self.logger.warning(
-                        f"Failed to fetch from date-specific NASDAQ API: {type(e).__name__}"
-                    )
+                    self.logger.warning(f"Failed to fetch from date-specific NASDAQ API: {type(e).__name__}")
                     return await self._scrape_html()
 
             # Make a direct API call with the start date parameter first
             api_url = f"https://api.nasdaq.com/api/ipo/calendar?date={start_str}"
             try:
                 self.logger.info(f"Trying API endpoint with date: {api_url}")
-                content = await self._make_request(
-                    api_url, headers=self.api_headers, timeout=60
-                )
+                content = await self._make_request(api_url, headers=self.api_headers, timeout=60)
 
-                self.logger.debug(
-                    f"Successfully retrieved data from NASDAQ API endpoint for {start_str}"
-                )
+                self.logger.debug(f"Successfully retrieved data from NASDAQ API endpoint for {start_str}")
                 listings = self.parse_api_data(content)
 
                 if listings:
-                    self._log_listings_found(
-                        listings, f"date-specific API for {start_str}"
-                    )
+                    self._log_listings_found(listings, f"date-specific API for {start_str}")
                     return ScrapingResult(
                         success=True,
                         message=f"Successfully scraped {len(listings)} listings from NASDAQ using date API",
                         data=listings,
                     )
             except (asyncio.TimeoutError, Exception) as e:
-                self.logger.warning(
-                    f"Failed to fetch from date-specific NASDAQ API for {start_str}: {type(e).__name__}"
-                )
+                self.logger.warning(f"Failed to fetch from date-specific NASDAQ API for {start_str}: {type(e).__name__}")
                 # Continue to try other months if this fails
 
             # If we get here, the start date API call failed or returned no listings
@@ -162,9 +144,7 @@ class NasdaqScraper(BaseScraper):
         """Try to fetch data from the primary API endpoint."""
         try:
             self.logger.info(f"Trying primary NASDAQ API endpoint: {self.api_url}")
-            content = await self._make_request(
-                self.api_url, headers=self.api_headers, timeout=60
-            )
+            content = await self._make_request(self.api_url, headers=self.api_headers, timeout=60)
 
             self.logger.debug("Successfully retrieved NASDAQ IPO API data")
             listings = self.parse_api_data(content)
@@ -177,9 +157,7 @@ class NasdaqScraper(BaseScraper):
                     data=listings,
                 )
         except (asyncio.TimeoutError, Exception) as e:
-            self.logger.warning(
-                f"Failed to fetch from primary NASDAQ API: {type(e).__name__}"
-            )
+            self.logger.warning(f"Failed to fetch from primary NASDAQ API: {type(e).__name__}")
 
         return None
 
@@ -187,13 +165,9 @@ class NasdaqScraper(BaseScraper):
         """Try to fetch data from the alternative API endpoint."""
         try:
             self.logger.info(f"Trying alternative API endpoint: {self.api_url_alt}")
-            content = await self._make_request(
-                self.api_url_alt, headers=self.api_headers, timeout=60
-            )
+            content = await self._make_request(self.api_url_alt, headers=self.api_headers, timeout=60)
 
-            self.logger.debug(
-                "Successfully retrieved data from alternative NASDAQ API endpoint"
-            )
+            self.logger.debug("Successfully retrieved data from alternative NASDAQ API endpoint")
             listings = self.parse_api_data(content)
 
             if listings:
@@ -204,9 +178,7 @@ class NasdaqScraper(BaseScraper):
                     data=listings,
                 )
         except (asyncio.TimeoutError, Exception) as e:
-            self.logger.warning(
-                f"Failed to fetch from alternative NASDAQ API: {type(e).__name__}"
-            )
+            self.logger.warning(f"Failed to fetch from alternative NASDAQ API: {type(e).__name__}")
 
         return None
 
@@ -232,9 +204,7 @@ class NasdaqScraper(BaseScraper):
                     data=listings,
                 )
             else:
-                return ScrapingResult(
-                    success=False, message="No listings found in NASDAQ HTML", data=[]
-                )
+                return ScrapingResult(success=False, message="No listings found in NASDAQ HTML", data=[])
         except Exception as html_err:
             self.logger.error(f"HTML scraping fallback also failed: {type(html_err).__name__}")
             return ScrapingResult(
@@ -245,13 +215,9 @@ class NasdaqScraper(BaseScraper):
 
     def _log_listings_found(self, listings: List[ListingBase], source: str) -> None:
         """Log information about found listings."""
-        self.logger.info(
-            f"Successfully parsed {len(listings)} IPO listings from {source}"
-        )
+        self.logger.info(f"Successfully parsed {len(listings)} IPO listings from {source}")
         for listing in listings:
-            self.logger.debug(
-                f"Found listing: {listing.name} ({listing.symbol}) - {listing.listing_date}"
-            )
+            self.logger.debug(f"Found listing: {listing.name} ({listing.symbol}) - {listing.listing_date}")
 
     def parse_api_data(self, content: str) -> List[ListingBase]:
         """Parse the API JSON data to extract IPO listings."""
@@ -277,18 +243,14 @@ class NasdaqScraper(BaseScraper):
                     self.logger.debug(f"No data in '{section_name}' section")
                     continue
 
-                self.logger.debug(
-                    f"Found {len(section_data['rows'])} rows in '{section_name}' section"
-                )
+                self.logger.debug(f"Found {len(section_data['rows'])} rows in '{section_name}' section")
                 for row in section_data["rows"]:
                     try:
                         listing = self._create_listing_from_api_row(row, status)
                         if listing:
                             listings.append(listing)
                     except Exception as e:
-                        self.logger.warning(
-                            f"Error processing {section_name} row: {type(e).__name__}"
-                        )
+                        self.logger.warning(f"Error processing {section_name} row: {type(e).__name__}")
 
             return listings
 
@@ -299,9 +261,7 @@ class NasdaqScraper(BaseScraper):
             self.logger.error(f"Error in parse_api_data: {str(e)}")
             return []
 
-    def _create_listing_from_api_row(
-        self, row: Dict[str, Any], status: str = "Upcoming IPO"
-    ) -> Optional[ListingBase]:
+    def _create_listing_from_api_row(self, row: Dict[str, Any], status: str = "Upcoming IPO") -> Optional[ListingBase]:
         """Create a ListingBase object from an API row."""
         try:
             # Extract company name
@@ -342,9 +302,7 @@ class NasdaqScraper(BaseScraper):
                 status=listing_status,
                 exchange_code=exchange_code,
                 security_type="Equity",
-                url=f"https://www.nasdaq.com/market-activity/stocks/{symbol.lower()}"
-                if symbol
-                else None,
+                url=f"https://www.nasdaq.com/market-activity/stocks/{symbol.lower()}" if symbol else None,
                 listing_detail_url=None,
             )
 
@@ -426,11 +384,7 @@ class NasdaqScraper(BaseScraper):
                 headers = table.find_all("th")
                 header_text = " ".join([h.text.strip() for h in headers])
 
-                if (
-                    "Symbol" not in header_text
-                    and "Company" not in header_text
-                    and "Date" not in header_text
-                ):
+                if "Symbol" not in header_text and "Company" not in header_text and "Date" not in header_text:
                     continue
 
                 self.logger.debug("Found potential IPO table")
@@ -518,17 +472,13 @@ class NasdaqScraper(BaseScraper):
                         if listing:
                             listings.append(listing)
                     except Exception as e:
-                        self.logger.warning(
-                            f"Error processing script data item: {str(e)}"
-                        )
+                        self.logger.warning(f"Error processing script data item: {str(e)}")
             except Exception as e:
                 self.logger.warning(f"Error extracting data from script: {str(e)}")
 
         return listings
 
-    def _create_listing_from_script_item(
-        self, item: Dict[str, Any]
-    ) -> Optional[ListingBase]:
+    def _create_listing_from_script_item(self, item: Dict[str, Any]) -> Optional[ListingBase]:
         """Create a listing from a script tag JSON item."""
         try:
             name = item.get("companyName", "")
@@ -568,9 +518,7 @@ class NasdaqScraper(BaseScraper):
     async def get_filtered_listings(self, filter_type: str = "all") -> pd.DataFrame:
         """Get listings with optional filtering."""
         try:
-            content = await self._make_request(
-                self.api_url, headers=self.api_headers, timeout=60
-            )
+            content = await self._make_request(self.api_url, headers=self.api_headers, timeout=60)
 
             listings = self.parse_api_data(content)
 
