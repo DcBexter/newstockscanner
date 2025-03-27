@@ -1,6 +1,6 @@
 [tool.black]
 line-length = 150
-target-version = ['py313']
+target-version = ['py311']
 include = '\.pyi?$'
 exclude = '''
 /(
@@ -18,7 +18,7 @@ exclude = '''
 
 [tool.isort]
 profile = "black"
-line_length = 88
+line_length = 150
 multi_line_output = 3
 include_trailing_comma = true
 force_grid_wrap = 0

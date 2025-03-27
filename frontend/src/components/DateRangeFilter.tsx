@@ -1,10 +1,19 @@
 import { FormControl, InputLabel, MenuItem, Select } from '@mui/material';
+import { SIZES } from '../theme';
 
+/**
+ * Props for the DateRangeFilter component
+ */
 interface DateRangeFilterProps {
+  /** Currently selected date range in days */
   value: number;
+  /** Callback function triggered when the user selects a different date range */
   onChange: (value: number) => void;
 }
 
+/**
+ * Predefined date range options for the dropdown
+ */
 const ranges = [
   { value: 7, label: 'Last 7 days' },
   { value: 30, label: 'Last 30 days' },
@@ -13,12 +22,22 @@ const ranges = [
   { value: 365, label: 'Last year' },
 ];
 
+/**
+ * DateRangeFilter component
+ *
+ * Renders a dropdown menu that allows users to filter stock listings by date range.
+ * Provides predefined options for common time periods (7 days, 30 days, etc.).
+ *
+ * @param props - Component props
+ * @returns A FormControl component with a Select dropdown for date ranges
+ */
 export default function DateRangeFilter({ value, onChange }: DateRangeFilterProps) {
-  // Find the current range label based on value
+  // Convert the numeric value to a human-readable label for the aria-label attribute
+  // Falls back to 'Custom' if the value doesn't match any predefined range
   const currentRangeLabel = ranges.find(range => range.value === value)?.label || 'Custom';
 
   return (
-    <FormControl sx={{ minWidth: 200 }}>
+    <FormControl sx={{ minWidth: SIZES.minWidth.formControl }}>
       <InputLabel>Time Range</InputLabel>
       <Select
         value={value}

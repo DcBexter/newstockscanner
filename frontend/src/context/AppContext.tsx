@@ -66,9 +66,9 @@ function useFetchListings(state: AppState, dispatch: React.Dispatch<AppAction>) 
         // Reset notification state when filters change
         dispatch(actions.setNewListings(false, 0));
       }
-      catch {
+      catch (err) {
         dispatch(actions.setError('Failed to load listings'));
-        // console.error(err);
+        devError(err);
       }
       finally {
         dispatch(actions.setLoadingListings(false));
