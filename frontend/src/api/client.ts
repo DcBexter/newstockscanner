@@ -1,10 +1,9 @@
-import process from 'node:process';
 import axios from 'axios';
 import { API_ENDPOINTS, API_URL, CACHE_SETTINGS } from '../config/api.config';
 
 // Helper function for logging that only runs in development mode
 function devLog(message: string): void {
-  if (process.env.NODE_ENV === 'development') {
+  if (import.meta.env.DEV) {
     // eslint-disable-next-line no-console
     console.log(message);
   }
@@ -42,7 +41,7 @@ function getCacheKey(endpoint: string, params?: Record<string, unknown>): string
 // Helper to check if cache is valid
 function isCacheValid(cacheKey: string): boolean {
   const entry = cache[cacheKey];
-  if (!entry)
+  if (entry === undefined || entry === null)
     return false;
 
   const now = Date.now();
@@ -165,9 +164,10 @@ export const api = {
   },
 
   triggerScrape: async (exchange?: string): Promise<unknown> => {
-    const { data } = await axios.post(`${API_URL}/${API_ENDPOINTS.SCRAPE}/`, null, {
-      params: exchange ? { exchange } : undefined,
+    // Explicitly type the response to avoid unsafe assignment
+    const response: { data: unknown; } = await axios.post(`${API_URL}/${API_ENDPOINTS.SCRAPE}/`, null, {
+      params: exchange !== undefined && exchange !== null && exchange !== '' ? { exchange } : undefined,
     });
-    return data;
+    return response.data;
   },
 };

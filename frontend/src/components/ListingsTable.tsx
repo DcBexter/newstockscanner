@@ -22,7 +22,7 @@ import {
 } from '@mui/material';
 import dayjs from 'dayjs';
 import localizedFormat from 'dayjs/plugin/localizedFormat';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 // Initialize dayjs plugins
 dayjs.extend(localizedFormat);
@@ -41,35 +41,32 @@ export default function ListingsTable({ data, isLoading }: ListingsTableProps) {
   const [sortField, setSortField] = useState<SortField>('listing_date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [searchTerm, setSearchTerm] = useState('');
-  const [filteredData, setFilteredData] = useState<Listing[]>([]);
   const theme = useTheme();
 
-  // Clean data when props change
-  useEffect(() => {
+  // Memoize filtered data based on searchTerm and data
+  const filteredData = useMemo(() => {
     // Ensure data is an array
-    setFilteredData(Array.isArray(data) ? data : []);
-  }, [data]);
+    const dataArray = Array.isArray(data) ? data : [];
 
-  // Filter data when search term changes
-  useEffect(() => {
+    // If search term is empty, return all data
     if (!searchTerm.trim()) {
-      setFilteredData(Array.isArray(data) ? data : []);
-      return;
+      return dataArray;
     }
 
+    // Filter data based on search term
     const lowercasedTerm = searchTerm.toLowerCase();
-    // Ensure data is an array before filtering
-    const dataArray = Array.isArray(data) ? data : [];
-    const results = dataArray.filter((item) => {
-      return (
-        (item.symbol && item.symbol.toLowerCase().includes(lowercasedTerm))
-        || (item.name && item.name.toLowerCase().includes(lowercasedTerm))
-        || (item.exchange_code && item.exchange_code.toLowerCase().includes(lowercasedTerm))
-        || (item.security_type && item.security_type.toLowerCase().includes(lowercasedTerm))
-      );
-    });
+    return dataArray.filter((item) => {
+      const symbolMatch = item.symbol !== undefined && item.symbol !== null && item.symbol !== ''
+        && item.symbol.toLowerCase().includes(lowercasedTerm);
+      const nameMatch = item.name !== undefined && item.name !== null && item.name !== ''
+        && item.name.toLowerCase().includes(lowercasedTerm);
+      const exchangeMatch = item.exchange_code !== undefined && item.exchange_code !== null && item.exchange_code !== ''
+        && item.exchange_code.toLowerCase().includes(lowercasedTerm);
+      const typeMatch = item.security_type !== undefined && item.security_type !== null && item.security_type !== ''
+        && item.security_type.toLowerCase().includes(lowercasedTerm);
 
-    setFilteredData(results);
+      return symbolMatch || nameMatch || exchangeMatch || typeMatch;
+    });
   }, [searchTerm, data]);
 
   // Handle sorting
@@ -81,8 +78,8 @@ export default function ListingsTable({ data, isLoading }: ListingsTableProps) {
 
   // Sort data based on current sort settings
   const sortedData = useMemo(() => {
-    if (!sortField)
-      return filteredData || [];
+    if (sortField === undefined || sortField === null || sortField === '')
+      return filteredData !== undefined && filteredData !== null ? filteredData : [];
 
     // Ensure filteredData is an array before spreading
     const dataToSort = Array.isArray(filteredData) ? filteredData : [];
@@ -240,7 +237,7 @@ export default function ListingsTable({ data, isLoading }: ListingsTableProps) {
                             {listing.symbol || 'N/A'}
                           </Box>
 
-                          {listing.url && (
+                          {listing.url !== undefined && listing.url !== null && listing.url !== '' && (
                             <Tooltip title="Company Information">
                               <IconButton
                                 href={listing.url}
@@ -261,7 +258,7 @@ export default function ListingsTable({ data, isLoading }: ListingsTableProps) {
                             </Tooltip>
                           )}
 
-                          {listing.listing_detail_url && (
+                          {listing.listing_detail_url !== undefined && listing.listing_detail_url !== null && listing.listing_detail_url !== '' && (
                             <Tooltip title="Listing Details">
                               <IconButton
                                 href={listing.listing_detail_url}
@@ -279,7 +276,7 @@ export default function ListingsTable({ data, isLoading }: ListingsTableProps) {
                       </TableCell>
                       <TableCell>
                         <Chip
-                          label={listing.exchange_code || 'Unknown'}
+                          label={listing.exchange_code !== undefined && listing.exchange_code !== null && listing.exchange_code !== '' ? listing.exchange_code : 'Unknown'}
                           size="small"
                           variant="outlined"
                           sx={{

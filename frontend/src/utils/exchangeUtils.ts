@@ -28,7 +28,7 @@ export function isExchangeSelected(
   selectedExchange: string | null | undefined,
   exchange: Exchange | undefined,
 ): boolean {
-  if (!selectedExchange || !exchange)
+  if (selectedExchange === null || selectedExchange === undefined || selectedExchange === '' || exchange === null || exchange === undefined)
     return false;
   return selectedExchange === exchange.code || selectedExchange === exchange.id.toString();
 }

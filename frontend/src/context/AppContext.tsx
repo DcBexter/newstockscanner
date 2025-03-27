@@ -1,7 +1,6 @@
 import type { AppContextType } from './AppContextTypes';
 import type { AppAction, AppState } from './types';
-import process from 'node:process';
-import React, { useCallback, useEffect, useReducer, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
 import { api } from '../api/client';
 import * as actions from './actions';
 import { AppContext } from './AppContextTypes';
@@ -9,8 +8,8 @@ import { initialState, reducer } from './reducer';
 
 // Helper function for logging errors that only runs in development mode
 function devError(error: unknown, message?: string): void {
-  if (process.env.NODE_ENV === 'development') {
-    if (message) {
+  if (import.meta.env.DEV) {
+    if (message !== undefined && message !== null && message !== '') {
       console.error(message, error);
     }
     else {
@@ -58,7 +57,13 @@ function useFetchListings(state: AppState, dispatch: React.Dispatch<AppAction>) 
     const fetchListings = async () => {
       dispatch(actions.setLoadingListings(true));
       try {
-        const params = createListingParams(state);
+        const params = createListingParams({
+          isPaginationMode: state.isPaginationMode,
+          startDate: state.startDate,
+          endDate: state.endDate,
+          days: state.days,
+          selectedExchange: state.selectedExchange,
+        });
         const listingsData = await api.getListings(params);
 
         dispatch(actions.setListings(listingsData));
@@ -85,7 +90,14 @@ function useFetchListings(state: AppState, dispatch: React.Dispatch<AppAction>) 
     };
 
     fetchData();
-  }, [state, dispatch]);
+  }, [
+    state.isPaginationMode,
+    state.startDate,
+    state.endDate,
+    state.days,
+    state.selectedExchange,
+    dispatch,
+  ]);
 }
 
 function useFetchStatistics(state: AppState, dispatch: React.Dispatch<AppAction>) {
@@ -125,26 +137,32 @@ function useListingPolling(state: AppState, dispatch: React.Dispatch<AppAction>)
   const pollingIntervalRef = useRef<number | null>(null);
 
   const fetchListingsForNotification = useCallback(async () => {
+    // Destructure the state properties we need to use
+    const { days, startDate, endDate, isPaginationMode, selectedExchange, previousListingsCount } = state;
+
     try {
-      const params = createListingParams(state);
+      const params = createListingParams({
+        days,
+        startDate,
+        endDate,
+        isPaginationMode,
+        selectedExchange,
+      });
       const listingsData = await api.getListings(params);
       const currentCount = listingsData.length;
 
       // If this isn't the first check and we have more listings than before
-      if (state.previousListingsCount > 0 && currentCount > state.previousListingsCount) {
-        const newCount = currentCount - state.previousListingsCount;
+      if (previousListingsCount > 0 && currentCount > previousListingsCount) {
+        const newCount = currentCount - previousListingsCount;
         dispatch(actions.setNewListings(true, newCount));
 
         // Show browser notification if allowed
         if (Notification.permission === 'granted') {
-          const notification = new Notification('New Financial Listings', {
+          // Use void to indicate intentional non-use of the notification object
+          void new Notification('New Financial Listings', {
             body: `${newCount} new listing${newCount > 1 ? 's' : ''} detected!`,
             icon: '/logo.png',
           });
-          // Use the notification object to avoid 'new' for side effects warning
-          if (notification) {
-            // The notification is created and can be used if needed
-          }
         }
 
         // Update the listings without setting loading state
@@ -154,11 +172,14 @@ function useListingPolling(state: AppState, dispatch: React.Dispatch<AppAction>)
     catch (err) {
       devError(err, 'Background polling error:');
     }
-  }, [state, dispatch]);
+  }, [
+    dispatch,
+    state,
+  ]);
 
   useEffect(() => {
     // Setup auto-polling for new listings
-    if (pollingIntervalRef.current) {
+    if (pollingIntervalRef.current !== null && pollingIntervalRef.current !== undefined && pollingIntervalRef.current !== 0) {
       window.clearInterval(pollingIntervalRef.current);
     }
 
@@ -175,7 +196,7 @@ function useListingPolling(state: AppState, dispatch: React.Dispatch<AppAction>)
     }, POLLING_INTERVAL_MS);
 
     return () => {
-      if (pollingIntervalRef.current) {
+      if (pollingIntervalRef.current !== null && pollingIntervalRef.current !== undefined && pollingIntervalRef.current !== 0) {
         window.clearInterval(pollingIntervalRef.current);
         pollingIntervalRef.current = null;
       }
@@ -189,20 +210,34 @@ function useListingPolling(state: AppState, dispatch: React.Dispatch<AppAction>)
 }
 
 // Helper function to create listing params
-function createListingParams(state: AppState): Record<string, string | number> {
+function createListingParams({
+  isPaginationMode,
+  startDate,
+  endDate,
+  days,
+  selectedExchange,
+}: {
+  isPaginationMode: boolean;
+  startDate: string | null;
+  endDate: string | null;
+  days: number;
+  selectedExchange: string;
+}): Record<string, string | number> {
   const params: Record<string, string | number> = {};
 
   // Use either date range or days depending on mode
-  if (state.isPaginationMode && state.startDate && state.endDate) {
-    params.start_date = state.startDate;
-    params.end_date = state.endDate;
+  if (isPaginationMode
+    && startDate !== undefined && startDate !== null && startDate !== ''
+    && endDate !== undefined && endDate !== null && endDate !== '') {
+    params.start_date = startDate;
+    params.end_date = endDate;
   }
   else {
-    params.days = state.days;
+    params.days = days;
   }
 
-  if (state.selectedExchange) {
-    params.exchange_code = state.selectedExchange;
+  if (selectedExchange) {
+    params.exchange_code = selectedExchange;
   }
 
   return params;
@@ -222,12 +257,12 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   useFetchStatistics(state, dispatch);
   useListingPolling(state, dispatch);
 
-  // Create context value
-  const contextValue: AppContextType = {
+  // Create memoized context value to prevent unnecessary re-renders
+  const contextValue = useMemo<AppContextType>(() => ({
     state,
     dispatch,
     actions,
-  };
+  }), [state]);
 
-  return <AppContext.Provider value={contextValue}>{children}</AppContext.Provider>;
+  return <AppContext value={contextValue}>{children}</AppContext>;
 };

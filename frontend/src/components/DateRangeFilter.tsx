@@ -29,12 +29,18 @@ const ranges = [
  * Provides predefined options for common time periods (7 days, 30 days, etc.).
  *
  * @param props - Component props
+ * @param props.value - Currently selected date range in days
+ * @param props.onChange - Callback function triggered when the user selects a different date range
  * @returns A FormControl component with a Select dropdown for date ranges
  */
 export default function DateRangeFilter({ value, onChange }: DateRangeFilterProps) {
   // Convert the numeric value to a human-readable label for the aria-label attribute
   // Falls back to 'Custom' if the value doesn't match any predefined range
-  const currentRangeLabel = ranges.find(range => range.value === value)?.label || 'Custom';
+  const foundRange = ranges.find(range => range.value === value);
+  const currentRangeLabel = foundRange !== undefined && foundRange !== null
+    && foundRange.label !== undefined && foundRange.label !== null && foundRange.label !== ''
+    ? foundRange.label
+    : 'Custom';
 
   return (
     <FormControl sx={{ minWidth: SIZES.minWidth.formControl }}>
