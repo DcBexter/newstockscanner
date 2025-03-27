@@ -89,7 +89,9 @@ class TestNasdaqScraper:
         """
 
     @pytest.mark.asyncio
-    async def test_scrape_success_primary_api(self, nasdaq_scraper, sample_api_response):
+    async def test_scrape_success_primary_api(
+        self, nasdaq_scraper, sample_api_response
+    ):
         """Test successful scraping from primary API endpoint."""
         # Setup mock to return sample data
         nasdaq_scraper._make_request.return_value = sample_api_response
@@ -98,7 +100,9 @@ class TestNasdaqScraper:
         result = await nasdaq_scraper.scrape()
 
         # Verify the API was called correctly
-        nasdaq_scraper._make_request.assert_called_once_with(nasdaq_scraper.api_url, headers=nasdaq_scraper.api_headers, timeout=60)
+        nasdaq_scraper._make_request.assert_called_once_with(
+            nasdaq_scraper.api_url, headers=nasdaq_scraper.api_headers, timeout=60
+        )
 
         # Verify the result
         assert result.success is True
@@ -112,7 +116,9 @@ class TestNasdaqScraper:
         assert "TEST3" in symbols
 
     @pytest.mark.asyncio
-    async def test_scrape_fallback_to_alternative_api(self, nasdaq_scraper, sample_api_response):
+    async def test_scrape_fallback_to_alternative_api(
+        self, nasdaq_scraper, sample_api_response
+    ):
         """Test fallback to alternative API when primary API fails."""
         # Setup mocks to simulate primary API failure
         nasdaq_scraper._make_request.side_effect = [
@@ -125,8 +131,12 @@ class TestNasdaqScraper:
 
         # Verify both APIs were called
         assert nasdaq_scraper._make_request.call_count == 2
-        nasdaq_scraper._make_request.assert_any_call(nasdaq_scraper.api_url, headers=nasdaq_scraper.api_headers, timeout=60)
-        nasdaq_scraper._make_request.assert_any_call(nasdaq_scraper.api_url_alt, headers=nasdaq_scraper.api_headers, timeout=60)
+        nasdaq_scraper._make_request.assert_any_call(
+            nasdaq_scraper.api_url, headers=nasdaq_scraper.api_headers, timeout=60
+        )
+        nasdaq_scraper._make_request.assert_any_call(
+            nasdaq_scraper.api_url_alt, headers=nasdaq_scraper.api_headers, timeout=60
+        )
 
         # Verify the result
         assert result.success is True
@@ -259,7 +269,9 @@ class TestNasdaqScraper:
         _ = await nasdaq_scraper.get_nyse_listings()
 
         # Verify the API was called
-        nasdaq_scraper._make_request.assert_called_with(nasdaq_scraper.api_url, headers=nasdaq_scraper.api_headers, timeout=60)
+        nasdaq_scraper._make_request.assert_called_with(
+            nasdaq_scraper.api_url, headers=nasdaq_scraper.api_headers, timeout=60
+        )
 
         # Verify the filtering works
         # Note: In a real test, we would check the actual filtering logic,
