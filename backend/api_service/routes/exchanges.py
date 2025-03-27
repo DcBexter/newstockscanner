@@ -9,16 +9,17 @@ the database.
 
 import logging
 from functools import wraps
-from typing import List, Callable, Any
+from typing import Any, Callable, List
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.api_service.services import ExchangeService
 from backend.core.models import Exchange, ExchangeCreate
 from backend.database.session import get_db
-from backend.api_service.services import ExchangeService
 
 logger = logging.getLogger(__name__)
+
 
 # Error handling decorator
 def handle_route_errors(operation_name: str):
@@ -31,6 +32,7 @@ def handle_route_errors(operation_name: str):
     Returns:
         Callable: Decorated function with error handling
     """
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         async def wrapper(*args, **kwargs) -> Any:
@@ -45,17 +47,18 @@ def handle_route_errors(operation_name: str):
             except Exception as e:
                 # Log unexpected errors and return a generic message
                 logger.error(f"Unexpected error in {operation_name}: {str(e)}", exc_info=True)
-                raise HTTPException(
-                    status_code=500, 
-                    detail=f"An unexpected error occurred while {operation_name}"
-                )
+                raise HTTPException(status_code=500, detail=f"An unexpected error occurred while {operation_name}")
+
         return wrapper
+
     return decorator
+
 
 router = APIRouter(
     prefix="/exchanges",
     tags=["exchanges"],
 )
+
 
 @router.get("/", response_model=List[Exchange])
 @handle_route_errors("retrieving exchanges")
@@ -79,6 +82,7 @@ async def get_exchanges(db: AsyncSession = Depends(get_db)) -> List[Exchange]:
     exchanges = await service.get_all()
     logger.info(f"Retrieved {len(exchanges)} exchanges")
     return exchanges
+
 
 @router.get("/{code}", response_model=Exchange)
 @handle_route_errors("retrieving exchange by code")
@@ -107,6 +111,7 @@ async def get_exchange(code: str, db: AsyncSession = Depends(get_db)) -> Exchang
         raise HTTPException(status_code=404, detail="Exchange not found")
     logger.info(f"Retrieved exchange: {exchange.name} ({exchange.code})")
     return exchange
+
 
 @router.post("/", response_model=Exchange)
 @handle_route_errors("creating exchange")

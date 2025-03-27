@@ -1,7 +1,7 @@
 import asyncio
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Optional, TYPE_CHECKING, List, Dict, Any
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 import aiohttp
 from aiohttp import ClientTimeout
@@ -17,8 +17,10 @@ from backend.core.models import NotificationMessage
 settings = get_settings()
 logger = get_logger(__name__)
 
+
 class BaseNotifier(ABC):
     """Base class for all notifiers."""
+
     # Constants for message handling
     MAX_MESSAGE_LENGTH = 4000  # Default maximum message length
     LISTINGS_PER_MESSAGE = 10  # Default number of listings per message
@@ -68,7 +70,9 @@ class BaseNotifier(ABC):
 
             # Check if message exceeds maximum length
             if len(formatted_message) > self.MAX_MESSAGE_LENGTH:
-                self.logger.info(f"Message exceeds maximum length ({len(formatted_message)} > {self.MAX_MESSAGE_LENGTH}). Splitting into multiple messages.")
+                self.logger.info(
+                    f"Message exceeds maximum length ({len(formatted_message)} > {self.MAX_MESSAGE_LENGTH}). Splitting into multiple messages."
+                )
                 return await self._send_long_message(message, formatted_message)
 
             # Send the message
@@ -105,9 +109,7 @@ class BaseNotifier(ABC):
         try:
             metadata_str = ""
             if message.metadata:
-                metadata_str = "\n\nMetadata:\n" + "\n".join(
-                    f"- {k}: {v}" for k, v in message.metadata.items()
-                )
+                metadata_str = "\n\nMetadata:\n" + "\n".join(f"- {k}: {v}" for k, v in message.metadata.items())
 
             return (
                 f"{message.title}\n"
@@ -160,7 +162,7 @@ class BaseNotifier(ABC):
         """
         parts = []
         for char_index in range(0, len(formatted_message), self.MAX_MESSAGE_LENGTH):
-            parts.append(formatted_message[char_index:char_index + self.MAX_MESSAGE_LENGTH])
+            parts.append(formatted_message[char_index : char_index + self.MAX_MESSAGE_LENGTH])
         return parts
 
     def _create_part_message(self, message: NotificationMessage, part: str, part_index: int, total_parts: int) -> NotificationMessage:
@@ -179,11 +181,7 @@ class BaseNotifier(ABC):
         return NotificationMessage(
             title=f"{message.title} (Part {part_index+1}/{total_parts})",
             body=part,
-            metadata={
-                **message.metadata,
-                "part": part_index+1,
-                "total_parts": total_parts
-            }
+            metadata={**message.metadata, "part": part_index + 1, "total_parts": total_parts},
         )
 
     async def _send_message_parts(self, message: NotificationMessage, parts: list) -> bool:
@@ -247,7 +245,7 @@ class BaseNotifier(ABC):
         unique_listings = {}
         for listing in listings:
             # Create a unique key for each listing
-            if 'id' in listing:
+            if "id" in listing:
                 key = f"{listing['exchange_code']}_{listing['symbol']}_{listing['id']}"
             else:
                 key = f"{listing['exchange_code']}_{listing['symbol']}"
@@ -270,13 +268,11 @@ class BaseNotifier(ABC):
         """
         listings_by_exchange = {}
         for listing in listings:
-            exchange_code = listing['exchange_code']
+            exchange_code = listing["exchange_code"]
             if exchange_code not in listings_by_exchange:
                 listings_by_exchange[exchange_code] = []
             listings_by_exchange[exchange_code].append(listing)
         return listings_by_exchange
-
-
 
     @staticmethod
     async def format_listing(listing: Dict[str, Any]) -> str:
@@ -290,17 +286,17 @@ class BaseNotifier(ABC):
             A formatted message string for the listing.
         """
         # Convert listing date to datetime if it's a string
-        listing_date = listing['listing_date']
+        listing_date = listing["listing_date"]
         if isinstance(listing_date, str):
             listing_date = datetime.fromisoformat(listing_date)
 
-        name = listing['name']
-        symbol = listing['symbol']
-        status = listing['status']
-        security_type = listing['security_type']
+        name = listing["name"]
+        symbol = listing["symbol"]
+        status = listing["status"]
+        security_type = listing["security_type"]
 
         # Format stock info with URL if available
-        primary_url = listing.get('url')
+        primary_url = listing.get("url")
         stock_info = f"<a href='{primary_url}'>{symbol}</a>" if primary_url else symbol
 
         # Build the listing body
@@ -313,7 +309,7 @@ class BaseNotifier(ABC):
         )
 
         # Only add detail link if URL exists and is not None
-        if listing.get('listing_detail_url'):
+        if listing.get("listing_detail_url"):
             listing_body += f"🌐 <a href='{listing['listing_detail_url']}'>View Details</a>\n"
 
         return listing_body
@@ -328,9 +324,10 @@ class BaseNotifier(ABC):
         Returns:
             List[Dict[str, Any]]: Sorted listings
         """
+
         def get_listing_date(exchange_listing):
             """Convert listing date to datetime if it's a string."""
-            date = exchange_listing['listing_date']
+            date = exchange_listing["listing_date"]
             return date if isinstance(date, datetime) else datetime.fromisoformat(date)
 
         sorted_listings = sorted(exchange_listings, key=get_listing_date, reverse=True)
@@ -370,7 +367,7 @@ class BaseNotifier(ABC):
         listing_notification = NotificationMessage(
             title="",  # Empty title to avoid adding it to the formatted message
             body=listing_body,
-            metadata={}  # Empty metadata to avoid adding it to the formatted message
+            metadata={},  # Empty metadata to avoid adding it to the formatted message
         )
 
         # Use the format_message function to format the listing
@@ -381,8 +378,9 @@ class BaseNotifier(ABC):
         body_end = formatted_listing.find("\n\nMetadata:") if "\n\nMetadata:" in formatted_listing else formatted_listing.find("\n\nTimestamp:")
         return formatted_listing[body_start:body_end].strip() + "\n\n"
 
-    def _create_chunk_notification(self, exchange: str, chunk: List[Dict[str, Any]], 
-                                  current_part: int, total_chunks: int, message: str) -> NotificationMessage:
+    def _create_chunk_notification(
+        self, exchange: str, chunk: List[Dict[str, Any]], current_part: int, total_chunks: int, message: str
+    ) -> NotificationMessage:
         """
         Create a notification message for a chunk of listings.
 
@@ -399,16 +397,10 @@ class BaseNotifier(ABC):
         return NotificationMessage(
             title=f"{exchange} New Listings (Part {current_part})",
             body=message,
-            metadata={
-                "exchange": exchange,
-                "listings": len(chunk), 
-                "part": current_part, 
-                "total_parts": total_chunks
-            }
+            metadata={"exchange": exchange, "listings": len(chunk), "part": current_part, "total_parts": total_chunks},
         )
 
-    async def _send_exchange_listings(self, exchange: str, exchange_listings: List[Dict[str, Any]], 
-                                     all_exchanges: List[str]) -> None:
+    async def _send_exchange_listings(self, exchange: str, exchange_listings: List[Dict[str, Any]], all_exchanges: List[str]) -> None:
         """
         Send listings for a specific exchange.
 
@@ -422,9 +414,9 @@ class BaseNotifier(ABC):
 
         # Split exchange listings into chunks
         for chunk_index in range(0, len(sorted_listings), self.LISTINGS_PER_MESSAGE):
-            chunk = sorted_listings[chunk_index:chunk_index + self.LISTINGS_PER_MESSAGE]
+            chunk = sorted_listings[chunk_index : chunk_index + self.LISTINGS_PER_MESSAGE]
             total_chunks = (len(sorted_listings) - 1) // self.LISTINGS_PER_MESSAGE + 1
-            current_part = chunk_index//self.LISTINGS_PER_MESSAGE + 1
+            current_part = chunk_index // self.LISTINGS_PER_MESSAGE + 1
 
             # Create message header
             message = self._create_chunk_header(exchange, current_part, total_chunks)

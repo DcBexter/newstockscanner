@@ -18,6 +18,7 @@ def test_settings():
     # Override settings for testing if needed
     return settings
 
+
 # Mock database session
 @pytest_asyncio.fixture
 async def mock_db():
@@ -28,8 +29,9 @@ async def mock_db():
     mock.commit = AsyncMock()
     mock.rollback = AsyncMock()
     mock.close = AsyncMock()
-    
+
     yield mock
+
 
 # Mock HTTP client session
 @pytest_asyncio.fixture
@@ -40,7 +42,7 @@ async def mock_aiohttp_session():
     mock_response.text = AsyncMock(return_value='{"success": true}')
     mock_response.json = AsyncMock(return_value={"success": True})
     mock_response.__aenter__.return_value = mock_response
-    
+
     mock_session = AsyncMock()
     mock_session.get = AsyncMock(return_value=mock_response)
     mock_session.post = AsyncMock(return_value=mock_response)
@@ -49,8 +51,9 @@ async def mock_aiohttp_session():
     mock_session.request = AsyncMock(return_value=mock_response)
     mock_session.close = AsyncMock()
     mock_session.__aenter__.return_value = mock_session
-    
+
     yield mock_session
+
 
 # Sample test data
 @pytest.fixture
@@ -65,8 +68,9 @@ def sample_listing_data():
         "exchange_code": "NASDAQ",
         "url": "https://example.com/test",
         "security_type": "Equity",
-        "listing_detail_url": "https://example.com/test/details"
+        "listing_detail_url": "https://example.com/test/details",
     }
+
 
 @pytest.fixture
 def sample_listings_data():
@@ -81,7 +85,7 @@ def sample_listings_data():
             "exchange_code": "NASDAQ",
             "url": "https://example.com/test1",
             "security_type": "Equity",
-            "listing_detail_url": "https://example.com/test1/details"
+            "listing_detail_url": "https://example.com/test1/details",
         },
         {
             "name": "Test Company 2",
@@ -92,6 +96,6 @@ def sample_listings_data():
             "exchange_code": "NYSE",
             "url": "https://example.com/test2",
             "security_type": "Equity",
-            "listing_detail_url": "https://example.com/test2/details"
-        }
+            "listing_detail_url": "https://example.com/test2/details",
+        },
     ]

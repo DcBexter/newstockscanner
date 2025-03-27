@@ -10,25 +10,27 @@ The application uses SQLAlchemy for database access and includes proper
 startup and shutdown handlers for resource management.
 """
 
-from contextlib import asynccontextmanager
-import uuid
-from fastapi import FastAPI, Depends, Request
-from fastapi.responses import JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
-from starlette.middleware.base import BaseHTTPMiddleware
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import text
 import logging
+import uuid
+from contextlib import asynccontextmanager
 
-from backend.database.session import get_db, init_db, close_db
-from backend.config.settings import get_settings
-from backend.config.log_config import setup_logging, set_request_id
-from backend.core.exceptions import StockScannerError
+from fastapi import Depends, FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.middleware.base import BaseHTTPMiddleware
+
 from backend.api_service.routes import router
+from backend.config.log_config import set_request_id, setup_logging
+from backend.config.settings import get_settings
+from backend.core.exceptions import StockScannerError
+from backend.database.session import close_db, get_db, init_db
 
 # Import metrics module (requires prometheus_client to be installed)
 try:
-    from backend.core.metrics import setup_metrics, metrics
+    from backend.core.metrics import metrics, setup_metrics
+
     METRICS_ENABLED = True
 except ImportError:
     METRICS_ENABLED = False
@@ -42,13 +44,14 @@ except ImportError:
 
     class DummyMetrics:
         """Dummy metrics class when prometheus_client is not available."""
-        def counter(self, name, description='', labels=None):
+
+        def counter(self, name, description="", labels=None):
             return self
 
-        def histogram(self, name, description='', labels=None, buckets=None):
+        def histogram(self, name, description="", labels=None, buckets=None):
             return self
 
-        def gauge(self, name, description='', labels=None):
+        def gauge(self, name, description="", labels=None):
             return self
 
         def labels(self, *args, **kwargs):
@@ -64,6 +67,7 @@ except ImportError:
             pass
 
     metrics = DummyMetrics()
+
 
 class RequestIDMiddleware(BaseHTTPMiddleware):
     """Middleware to set a unique request ID for each request."""
@@ -81,8 +85,10 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
 
         return response
 
+
 settings = get_settings()
 logger = logging.getLogger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -120,6 +126,7 @@ async def lifespan(app: FastAPI):
 
     logger.info("Application shutdown complete")
 
+
 # Create the app instance
 app = FastAPI(
     title="Stock Scanner API",
@@ -146,12 +153,13 @@ if METRICS_ENABLED:
     setup_metrics(app)
 
     # Add API-specific metrics
-    metrics.counter('api_listings_requests_total', 'Total number of requests to the listings endpoint')
-    metrics.counter('api_exchanges_requests_total', 'Total number of requests to the exchanges endpoint')
-    metrics.counter('api_stats_requests_total', 'Total number of requests to the stats endpoint')
-    metrics.gauge('api_active_db_connections', 'Number of active database connections')
+    metrics.counter("api_listings_requests_total", "Total number of requests to the listings endpoint")
+    metrics.counter("api_exchanges_requests_total", "Total number of requests to the exchanges endpoint")
+    metrics.counter("api_stats_requests_total", "Total number of requests to the stats endpoint")
+    metrics.gauge("api_active_db_connections", "Number of active database connections")
 else:
     logger.info("Metrics collection is disabled")
+
 
 @app.get("/")
 async def root():
@@ -165,6 +173,7 @@ async def root():
         dict: A message indicating that the API is running.
     """
     return {"message": "Stock Scanner API is running"}
+
 
 @app.get("/health")
 async def health_check(db: AsyncSession = Depends(get_db)):
@@ -189,11 +198,8 @@ async def health_check(db: AsyncSession = Depends(get_db)):
         logger.error(f"Database connection error: {str(e)}", exc_info=True)
         db_status = "error"
 
-    return {
-        "status": "ok",
-        "api_version": "0.1.0",
-        "database": db_status
-    }
+    return {"status": "ok", "api_version": "0.1.0", "database": db_status}
+
 
 # Exception handlers
 @app.exception_handler(StockScannerError)
@@ -213,10 +219,8 @@ async def stockscanner_exception_handler(request: Request, exc: StockScannerErro
         JSONResponse: A JSON response containing the error message and type.
     """
     logger.error(f"StockScanner error: {str(exc)}", exc_info=True)
-    return JSONResponse(
-        status_code=400,
-        content={"error": str(exc), "type": exc.__class__.__name__}
-    )
+    return JSONResponse(status_code=400, content={"error": str(exc), "type": exc.__class__.__name__})
+
 
 @app.exception_handler(Exception)
 async def general_exception_handler(request: Request, exc: Exception):
@@ -235,10 +239,8 @@ async def general_exception_handler(request: Request, exc: Exception):
         JSONResponse: A JSON response with a generic error message.
     """
     logger.error(f"Unexpected error: {str(exc)}", exc_info=True)
-    return JSONResponse(
-        status_code=500,
-        content={"error": "Internal server error"}
-    )
+    return JSONResponse(status_code=500, content={"error": "Internal server error"})
+
 
 # Include API routes
 app.include_router(router, prefix="/api/v1")
@@ -246,4 +248,5 @@ app.include_router(router, prefix="/api/v1")
 # If this file is run directly (not imported), run the application
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)

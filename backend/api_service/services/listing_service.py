@@ -6,17 +6,16 @@ including filtering, querying, and updating listings. It also includes functiona
 for handling notifications about new listings.
 """
 
-from datetime import datetime, timedelta, UTC
-from typing import List, Optional, Dict, Any
+from datetime import UTC, datetime, timedelta
+from typing import Any, Dict, List, Optional
 
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
-from backend.core.exceptions import DatabaseQueryError, DatabaseNotFoundError, DatabaseUpdateError, DatabaseCreateError, \
-    DatabaseTransactionError
+from backend.core.exceptions import DatabaseCreateError, DatabaseNotFoundError, DatabaseQueryError, DatabaseTransactionError, DatabaseUpdateError
 from backend.core.models import ListingCreate
-from backend.database.models import StockListing, Exchange
+from backend.database.models import Exchange, StockListing
 
 
 class ListingService:
@@ -39,7 +38,7 @@ class ListingService:
         days: Optional[int] = None,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
-        include_exchange_join: bool = True
+        include_exchange_join: bool = True,
     ):
         """
         Build a base query with common filters.
@@ -94,12 +93,7 @@ class ListingService:
         return query
 
     async def get_filtered(
-        self,
-        exchange_code: Optional[str] = None,
-        status: Optional[str] = None,
-        days: Optional[int] = None,
-        skip: int = 0,
-        limit: int = 100
+        self, exchange_code: Optional[str] = None, status: Optional[str] = None, days: Optional[int] = None, skip: int = 0, limit: int = 100
     ) -> List[StockListing]:
         """
         Get listings with filters and pagination.
@@ -122,12 +116,7 @@ class ListingService:
         """
         try:
             # Build the base query with filters
-            query = self._build_base_query(
-                StockListing,
-                exchange_code=exchange_code,
-                status=status,
-                days=days
-            )
+            query = self._build_base_query(StockListing, exchange_code=exchange_code, status=status, days=days)
 
             # Apply sorting
             query = query.order_by(StockListing.listing_date.desc())
@@ -140,12 +129,7 @@ class ListingService:
         except Exception as e:
             raise DatabaseQueryError(f"Failed to get listings: {str(e)}")
 
-    async def get_filtered_count(
-        self,
-        exchange_code: Optional[str] = None,
-        status: Optional[str] = None,
-        days: Optional[int] = None
-    ) -> int:
+    async def get_filtered_count(self, exchange_code: Optional[str] = None, status: Optional[str] = None, days: Optional[int] = None) -> int:
         """
         Get the total count of listings matching the filters.
 
@@ -165,12 +149,7 @@ class ListingService:
         """
         try:
             # Build the count query using the base query helper
-            query = self._build_base_query(
-                func.count(StockListing.id),
-                exchange_code=exchange_code,
-                status=status,
-                days=days
-            )
+            query = self._build_base_query(func.count(StockListing.id), exchange_code=exchange_code, status=status, days=days)
 
             result = await self.db.execute(query)
             return result.scalar() or 0
@@ -218,9 +197,11 @@ class ListingService:
         """
         try:
             # Use joinedload to eagerly load the exchange relationship
-            query = select(StockListing).options(joinedload(StockListing.exchange)).join(Exchange).where(
-                StockListing.symbol == symbol,
-                Exchange.code == exchange_code
+            query = (
+                select(StockListing)
+                .options(joinedload(StockListing.exchange))
+                .join(Exchange)
+                .where(StockListing.symbol == symbol, Exchange.code == exchange_code)
             )
             result = await self.db.execute(query)
             return result.scalar_one_or_none()
@@ -264,7 +245,7 @@ class ListingService:
             await self.db.refresh(listing)
 
             # Ensure the exchange relationship is loaded
-            await self.db.refresh(listing, ['exchange'])
+            await self.db.refresh(listing, ["exchange"])
 
             return listing
         except Exception as e:
@@ -293,7 +274,9 @@ class ListingService:
             # Get exchange by code
             exchange = await self._get_exchange(listing.exchange_code)
             if not exchange:
-                raise DatabaseNotFoundError(f"Exchange with code {listing.exchange_code} not found", model="Exchange", record_id=listing.exchange_code)
+                raise DatabaseNotFoundError(
+                    f"Exchange with code {listing.exchange_code} not found", model="Exchange", record_id=listing.exchange_code
+                )
 
             # Check if listing already exists
             existing = await self.get_by_symbol_and_exchange(listing.symbol, listing.exchange_code)
@@ -310,7 +293,7 @@ class ListingService:
                 await self.db.commit()
                 await self.db.refresh(existing)
                 # Reload the exchange relationship
-                await self.db.refresh(existing, ['exchange'])
+                await self.db.refresh(existing, ["exchange"])
                 return existing
 
             # Create new listing with notified=False
@@ -367,7 +350,7 @@ class ListingService:
             exchange_id=exchange_id,
             url=listing.url,
             security_type=listing.security_type,
-            listing_detail_url=listing.listing_detail_url
+            listing_detail_url=listing.listing_detail_url,
         )
 
     async def get_unnotified_listings(self) -> List[StockListing]:
@@ -384,9 +367,13 @@ class ListingService:
             DatabaseError: If there's an error retrieving listings from the database.
         """
         try:
-            query = select(StockListing).options(joinedload(StockListing.exchange)).join(Exchange).where(
-                StockListing.notified == False
-            ).order_by(StockListing.created_at.desc())
+            query = (
+                select(StockListing)
+                .options(joinedload(StockListing.exchange))
+                .join(Exchange)
+                .where(StockListing.notified == False)
+                .order_by(StockListing.created_at.desc())
+            )
 
             result = await self.db.execute(query)
             return list(result.scalars().all())
@@ -432,7 +419,7 @@ class ListingService:
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
         skip: int = 0,
-        limit: int = 100
+        limit: int = 100,
     ) -> List[StockListing]:
         """
         Get listings within a specific date range with pagination.
@@ -456,13 +443,7 @@ class ListingService:
         """
         try:
             # Build the query using the base query helper
-            query = self._build_base_query(
-                StockListing,
-                exchange_code=exchange_code,
-                status=status,
-                start_date=start_date,
-                end_date=end_date
-            )
+            query = self._build_base_query(StockListing, exchange_code=exchange_code, status=status, start_date=start_date, end_date=end_date)
 
             # Default sort by listing date, most recent first
             query = query.order_by(StockListing.listing_date.desc())
@@ -480,7 +461,7 @@ class ListingService:
         exchange_code: Optional[str] = None,
         status: Optional[str] = None,
         start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None
+        end_date: Optional[datetime] = None,
     ) -> int:
         """
         Get the total count of listings within a specific date range.
@@ -504,11 +485,7 @@ class ListingService:
         try:
             # Build the count query using the base query helper
             query = self._build_base_query(
-                func.count(StockListing.id),
-                exchange_code=exchange_code,
-                status=status,
-                start_date=start_date,
-                end_date=end_date
+                func.count(StockListing.id), exchange_code=exchange_code, status=status, start_date=start_date, end_date=end_date
             )
 
             result = await self.db.execute(query)

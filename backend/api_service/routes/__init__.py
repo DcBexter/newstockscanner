@@ -13,9 +13,9 @@ The main router is created here and all sub-routers are included.
 """
 
 from fastapi import APIRouter
-from backend.config.settings import get_settings
 
-from backend.api_service.routes import listings, exchanges, stats, notifications, scrape
+from backend.api_service.routes import exchanges, listings, notifications, scrape, stats
+from backend.config.settings import get_settings
 
 settings = get_settings()
 
@@ -29,4 +29,4 @@ router.include_router(stats.router)
 router.include_router(notifications.router)
 router.include_router(scrape.router)
 
-__all__ = ["router"] 
+__all__ = ["router"]

@@ -1,7 +1,7 @@
 import re
 from contextlib import suppress
 from datetime import datetime, timedelta
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
 
 from bs4 import BeautifulSoup
 
@@ -27,7 +27,7 @@ class FrankfurtScraper(BaseScraper):
         self.headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
             "Accept-Language": "de-DE,de;q=0.9,en;q=0.8",
-            "Accept": "text/html,application/xhtml+xml,application/xml"
+            "Accept": "text/html,application/xhtml+xml,application/xml",
         }
 
     async def scrape(self) -> ScrapingResult:
@@ -37,11 +37,7 @@ class FrankfurtScraper(BaseScraper):
 
             # Get announcements that might contain listings
             self.logger.info(f"Scraping announcements: {self.announcements_url}")
-            announcements_content = await self._make_request(
-                self.announcements_url,
-                headers=self.headers,
-                timeout=60
-            )
+            announcements_content = await self._make_request(self.announcements_url, headers=self.headers, timeout=60)
 
             # Parse the announcements
             listings = self.parse(announcements_content)
@@ -49,26 +45,16 @@ class FrankfurtScraper(BaseScraper):
             if listings:
                 self._log_listings_found(listings)
                 return ScrapingResult(
-                    success=True,
-                    message=f"Successfully scraped {len(listings)} listings from Frankfurt Stock Exchange",
-                    data=listings
+                    success=True, message=f"Successfully scraped {len(listings)} listings from Frankfurt Stock Exchange", data=listings
                 )
             else:
-                return ScrapingResult(
-                    success=True,
-                    message="No new listings found from Frankfurt Stock Exchange",
-                    data=[]
-                )
+                return ScrapingResult(success=True, message="No new listings found from Frankfurt Stock Exchange", data=[])
 
         except Exception as e:
             error_msg = f"Failed to scrape Frankfurt Stock Exchange: {type(e).__name__}: {str(e)}"
             self.logger.error(error_msg)
             self.logger.debug("Detailed error:", exc_info=True)
-            return ScrapingResult(
-                success=False,
-                message=error_msg,
-                data=[]
-            )
+            return ScrapingResult(success=False, message=error_msg, data=[])
 
     def _log_listings_found(self, listings: List[ListingBase]) -> None:
         """Log information about found listings."""
@@ -79,11 +65,11 @@ class FrankfurtScraper(BaseScraper):
     def parse(self, content: str) -> List[ListingBase]:
         """Parse the announcements page for new listings."""
         try:
-            soup = BeautifulSoup(content, 'html.parser')
+            soup = BeautifulSoup(content, "html.parser")
             listings = []
 
             # Based on the actual HTML structure
-            announcements = soup.select('ol.list.search-results > li')
+            announcements = soup.select("ol.list.search-results > li")
             self.logger.info(f"Found {len(announcements)} announcements in the exact selector")
 
             # Process each announcement
@@ -110,14 +96,14 @@ class FrankfurtScraper(BaseScraper):
     def _is_listing_announcement(self, announcement_elem) -> bool:
         """Check if an announcement is about a new listing."""
         with suppress(Exception):
-            title_elem = announcement_elem.select_one('.contentCol > h3 > a')
+            title_elem = announcement_elem.select_one(".contentCol > h3 > a")
             if not title_elem:
                 return False
 
             title = title_elem.get_text(strip=True)
 
             # Check for new listing keywords in German
-            listing_keywords = ['Neuemission', 'Notierungsaufnahme', 'Erstnotiz', 'Zulassung', 'Handel']
+            listing_keywords = ["Neuemission", "Notierungsaufnahme", "Erstnotiz", "Zulassung", "Handel"]
 
             # Check if any of the listing keywords appear in the title
             return any(keyword.lower() in title.lower() for keyword in listing_keywords)
@@ -128,16 +114,16 @@ class FrankfurtScraper(BaseScraper):
         """Extract listing data from an announcement element."""
         try:
             # Extract announcement title and URL
-            title_elem = announcement_elem.select_one('.contentCol > h3 > a')
+            title_elem = announcement_elem.select_one(".contentCol > h3 > a")
             if not title_elem:
                 return None
 
             title = title_elem.get_text(strip=True)
             detail_url = None
 
-            if 'href' in title_elem.attrs:
-                relative_url = title_elem.attrs['href']
-                detail_url = f"{self.base_url}{relative_url}" if relative_url.startswith('/') else relative_url
+            if "href" in title_elem.attrs:
+                relative_url = title_elem.attrs["href"]
+                detail_url = f"{self.base_url}{relative_url}" if relative_url.startswith("/") else relative_url
 
             # Extract date
             listing_date = self._extract_date(announcement_elem)
@@ -157,7 +143,7 @@ class FrankfurtScraper(BaseScraper):
                 exchange_code="FSE",  # Frankfurt Stock Exchange
                 security_type="Equity",
                 url=None,
-                listing_detail_url=detail_url
+                listing_detail_url=detail_url,
             )
         except Exception as e:
             self.logger.warning(f"Error processing announcement data: {str(e)}")
@@ -168,7 +154,7 @@ class FrankfurtScraper(BaseScraper):
         default_date = datetime.now() + timedelta(days=7)
 
         try:
-            date_elem = announcement_elem.select_one('.indexCol > .date')
+            date_elem = announcement_elem.select_one(".indexCol > .date")
             if date_elem:
                 date_text = date_elem.get_text(strip=True)
                 # Use DateUtils to parse the date with German format (DD.MM.YYYY)
@@ -189,14 +175,14 @@ class FrankfurtScraper(BaseScraper):
         # Example: "Neuemission: ABC AG (DE000A1234Z7)"
 
         # First try to extract by ISIN pattern (more reliable)
-        isin_match = re.search(r'([A-Z0-9\s]+)\s*\(([A-Z]{2}[0-9A-Z]{10})\)', title)
+        isin_match = re.search(r"([A-Z0-9\s]+)\s*\(([A-Z]{2}[0-9A-Z]{10})\)", title)
         if isin_match:
             name = isin_match.group(1).strip()
             symbol = isin_match.group(2).strip()  # This is actually the ISIN
             return name, symbol
 
         # Try various patterns for company extraction
-        colon_match = re.search(r':\s*([^(]+)', title)
+        colon_match = re.search(r":\s*([^(]+)", title)
         if colon_match:
             name = colon_match.group(1).strip()
             return name, symbol
@@ -215,14 +201,10 @@ class FrankfurtScraper(BaseScraper):
     async def get_latest_announcements(self, limit: int = 10) -> List[Dict[str, Any]]:
         """Get the latest announcements from Frankfurt Stock Exchange."""
         try:
-            content = await self._make_request(
-                self.announcements_url,
-                headers=self.headers,
-                timeout=60
-            )
+            content = await self._make_request(self.announcements_url, headers=self.headers, timeout=60)
 
-            soup = BeautifulSoup(content, 'html.parser')
-            announcements = soup.select('ol.list.search-results > li')
+            soup = BeautifulSoup(content, "html.parser")
+            announcements = soup.select("ol.list.search-results > li")
 
             result = []
             for i, announcement in enumerate(announcements):
@@ -230,24 +212,20 @@ class FrankfurtScraper(BaseScraper):
                     break
 
                 with suppress(Exception):
-                    title_elem = announcement.select_one('.contentCol > h3 > a')
-                    date_elem = announcement.select_one('.indexCol > .date')
+                    title_elem = announcement.select_one(".contentCol > h3 > a")
+                    date_elem = announcement.select_one(".indexCol > .date")
 
                     title = title_elem.get_text(strip=True) if title_elem else "Unknown"
                     date_text = date_elem.get_text(strip=True) if date_elem else "Unknown"
 
                     url = None
-                    if title_elem and 'href' in title_elem.attrs:
-                        relative_url = title_elem.attrs['href']
-                        url = f"{self.base_url}{relative_url}" if relative_url.startswith('/') else relative_url
+                    if title_elem and "href" in title_elem.attrs:
+                        relative_url = title_elem.attrs["href"]
+                        url = f"{self.base_url}{relative_url}" if relative_url.startswith("/") else relative_url
 
-                    result.append({
-                        "title": title,
-                        "date": date_text,
-                        "url": url
-                    })
+                    result.append({"title": title, "date": date_text, "url": url})
 
             return result
         except Exception as e:
             self.logger.error(f"Failed to get latest announcements: {str(e)}")
-            return [] 
+            return []

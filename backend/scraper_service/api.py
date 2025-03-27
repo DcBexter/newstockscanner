@@ -5,16 +5,17 @@ import logging
 import threading
 import time
 from datetime import datetime
-from fastapi import FastAPI, BackgroundTasks, Query, Depends
-from typing import Optional, Dict, Any
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import text
+from typing import Any, Dict, Optional
 
+from fastapi import BackgroundTasks, Depends, FastAPI, Query
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from backend.config.settings import get_settings
+from backend.database.session import get_db
 from backend.scraper_service.scraper import StockScanner
 from backend.scraper_service.scrapers.hkex_scraper import HKEXScraper
 from backend.scraper_service.scrapers.nasdaq_scraper import NasdaqScraper
-from backend.database.session import get_db
-from backend.config.settings import get_settings
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -24,7 +25,8 @@ settings = get_settings()
 
 # Import metrics module (requires prometheus_client to be installed)
 try:
-    from backend.core.metrics import setup_metrics, metrics
+    from backend.core.metrics import metrics, setup_metrics
+
     METRICS_ENABLED = True
 except ImportError:
     METRICS_ENABLED = False
@@ -38,13 +40,14 @@ except ImportError:
 
     class DummyMetrics:
         """Dummy metrics class when prometheus_client is not available."""
-        def counter(self, name, description='', labels=None):
+
+        def counter(self, name, description="", labels=None):
             return self
 
-        def histogram(self, name, description='', labels=None, buckets=None):
+        def histogram(self, name, description="", labels=None, buckets=None):
             return self
 
-        def gauge(self, name, description='', labels=None):
+        def gauge(self, name, description="", labels=None):
             return self
 
         def labels(self, *args, **kwargs):
@@ -76,19 +79,21 @@ if METRICS_ENABLED:
     setup_metrics(app)
 
     # Add scraper-specific metrics
-    metrics.counter('scraper_runs_total', 'Total number of scraper runs', ['exchange'])
-    metrics.counter('scraper_listings_found_total', 'Total number of listings found', ['exchange'])
-    metrics.counter('scraper_errors_total', 'Total number of scraper errors', ['exchange', 'error_type'])
-    metrics.histogram('scraper_run_duration_seconds', 'Duration of scraper runs in seconds', ['exchange'])
-    metrics.gauge('scraper_last_run_timestamp', 'Timestamp of the last scraper run', ['exchange'])
+    metrics.counter("scraper_runs_total", "Total number of scraper runs", ["exchange"])
+    metrics.counter("scraper_listings_found_total", "Total number of listings found", ["exchange"])
+    metrics.counter("scraper_errors_total", "Total number of scraper errors", ["exchange", "error_type"])
+    metrics.histogram("scraper_run_duration_seconds", "Duration of scraper runs in seconds", ["exchange"])
+    metrics.gauge("scraper_last_run_timestamp", "Timestamp of the last scraper run", ["exchange"])
 else:
     logger.info("Metrics collection is disabled")
+
 
 def execute_coroutine_in_thread(coroutine):
     """Execute a coroutine in a dedicated event loop in a separate thread.
 
     This ensures that async operations can run safely without interfering with the main thread's event loop.
     """
+
     def _run_in_thread():
         # Create new event loop for this thread
         loop = asyncio.new_event_loop()
@@ -121,9 +126,7 @@ def execute_coroutine_in_thread(coroutine):
 
                     # Now gather them with a timeout to avoid waiting forever
                     try:
-                        loop.run_until_complete(
-                            asyncio.wait(pending, timeout=1.0, return_when=asyncio.ALL_COMPLETED)
-                        )
+                        loop.run_until_complete(asyncio.wait(pending, timeout=1.0, return_when=asyncio.ALL_COMPLETED))
                     except Exception as wait_error:
                         logger.debug(f"Error waiting for tasks to complete: {wait_error}")
 
@@ -141,7 +144,7 @@ def execute_coroutine_in_thread(coroutine):
                     try:
                         # Get all database-related tasks and gracefully close them
                         for task in asyncio.all_tasks(loop):
-                            if 'database' in str(task) or 'db' in str(task) or 'sql' in str(task):
+                            if "database" in str(task) or "db" in str(task) or "sql" in str(task):
                                 logger.debug(f"Cancelling database task: {task}")
                                 task.cancel()
                     except Exception as e:
@@ -181,11 +184,11 @@ def execute_coroutine_in_thread(coroutine):
     thread.start()
     return thread
 
+
 @app.post("/api/v1/scrape")
 @app.post("/api/v1/scrape/")
 async def scan(
-    background_tasks: BackgroundTasks,
-    exchange: Optional[str] = Query(None, description="Specific exchange to scan (e.g., 'hkex', 'nasdaq')")
+    background_tasks: BackgroundTasks, exchange: Optional[str] = Query(None, description="Specific exchange to scan (e.g., 'hkex', 'nasdaq')")
 ) -> Dict[str, Any]:
     """
     Trigger a scan for new listings.
@@ -212,8 +215,8 @@ async def scan(
 
         # Record metrics if enabled
         if METRICS_ENABLED:
-            metrics.counter('scraper_runs_total').labels(exchange_name).inc()
-            metrics.gauge('scraper_last_run_timestamp').labels(exchange_name).set_to_current_time()
+            metrics.counter("scraper_runs_total").labels(exchange_name).inc()
+            metrics.gauge("scraper_last_run_timestamp").labels(exchange_name).set_to_current_time()
 
         try:
             # Each scanner instance gets its own database connections
@@ -224,8 +227,8 @@ async def scan(
             # Record success metrics if enabled
             if METRICS_ENABLED and result:
                 # Record the number of listings found
-                listings_count = result.get('all_listings', 0)
-                metrics.counter('scraper_listings_found_total').labels(exchange_name).inc(listings_count)
+                listings_count = result.get("all_listings", 0)
+                metrics.counter("scraper_listings_found_total").labels(exchange_name).inc(listings_count)
 
         except Exception as e:
             logger.error(f"Error during scan: {e}", exc_info=True)
@@ -233,22 +236,22 @@ async def scan(
             # Record error metrics if enabled
             if METRICS_ENABLED:
                 error_type = type(e).__name__
-                metrics.counter('scraper_errors_total').labels(exchange_name, error_type).inc()
+                metrics.counter("scraper_errors_total").labels(exchange_name, error_type).inc()
 
         finally:
             # Record duration metrics if enabled
             if METRICS_ENABLED:
                 duration = time.time() - start_time
-                metrics.histogram('scraper_run_duration_seconds').labels(exchange_name).observe(duration)
+                metrics.histogram("scraper_run_duration_seconds").labels(exchange_name).observe(duration)
 
             # Explicitly clean up scanner resources if possible
-            if 'scanner' in locals():
+            if "scanner" in locals():
                 try:
                     # If the scanner has a cleanup method, call it
-                    if hasattr(scanner, 'cleanup') and callable(scanner.cleanup):
+                    if hasattr(scanner, "cleanup") and callable(scanner.cleanup):
                         await scanner.cleanup()
                     # If the scanner has a close method, call it
-                    elif hasattr(scanner, 'close') and callable(scanner.close):
+                    elif hasattr(scanner, "close") and callable(scanner.close):
                         await scanner.close()
                 except Exception as cleanup_error:
                     logger.error(f"Error during scanner cleanup: {cleanup_error}", exc_info=True)
@@ -256,10 +259,8 @@ async def scan(
     # Run the scan in a dedicated thread with its own event loop
     execute_coroutine_in_thread(isolated_scan())
 
-    return {
-        "status": "success",
-        "message": f"Scan for {exchange if exchange else 'all exchanges'} initiated"
-    }
+    return {"status": "success", "message": f"Scan for {exchange if exchange else 'all exchanges'} initiated"}
+
 
 @app.get("/api/v1/health")
 async def health_check(db: AsyncSession = Depends(get_db)) -> Dict[str, Any]:
@@ -289,10 +290,7 @@ async def health_check(db: AsyncSession = Depends(get_db)) -> Dict[str, Any]:
 
     # Check if scrapers are available
     scrapers_status = {}
-    for name, scraper_class in {
-        "hkex": HKEXScraper,
-        "nasdaq": NasdaqScraper
-    }.items():
+    for name, scraper_class in {"hkex": HKEXScraper, "nasdaq": NasdaqScraper}.items():
         try:
             # Just check if the class can be instantiated
             scraper_instance = scraper_class()
@@ -309,17 +307,17 @@ async def health_check(db: AsyncSession = Depends(get_db)) -> Dict[str, Any]:
     return {
         "status": overall_status,
         "service": "scraper",
-        "dependencies": {
-            "database": db_status,
-            "scrapers": scrapers_status
-        },
-        "timestamp": datetime.now().isoformat()
+        "dependencies": {"database": db_status, "scrapers": scrapers_status},
+        "timestamp": datetime.now().isoformat(),
     }
+
 
 def start_api():
     """Start the API server."""
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8002)
 
+
 if __name__ == "__main__":
-    start_api() 
+    start_api()

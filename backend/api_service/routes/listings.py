@@ -8,18 +8,19 @@ the database.
 """
 
 from datetime import datetime
-from typing import Optional, List, Tuple
+from typing import List, Optional, Tuple
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.api_service.services import ListingService
 from backend.core.models import Listing, ListingCreate, PaginatedListings
-from backend.database.session import get_db
 from backend.database.models import StockListing
+from backend.database.session import get_db
 
 # Constants
 MAX_PAGINATION_LIMIT = 1000  # Maximum number of records that can be returned in a single request
+
 
 # Utility functions
 def parse_and_validate_dates(start_date: Optional[str], end_date: Optional[str]) -> Tuple[Optional[datetime], Optional[datetime]]:
@@ -57,6 +58,7 @@ def parse_and_validate_dates(start_date: Optional[str], end_date: Optional[str])
 
     return parsed_start_date, parsed_end_date
 
+
 def validate_pagination_params(skip: int, limit: int) -> None:
     """
     Validate pagination parameters.
@@ -73,8 +75,8 @@ def validate_pagination_params(skip: int, limit: int) -> None:
     if limit < 1:
         raise HTTPException(status_code=400, detail="limit must be a positive integer")
     if limit > MAX_PAGINATION_LIMIT:
-        raise HTTPException(status_code=400, 
-                           detail=f"limit must not exceed {MAX_PAGINATION_LIMIT}")
+        raise HTTPException(status_code=400, detail=f"limit must not exceed {MAX_PAGINATION_LIMIT}")
+
 
 # Utility function to convert database models to Pydantic models
 def convert_db_listing_to_model(db_listing: StockListing) -> Listing:
@@ -99,8 +101,9 @@ def convert_db_listing_to_model(db_listing: StockListing) -> Listing:
         security_type=db_listing.security_type,
         listing_detail_url=db_listing.listing_detail_url,
         created_at=db_listing.created_at,
-        updated_at=db_listing.updated_at
+        updated_at=db_listing.updated_at,
     )
+
 
 def convert_db_listings_to_models(db_listings: List[StockListing]) -> List[Listing]:
     """
@@ -114,10 +117,12 @@ def convert_db_listings_to_models(db_listings: List[StockListing]) -> List[Listi
     """
     return [convert_db_listing_to_model(listing) for listing in db_listings]
 
+
 router = APIRouter(
     prefix="/listings",
     tags=["listings"],
 )
+
 
 @router.get("/", response_model=PaginatedListings)
 async def get_listings(
@@ -128,7 +133,7 @@ async def get_listings(
     end_date: Optional[str] = None,
     skip: int = 0,
     limit: int = 100,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Get listings with optional filters and pagination.
@@ -165,12 +170,8 @@ async def get_listings(
 
         # Get database models and total count - use date range if provided, otherwise use days
         if parsed_start_date and parsed_end_date:
-            db_listings = await service.get_by_date_range(
-                exchange_code, status, parsed_start_date, parsed_end_date, skip, limit
-            )
-            total = await service.get_by_date_range_count(
-                exchange_code, status, parsed_start_date, parsed_end_date
-            )
+            db_listings = await service.get_by_date_range(exchange_code, status, parsed_start_date, parsed_end_date, skip, limit)
+            total = await service.get_by_date_range_count(exchange_code, status, parsed_start_date, parsed_end_date)
         else:
             db_listings = await service.get_filtered(exchange_code, status, days, skip, limit)
             total = await service.get_filtered_count(exchange_code, status, days)
@@ -179,12 +180,7 @@ async def get_listings(
         items = convert_db_listings_to_models(db_listings)
 
         # Return paginated response
-        return PaginatedListings(
-            items=items,
-            total=total,
-            skip=skip,
-            limit=limit
-        )
+        return PaginatedListings(items=items, total=total, skip=skip, limit=limit)
     except HTTPException:
         # Re-raise HTTP exceptions that were already raised by utility functions
         raise
@@ -194,8 +190,10 @@ async def get_listings(
     except Exception as e:
         # Log unexpected errors and return a generic message
         import logging
+
         logging.error(f"Unexpected error in get_listings: {str(e)}")
         raise HTTPException(status_code=500, detail="An unexpected error occurred while retrieving listings")
+
 
 @router.get("/{symbol}", response_model=Listing)
 async def get_listing(symbol: str, db: AsyncSession = Depends(get_db)):
@@ -222,6 +220,7 @@ async def get_listing(symbol: str, db: AsyncSession = Depends(get_db)):
 
     # Convert to Pydantic model to avoid detached session issues
     return convert_db_listing_to_model(listing)
+
 
 @router.post("/", response_model=Listing)
 async def create_listing(listing: ListingCreate, db: AsyncSession = Depends(get_db)):
@@ -259,5 +258,6 @@ async def create_listing(listing: ListingCreate, db: AsyncSession = Depends(get_
     except Exception as e:
         # Log unexpected errors and return a generic message
         import logging
+
         logging.error(f"Unexpected error in create_listing: {str(e)}")
         raise HTTPException(status_code=500, detail="An unexpected error occurred while creating the listing")

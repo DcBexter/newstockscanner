@@ -13,10 +13,12 @@ from backend.scraper_service.scraper import StockScanner, start_continuous_scann
 setup_logging(service_name="scraper_service")
 logger = logging.getLogger(__name__)
 
+
 def start_api_server():
     """Start the API server in a separate thread."""
     logger.info("Starting API server...")
     start_api()
+
 
 def start_scheduler():
     """Start the continuous scanning scheduler in the main thread."""
@@ -30,6 +32,7 @@ def start_scheduler():
         logger.error(f"Error in scheduler: {e}")
     finally:
         loop.close()
+
 
 def process_unnotified_listings():
     """Process any unnotified listings and send notifications."""
@@ -60,6 +63,7 @@ def process_unnotified_listings():
         finally:
             loop.close()
 
+
 def main():
     """Main entry point for the scraper service."""
     # Determine which components to run based on environment variables
@@ -89,5 +93,6 @@ def main():
     else:
         logger.error("Neither API nor scheduler enabled. Nothing to run.")
 
+
 if __name__ == "__main__":
-    main() 
+    main()

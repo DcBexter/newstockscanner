@@ -1,10 +1,12 @@
-from typing import Optional
-from pydantic_settings import SettingsConfigDict, BaseSettings
-from functools import lru_cache
 import os
+from functools import lru_cache
+from typing import Optional
+
 from dotenv import load_dotenv
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 load_dotenv()
+
 
 class Settings(BaseSettings):
     """Application settings with environment variable support."""
@@ -13,10 +15,7 @@ class Settings(BaseSettings):
     DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
 
     # Database
-    DATABASE_URL: str = os.getenv(
-        "DATABASE_URL",
-        "postgresql+asyncpg://user:password@localhost:5432/stockscanner"
-    )
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql+asyncpg://user:password@localhost:5432/stockscanner")
 
     # Scraping
     SCRAPING_INTERVAL_MINUTES: int = int(os.getenv("SCRAPING_INTERVAL_MINUTES", "60"))
@@ -51,11 +50,13 @@ class Settings(BaseSettings):
     LOG_FORMAT: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
 
+
 @lru_cache()
 def get_settings() -> Settings:
     """Get cached settings instance."""
     return Settings()
 
+
 # Example usage:
 # from backend.config.settings import get_settings
-# settings = get_settings() 
+# settings = get_settings()

@@ -1,22 +1,23 @@
+import datetime
+import json
 import logging
 import logging.handlers
-import sys
-import json
-import socket
-import uuid
-import datetime
-from pathlib import Path
-from typing import Optional, Dict, Any
 import os
-from logging.handlers import RotatingFileHandler
+import socket
+import sys
+import uuid
 from contextvars import ContextVar
+from logging.handlers import RotatingFileHandler
+from pathlib import Path
+from typing import Any, Dict, Optional
 
 from backend.config.settings import get_settings
 
 settings = get_settings()
 
 # Context variable to store request ID
-request_id_var: ContextVar[str] = ContextVar('request_id', default='')
+request_id_var: ContextVar[str] = ContextVar("request_id", default="")
+
 
 def get_request_id() -> str:
     """Get the current request ID or generate a new one if not set."""
@@ -26,9 +27,11 @@ def get_request_id() -> str:
         request_id_var.set(request_id)
     return request_id
 
+
 def set_request_id(request_id: str) -> None:
     """Set the request ID for the current context."""
     request_id_var.set(request_id)
+
 
 class JsonFormatter(logging.Formatter):
     """
@@ -37,6 +40,7 @@ class JsonFormatter(logging.Formatter):
     This formatter is designed to make logs easier to parse and analyze
     by outputting them in a structured JSON format.
     """
+
     def __init__(self, service_name: str = None):
         super().__init__()
         self.service_name = service_name or os.getenv("SERVICE_NAME", "stockscanner")
@@ -66,14 +70,15 @@ class JsonFormatter(logging.Formatter):
             log_data["exception"] = {
                 "type": record.exc_info[0].__name__,
                 "message": str(record.exc_info[1]),
-                "traceback": self.formatException(record.exc_info)
+                "traceback": self.formatException(record.exc_info),
             }
 
         # Add extra fields from the record
-        if hasattr(record, 'extra'):
+        if hasattr(record, "extra"):
             log_data.update(record.extra)
 
         return json.dumps(log_data)
+
 
 class StandardFormatter(logging.Formatter):
     """
@@ -82,6 +87,7 @@ class StandardFormatter(logging.Formatter):
     This formatter is designed for human readability while still
     maintaining a consistent format across all logs.
     """
+
     def __init__(self, service_name: str = None):
         super().__init__()
         self.service_name = service_name or os.getenv("SERVICE_NAME", "stockscanner")
@@ -100,6 +106,7 @@ class StandardFormatter(logging.Formatter):
             log_line += f"\n{self.formatException(record.exc_info)}"
 
         return log_line
+
 
 def setup_logging(log_file: Optional[Path] = None, service_name: str = None) -> None:
     """
@@ -143,11 +150,7 @@ def setup_logging(log_file: Optional[Path] = None, service_name: str = None) -> 
         log_file.parent.mkdir(parents=True, exist_ok=True)
 
         # Create rotating file handler
-        file_handler = RotatingFileHandler(
-            log_file,
-            maxBytes=10 * 1024 * 1024,  # 10MB
-            backupCount=5
-        )
+        file_handler = RotatingFileHandler(log_file, maxBytes=10 * 1024 * 1024, backupCount=5)  # 10MB
         file_handler.setFormatter(file_formatter)
         file_handler.setLevel(log_level)
         handlers.append(file_handler)
@@ -161,6 +164,7 @@ def setup_logging(log_file: Optional[Path] = None, service_name: str = None) -> 
     logging.getLogger("urllib3").setLevel(logging.WARNING)
     logging.getLogger("asyncio").setLevel(logging.WARNING)
     logging.getLogger("aioschedule").setLevel(logging.WARNING)
+
 
 def get_logger(name: str) -> logging.Logger:
     """

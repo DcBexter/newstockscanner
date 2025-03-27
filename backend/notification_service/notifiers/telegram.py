@@ -1,23 +1,25 @@
 import asyncio
 from enum import IntEnum
 from functools import wraps
-from typing import Optional, TYPE_CHECKING, TypeVar, Callable, Any
+from typing import TYPE_CHECKING, Any, Callable, TypeVar
 
 import aiohttp
 from aiohttp import ClientTimeout
 
 if TYPE_CHECKING:
-    from sqlalchemy.ext.asyncio import AsyncSession
+    pass
 
-from backend.core.exceptions import NotifierError, ConfigurationError
+from backend.core.exceptions import ConfigurationError, NotifierError
 from backend.core.models import NotificationMessage
 from backend.notification_service.notifiers.base import BaseNotifier
 
 # Type variable for the return type of the function being decorated
-T = TypeVar('T')
+T = TypeVar("T")
+
 
 class HttpStatus(IntEnum):
     """HTTP status codes used in the application."""
+
     OK = 200
     BAD_REQUEST = 400
     UNAUTHORIZED = 401
@@ -26,10 +28,7 @@ class HttpStatus(IntEnum):
 
 
 def with_retry(
-    max_retries: int = 3,
-    retry_delay: int = 5,
-    logger = None,
-    error_class: type = NotifierError
+    max_retries: int = 3, retry_delay: int = 5, logger=None, error_class: type = NotifierError
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """
     Decorator for retrying async functions with exponential backoff.
@@ -43,12 +42,13 @@ def with_retry(
     Returns:
         Decorated function with retry logic
     """
+
     def decorator(func: Callable[..., T]) -> Callable[..., T]:
         @wraps(func)
         async def wrapper(*args, **kwargs) -> T:
             # Get logger from first argument (self) if not provided
             nonlocal logger
-            if logger is None and args and hasattr(args[0], 'logger'):
+            if logger is None and args and hasattr(args[0], "logger"):
                 logger = args[0].logger
 
             last_exception = None
@@ -80,6 +80,7 @@ def with_retry(
             return None  # To satisfy type checker
 
         return wrapper
+
     return decorator
 
 
@@ -90,6 +91,7 @@ class TelegramNotifier(BaseNotifier):
     This class is responsible for sending messages to Telegram.
     All formatting and message splitting is handled by the base class.
     """
+
     # Constants for Telegram-specific settings
     MAX_RETRIES = 3
     RETRY_DELAY = 5  # seconds
@@ -225,11 +227,7 @@ class TelegramNotifier(BaseNotifier):
         success = result.get("ok", False)
 
         # Log the result
-        self.logger.info(
-            f"Notification sent: success={success}, "
-            f"type={self.__class__.__name__}, "
-            f"title={message.title}"
-        )
+        self.logger.info(f"Notification sent: success={success}, " f"type={self.__class__.__name__}, " f"title={message.title}")
 
         if not success:
             self.logger.error(f"Notification error: {str(result)}")
@@ -248,12 +246,7 @@ class TelegramNotifier(BaseNotifier):
         Returns:
             dict: The payload for the Telegram API
         """
-        return {
-            "chat_id": self.settings.TELEGRAM_CHAT_ID,
-            "text": formatted_message,
-            "parse_mode": "HTML",
-            "disable_web_page_preview": True
-        }
+        return {"chat_id": self.settings.TELEGRAM_CHAT_ID, "text": formatted_message, "parse_mode": "HTML", "disable_web_page_preview": True}
 
     @with_retry(max_retries=MAX_RETRIES, retry_delay=RETRY_DELAY)
     async def _send_message_to_telegram(self, message: NotificationMessage, formatted_message: str) -> bool:
@@ -294,9 +287,5 @@ class TelegramNotifier(BaseNotifier):
             # Log the error and return False instead of re-raising
             error_msg = f"Error sending message: {str(exception)}"
             self.logger.error(error_msg)
-            self.logger.info(
-                f"Notification sent: success=False, "
-                f"type={self.__class__.__name__}, "
-                f"title={message.title}"
-            )
+            self.logger.info(f"Notification sent: success=False, " f"type={self.__class__.__name__}, " f"title={message.title}")
             return False

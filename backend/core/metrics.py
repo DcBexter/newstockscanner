@@ -23,11 +23,10 @@ Usage:
 """
 
 import time
-from typing import Dict, Optional, Callable
+from typing import Callable, Dict, Optional
 
 from fastapi import FastAPI, Request, Response
-from prometheus_client import Counter, Histogram, Gauge, Summary, REGISTRY
-from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+from prometheus_client import CONTENT_TYPE_LATEST, REGISTRY, Counter, Gauge, Histogram, Summary, generate_latest
 from starlette.middleware.base import BaseHTTPMiddleware
 
 
@@ -54,12 +53,12 @@ class Metrics:
         self._summaries: Dict[str, Summary] = {}
 
         # Common metrics that are used across all services
-        self.counter('http_requests_total', 'Total number of HTTP requests', ['method', 'endpoint', 'status'])
-        self.histogram('http_request_duration_seconds', 'HTTP request duration in seconds', ['method', 'endpoint'])
-        self.gauge('process_start_time_seconds', 'Start time of the process since unix epoch in seconds')
-        self.gauge('process_start_time_seconds').set_to_current_time()
+        self.counter("http_requests_total", "Total number of HTTP requests", ["method", "endpoint", "status"])
+        self.histogram("http_request_duration_seconds", "HTTP request duration in seconds", ["method", "endpoint"])
+        self.gauge("process_start_time_seconds", "Start time of the process since unix epoch in seconds")
+        self.gauge("process_start_time_seconds").set_to_current_time()
 
-    def counter(self, name: str, description: str = '', labels: Optional[list] = None) -> Counter:
+    def counter(self, name: str, description: str = "", labels: Optional[list] = None) -> Counter:
         """
         Get or create a Counter metric.
 
@@ -79,6 +78,7 @@ class Metrics:
                 if f"Duplicated timeseries in CollectorRegistry" in str(e):
                     # For existing metrics, we can use the existing metric from the registry
                     from prometheus_client import REGISTRY
+
                     for metric in REGISTRY.collect():
                         if metric.name == name:
                             # Found the existing metric, use it
@@ -89,8 +89,7 @@ class Metrics:
                     raise
         return self._counters[name]
 
-    def histogram(self, name: str, description: str = '', labels: Optional[list] = None, 
-                 buckets: Optional[list] = None) -> Histogram:
+    def histogram(self, name: str, description: str = "", labels: Optional[list] = None, buckets: Optional[list] = None) -> Histogram:
         """
         Get or create a Histogram metric.
 
@@ -114,22 +113,21 @@ class Metrics:
                 if f"Duplicated timeseries in CollectorRegistry" in str(e):
                     # For existing metrics, we can use the existing metric from the registry
                     from prometheus_client import REGISTRY
+
                     for metric in REGISTRY.collect():
                         if metric.name == name:
                             # Found the existing metric, use it
                             if buckets is not None:
-                                self._histograms[name] = Histogram(name, description, labels or [], 
-                                                                 buckets=buckets, registry=None)
+                                self._histograms[name] = Histogram(name, description, labels or [], buckets=buckets, registry=None)
                             else:
-                                self._histograms[name] = Histogram(name, description, labels or [], 
-                                                                 registry=None)
+                                self._histograms[name] = Histogram(name, description, labels or [], registry=None)
                             break
                 else:
                     # Re-raise if it's a different error
                     raise
         return self._histograms[name]
 
-    def gauge(self, name: str, description: str = '', labels: Optional[list] = None) -> Gauge:
+    def gauge(self, name: str, description: str = "", labels: Optional[list] = None) -> Gauge:
         """
         Get or create a Gauge metric.
 
@@ -149,6 +147,7 @@ class Metrics:
                 if f"Duplicated timeseries in CollectorRegistry: {{'{name}'}}" in str(e):
                     # For process_start_time_seconds, we can use the existing metric from the registry
                     from prometheus_client import REGISTRY
+
                     for metric in REGISTRY.collect():
                         if metric.name == name:
                             # Found the existing metric, use it
@@ -159,7 +158,7 @@ class Metrics:
                     raise
         return self._gauges[name]
 
-    def summary(self, name: str, description: str = '', labels: Optional[list] = None) -> Summary:
+    def summary(self, name: str, description: str = "", labels: Optional[list] = None) -> Summary:
         """
         Get or create a Summary metric.
 
@@ -179,6 +178,7 @@ class Metrics:
                 if f"Duplicated timeseries in CollectorRegistry" in str(e):
                     # For existing metrics, we can use the existing metric from the registry
                     from prometheus_client import REGISTRY
+
                     for metric in REGISTRY.collect():
                         if metric.name == name:
                             # Found the existing metric, use it
@@ -198,8 +198,10 @@ class Metrics:
         """
         return generate_latest(REGISTRY)
 
+
 # Create a singleton instance of the Metrics class
 metrics = Metrics()
+
 
 class MetricsMiddleware(BaseHTTPMiddleware):
     """
@@ -221,7 +223,7 @@ class MetricsMiddleware(BaseHTTPMiddleware):
             Response: The response from the next middleware or route handler.
         """
         # Skip metrics collection for the metrics endpoint itself
-        if request.url.path == '/metrics':
+        if request.url.path == "/metrics":
             return await call_next(request)
 
         # Record request start time
@@ -234,15 +236,12 @@ class MetricsMiddleware(BaseHTTPMiddleware):
         duration = time.time() - start_time
 
         # Record metrics
-        metrics.counter('http_requests_total').labels(
-            request.method, request.url.path, response.status_code
-        ).inc()
+        metrics.counter("http_requests_total").labels(request.method, request.url.path, response.status_code).inc()
 
-        metrics.histogram('http_request_duration_seconds').labels(
-            request.method, request.url.path
-        ).observe(duration)
+        metrics.histogram("http_request_duration_seconds").labels(request.method, request.url.path).observe(duration)
 
         return response
+
 
 def setup_metrics(app: FastAPI) -> None:
     """
@@ -257,10 +256,7 @@ def setup_metrics(app: FastAPI) -> None:
     app.add_middleware(MetricsMiddleware)
 
     # Add metrics endpoint
-    @app.get('/metrics')
+    @app.get("/metrics")
     async def metrics_endpoint():
         """Endpoint for exposing Prometheus metrics."""
-        return Response(
-            content=metrics.generate_latest(),
-            media_type=CONTENT_TYPE_LATEST
-        )
+        return Response(content=metrics.generate_latest(), media_type=CONTENT_TYPE_LATEST)

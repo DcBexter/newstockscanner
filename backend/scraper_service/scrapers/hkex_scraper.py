@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 
 from backend.core.exceptions import ParsingError
 from backend.core.models import ListingBase, ScrapingResult
-from backend.core.utils import HKEXUtils, DateUtils
+from backend.core.utils import DateUtils, HKEXUtils
 from backend.scraper_service.scrapers.base import BaseScraper
 
 
@@ -29,46 +29,26 @@ class HKEXScraper(BaseScraper):
 
             content = await self._fetch_hkex_content()
             if not content:
-                return ScrapingResult(
-                    success=False,
-                    message="Failed to retrieve content from HKEX",
-                    data=[]
-                )
+                return ScrapingResult(success=False, message="Failed to retrieve content from HKEX", data=[])
 
             listings = self.parse(content)
             self._log_listings_found(listings)
 
-            return ScrapingResult(
-                success=True,
-                message=f"Successfully scraped {len(listings)} listings from HKEX",
-                data=listings
-            )
+            return ScrapingResult(success=True, message=f"Successfully scraped {len(listings)} listings from HKEX", data=listings)
         except Exception as e:
             error_msg = f"Failed to scrape HKEX: {str(e)}"
             self.logger.error(error_msg)
             self.logger.debug(f"Detailed error: {str(e)}", exc_info=True)
-            return ScrapingResult(
-                success=False,
-                message=error_msg,
-                data=[]
-            )
+            return ScrapingResult(success=False, message=error_msg, data=[])
 
     async def _fetch_hkex_content(self) -> Optional[str]:
         """Fetch content from HKEX with retry mechanism."""
         try:
-            return await self._make_request(
-                self.url,
-                headers=self.headers,
-                timeout=60
-            )
+            return await self._make_request(self.url, headers=self.headers, timeout=60)
         except asyncio.TimeoutError:
             self.logger.warning("Timeout accessing HKEX website. Retrying with longer timeout.")
             try:
-                return await self._make_request(
-                    self.url,
-                    headers=self.headers,
-                    timeout=120
-                )
+                return await self._make_request(self.url, headers=self.headers, timeout=120)
             except Exception as e:
                 self.logger.error(f"Failed to retrieve HKEX content after retry: {str(e)}")
                 return None
@@ -85,8 +65,8 @@ class HKEXScraper(BaseScraper):
     def parse(self, content: str) -> List[ListingBase]:
         """Parse the HTML content and extract listings."""
         try:
-            soup = BeautifulSoup(content, 'html.parser')
-            table = soup.find('table', {'class': 'table migrate'})
+            soup = BeautifulSoup(content, "html.parser")
+            table = soup.find("table", {"class": "table migrate"})
 
             if not table:
                 error_msg = "Could not find listings table in HKEX page"
@@ -94,11 +74,11 @@ class HKEXScraper(BaseScraper):
                 raise ParsingError(error_msg)
 
             listings = []
-            rows = table.find_all('tr')[1:]  # Skip header
+            rows = table.find_all("tr")[1:]  # Skip header
             self.logger.debug(f"Found {len(rows)} rows in the listings table")
 
             for row in rows:
-                cols = row.find_all('td')
+                cols = row.find_all("td")
                 if len(cols) >= 10:  # Ensure row has enough columns
                     try:
                         listing = self._parse_row(cols)
@@ -120,7 +100,7 @@ class HKEXScraper(BaseScraper):
         """Parse a row of listing data."""
         try:
             # Extract data from columns
-            date_text = cols[0].text.strip().rstrip('*')
+            date_text = cols[0].text.strip().rstrip("*")
             if not date_text:
                 return None
 
@@ -134,9 +114,9 @@ class HKEXScraper(BaseScraper):
                 return None
 
             url = None
-            link = name_col.find('a')
-            if link and 'href' in link.attrs:
-                url = link['href']
+            link = name_col.find("a")
+            if link and "href" in link.attrs:
+                url = link["href"]
 
             # Extract stock code
             symbol_col = cols[2]
@@ -168,7 +148,7 @@ class HKEXScraper(BaseScraper):
                 exchange_code="HKEX",
                 security_type=security_type,
                 url=url,
-                listing_detail_url=listing_detail_url
+                listing_detail_url=listing_detail_url,
             )
         except Exception as e:
             self.logger.warning(f"Error parsing listing row: {str(e)}")
@@ -185,7 +165,7 @@ class HKEXScraper(BaseScraper):
         """
         try:
             # Remove commas and any non-numeric characters
-            cleaned_text = re.sub(r'[^\d]', '', lot_size_text)
+            cleaned_text = re.sub(r"[^\d]", "", lot_size_text)
             if not cleaned_text:
                 return 1000
             return int(cleaned_text)
@@ -205,10 +185,10 @@ class HKEXScraper(BaseScraper):
             return "UNKNOWN"
 
         # Take first 5 alphanumeric characters
-        alphanumeric = re.sub(r'[^a-zA-Z0-9]', '', company_name)
+        alphanumeric = re.sub(r"[^a-zA-Z0-9]", "", company_name)
         return alphanumeric[:5].upper() or "HKEX"
 
-    async def get_filtered_listings(self, filter_type: str = 'all') -> pd.DataFrame:
+    async def get_filtered_listings(self, filter_type: str = "all") -> pd.DataFrame:
         """Get listings with optional filtering."""
         try:
             content = await self._fetch_hkex_content()
@@ -221,11 +201,7 @@ class HKEXScraper(BaseScraper):
 
             df = pd.DataFrame([vars(listing) for listing in listings])
 
-            filters = {
-                'all': slice(None),
-                'new_listings': df['status'] == 'New Listing',
-                'rights_issues': df['status'] == 'Rights Issue'
-            }
+            filters = {"all": slice(None), "new_listings": df["status"] == "New Listing", "rights_issues": df["status"] == "Rights Issue"}
 
             filter_slice = filters.get(filter_type, slice(None))
             return df[filter_slice].copy()
@@ -236,8 +212,8 @@ class HKEXScraper(BaseScraper):
     # Convenience methods
     async def get_new_listings(self) -> pd.DataFrame:
         """Get only new listings."""
-        return await self.get_filtered_listings('new_listings')
+        return await self.get_filtered_listings("new_listings")
 
     async def get_rights_issues(self) -> pd.DataFrame:
         """Get only rights issues."""
-        return await self.get_filtered_listings('rights_issues') 
+        return await self.get_filtered_listings("rights_issues")

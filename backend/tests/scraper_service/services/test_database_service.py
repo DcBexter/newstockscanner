@@ -8,7 +8,7 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.core.models import ListingCreate
-from backend.scraper_service.services.database_service import DatabaseService, DatabaseHelper
+from backend.scraper_service.services.database_service import DatabaseHelper, DatabaseService
 
 
 @pytest.mark.asyncio
@@ -16,6 +16,7 @@ class TestDatabaseHelper:
     @pytest.mark.asyncio
     async def test_execute_db_operation_success(self, mock_db):
         """Test successful execution of a database operation."""
+
         # Create a mock operation function
         async def mock_operation(db):
             return "success"
@@ -32,7 +33,7 @@ class TestDatabaseHelper:
                 return mock_session
 
         # Mock get_session_factory to return our mock factory
-        with patch('backend.scraper_service.services.database_service.get_session_factory', return_value=MockSessionFactory()):
+        with patch("backend.scraper_service.services.database_service.get_session_factory", return_value=MockSessionFactory()):
             # Create an instance of DatabaseHelper
             db_helper = DatabaseHelper(MockSessionFactory())
 
@@ -50,6 +51,7 @@ class TestDatabaseHelper:
     @pytest.mark.asyncio
     async def test_execute_db_operation_error(self, mock_db):
         """Test handling of errors during database operations."""
+
         # Create a mock operation function that raises an exception
         async def mock_operation(db):
             raise ValueError("Test error")
@@ -66,7 +68,7 @@ class TestDatabaseHelper:
                 return mock_session
 
         # Mock get_session_factory to return our mock factory
-        with patch('backend.scraper_service.services.database_service.get_session_factory', return_value=MockSessionFactory()):
+        with patch("backend.scraper_service.services.database_service.get_session_factory", return_value=MockSessionFactory()):
             # Create an instance of DatabaseHelper
             db_helper = DatabaseHelper(MockSessionFactory())
 
@@ -78,6 +80,7 @@ class TestDatabaseHelper:
             assert mock_session.rollback.await_count == 1
             assert mock_session.__aenter__.await_count == 1
             assert mock_session.__aexit__.await_count == 1
+
 
 @pytest.mark.asyncio
 class TestDatabaseService:
@@ -103,17 +106,10 @@ class TestDatabaseService:
         # Create a mock for the database helper
         async def mock_execute_db_operation(self, operation):
             # Simulate the database operation by returning a success result
-            return {
-                "saved_count": len(sample_listings_data),
-                "total": len(sample_listings_data),
-                "new_listings": sample_listings_data
-            }
+            return {"saved_count": len(sample_listings_data), "total": len(sample_listings_data), "new_listings": sample_listings_data}
 
         # Apply the mock
-        monkeypatch.setattr(
-            'backend.scraper_service.services.DatabaseHelper.execute_db_operation',
-            mock_execute_db_operation
-        )
+        monkeypatch.setattr("backend.scraper_service.services.DatabaseHelper.execute_db_operation", mock_execute_db_operation)
 
         # Call the method under test
         result = await database_service.save_listings(sample_listings_data)
@@ -126,15 +122,13 @@ class TestDatabaseService:
     @pytest.mark.asyncio
     async def test_save_listings_with_error(self, database_service, sample_listings_data, monkeypatch):
         """Test handling of errors when saving listings."""
+
         # Create a mock for the database helper that raises an exception
         async def mock_execute_db_operation(self, operation):
             raise ValueError("Test database error")
 
         # Apply the mock
-        monkeypatch.setattr(
-            'backend.scraper_service.services.DatabaseHelper.execute_db_operation',
-            mock_execute_db_operation
-        )
+        monkeypatch.setattr("backend.scraper_service.services.DatabaseHelper.execute_db_operation", mock_execute_db_operation)
 
         # Call the method under test
         result = await database_service.save_listings(sample_listings_data)
@@ -147,7 +141,7 @@ class TestDatabaseService:
     # Constants for test data
     EXCHANGE_DATA = {
         "NASDAQ": {"id": 1, "name": "NASDAQ", "code": "NASDAQ", "url": "https://nasdaq.com"},
-        "NYSE": {"id": 2, "name": "NYSE", "code": "NYSE", "url": "https://nyse.com"}
+        "NYSE": {"id": 2, "name": "NYSE", "code": "NYSE", "url": "https://nyse.com"},
     }
 
     def _create_listing_model(self, listing_data):
@@ -162,7 +156,7 @@ class TestDatabaseService:
             exchange_code=listing_data.get("exchange_code", ""),
             security_type=listing_data.get("security_type", "Equity"),
             url=listing_data.get("url"),
-            listing_detail_url=listing_data.get("listing_detail_url")
+            listing_detail_url=listing_data.get("listing_detail_url"),
         )
 
     @pytest.mark.asyncio
@@ -174,7 +168,7 @@ class TestDatabaseService:
         mock_listing_service.create = AsyncMock()
 
         # Mock the ListingService constructor
-        with patch('backend.api_service.services.ListingService', return_value=mock_listing_service):
+        with patch("backend.api_service.services.ListingService", return_value=mock_listing_service):
             # Call the process_listings function with our mock db
             result = await self._execute_process_listings(mock_db, sample_listings_data)
 
@@ -196,7 +190,7 @@ class TestDatabaseService:
         mock_listing_service.get_by_symbol_and_exchange = AsyncMock(side_effect=ValueError("Test error"))
 
         # Mock the ListingService constructor
-        with patch('backend.api_service.services.ListingService', return_value=mock_listing_service):
+        with patch("backend.api_service.services.ListingService", return_value=mock_listing_service):
             # Call the process_listings function with our mock db and expect an exception
             with pytest.raises(ValueError, match="Test error"):
                 await self._execute_process_listings(mock_db, sample_listings_data)
@@ -218,6 +212,7 @@ class TestDatabaseService:
         try:
             # Create service for listings
             from backend.api_service.services import ListingService
+
             service = ListingService(db)
 
             saved_count = 0
@@ -231,9 +226,7 @@ class TestDatabaseService:
                     listing_data["exchange_id"] = self.EXCHANGE_DATA[exchange_code]["id"]
 
                 # Check if listing exists
-                existing = await service.get_by_symbol_and_exchange(
-                    listing_data.get("symbol"), exchange_code
-                )
+                existing = await service.get_by_symbol_and_exchange(listing_data.get("symbol"), exchange_code)
 
                 if existing:
                     # Update existing listing
@@ -250,11 +243,7 @@ class TestDatabaseService:
             # Commit the transaction
             await db.commit()
 
-            return {
-                "saved_count": saved_count,
-                "total": len(listings_data),
-                "new_listings": new_listings
-            }
+            return {"saved_count": saved_count, "total": len(listings_data), "new_listings": new_listings}
 
         except Exception as e:
             # Ensure transaction is rolled back

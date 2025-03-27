@@ -1,0 +1,48 @@
+name: Backend Tests
+
+on:
+  workflow_run:
+    workflows: ["Backend Linting"]
+    types:
+      - completed
+    branches: [ main, master, develop ]
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+
+jobs:
+  test-backend:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'push' || github.event_name == 'pull_request' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Run backend tests
+        run: |
+          # Create a .env file with test values
+          echo "POSTGRES_USER=postgres" > .env.test
+          echo "POSTGRES_PASSWORD=postgres" >> .env.test
+          echo "POSTGRES_DB=backend_test" >> .env.test
+          echo "TELEGRAM_BOT_TOKEN=dummy_token" >> .env.test
+          echo "TELEGRAM_CHAT_ID=-1002575188289" >> .env.test
+          echo "DEBUG=True" >> .env
+          echo "NOTIFICATION_SERVICE_URL=http://notification_service:8001" >> .env.test
+          echo "SCRAPER_SERVICE_URL=http://scraper_service:8002" >> .env.test
+
+          # Build test_runner image with cache
+          docker buildx build \
+            --cache-from=type=gha,scope=backend-test \
+            --cache-to=type=gha,mode=max,scope=backend-test \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --load \
+            -t test_runner:latest \
+            -f ./backend/Dockerfile.dev ./backend
+
+          # Run tests using docker-compose with pre-built image
+          docker compose -f docker-compose.test.yml up --exit-code-from test_runner

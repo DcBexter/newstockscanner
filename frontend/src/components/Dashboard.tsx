@@ -1,16 +1,6 @@
 import type { PaletteMode } from '@mui/material';
 import { DarkMode, LightMode, Visibility, VisibilityOff } from '@mui/icons-material';
-import {
-  Box,
-  Button,
-  Container,
-  IconButton,
-  Paper,
-  Stack,
-  Tooltip,
-  Typography,
-  useTheme,
-} from '@mui/material';
+import { Box, Button, Container, IconButton, Paper, Stack, Tooltip, Typography, useTheme } from '@mui/material';
 import { EXCHANGE_CODES } from '../constants/exchanges';
 import { useAppContext } from '../context/useAppContext';
 import { findCommonExchanges, isExchangeSelected } from '../utils/exchangeUtils';

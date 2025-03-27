@@ -8,16 +8,17 @@ interact with the database and generate statistics.
 
 import logging
 from functools import wraps
-from typing import Dict, Any, Callable, Optional
+from typing import Any, Callable, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.database.session import get_db
 from backend.api_service.services import StatsService
 from backend.core.exceptions import DatabaseQueryError
+from backend.database.session import get_db
 
 logger = logging.getLogger(__name__)
+
 
 # Error handling decorator
 def handle_route_errors(operation_name: str):
@@ -30,6 +31,7 @@ def handle_route_errors(operation_name: str):
     Returns:
         Callable: Decorated function with error handling
     """
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         async def wrapper(*args, **kwargs) -> Any:
@@ -48,25 +50,22 @@ def handle_route_errors(operation_name: str):
             except Exception as e:
                 # Log unexpected errors and return a generic message
                 logger.error(f"Unexpected error in {operation_name}: {str(e)}", exc_info=True)
-                raise HTTPException(
-                    status_code=500, 
-                    detail=f"An unexpected error occurred while {operation_name}"
-                )
+                raise HTTPException(status_code=500, detail=f"An unexpected error occurred while {operation_name}")
+
         return wrapper
+
     return decorator
+
 
 router = APIRouter(
     prefix="/statistics",
     tags=["statistics"],
 )
 
+
 @router.get("/", response_model=Dict[str, Any])
 @handle_route_errors("retrieving statistics")
-async def get_listing_stats(
-    days: int = 30,
-    exchange_code: Optional[str] = None,
-    db: AsyncSession = Depends(get_db)
-):
+async def get_listing_stats(days: int = 30, exchange_code: Optional[str] = None, db: AsyncSession = Depends(get_db)):
     """
     Get listing statistics with optional filters.
 
