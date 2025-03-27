@@ -34,6 +34,7 @@ jobs:
             --cache-from=type=gha,scope=backend-test \
             --cache-to=type=gha,mode=max,scope=backend-test \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --load \
             -t test_runner:latest \
             -f ./backend/Dockerfile.dev ./backend
 
@@ -81,6 +82,7 @@ jobs:
           context: ./backend
           file: ./backend/Dockerfile.prod
           push: false
+          load: true
           tags: stock-scanner-backend:latest
           cache-from: type=gha,scope=backend-prod
           cache-to: type=gha,mode=max,scope=backend-prod
@@ -93,6 +95,7 @@ jobs:
           context: ./frontend
           file: ./frontend/Dockerfile.prod
           push: false
+          load: true
           tags: stock-scanner-frontend:latest
           cache-from: type=gha,scope=frontend-prod
           cache-to: type=gha,mode=max,scope=frontend-prod
