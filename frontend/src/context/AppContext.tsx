@@ -70,7 +70,7 @@ const useFetchListings = (
     };
 
     fetchData();
-  }, [state, dispatch]);
+  }, [state.days, state.selectedExchange, state.isPaginationMode, state.startDate, state.endDate, dispatch]);
 };
 
 const useFetchStatistics = (
@@ -138,7 +138,7 @@ const useListingPolling = (
     } catch (err) {
       console.error('Background polling error:', err);
     }
-  }, [state, dispatch]);
+  }, [state.days, state.selectedExchange, state.isPaginationMode, state.startDate, state.endDate, state.previousListingsCount, dispatch]);
 
   useEffect(() => {
     // Setup auto-polling for new listings

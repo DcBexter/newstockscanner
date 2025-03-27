@@ -103,19 +103,8 @@ class BaseNotifier(ABC):
     async def format_message(message: NotificationMessage) -> str:
         """Format the notification message."""
         try:
-            metadata_str = ""
-            if message.metadata:
-                metadata_str = "\n\nMetadata:\n" + "\n".join(
-                    f"- {k}: {v}" for k, v in message.metadata.items()
-                )
-
-            return (
-                f"{message.title}\n"
-                f"---\n"
-                f"{message.body}"
-                f"{metadata_str}\n"
-                f"\nTimestamp: {message.timestamp.strftime('%Y-%m-%d %H:%M:%S UTC')}"
-            )
+            # Only include the body of the message, not the title, separator, or metadata
+            return message.body
         except Exception as exception:
             raise NotifierError(f"Failed to format message: {str(exception)}") from exception
 
@@ -163,7 +152,8 @@ class BaseNotifier(ABC):
             parts.append(formatted_message[char_index:char_index + self.MAX_MESSAGE_LENGTH])
         return parts
 
-    def _create_part_message(self, message: NotificationMessage, part: str, part_index: int, total_parts: int) -> NotificationMessage:
+    @staticmethod
+    def _create_part_message(message: NotificationMessage, part: str, part_index: int, total_parts: int) -> NotificationMessage:
         """
         Create a notification message for a part of a long message.
 
@@ -318,7 +308,8 @@ class BaseNotifier(ABC):
 
         return listing_body
 
-    def _sort_listings_by_date(self, exchange_listings: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    @staticmethod
+    def _sort_listings_by_date(exchange_listings: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
         Sort listings by listing date (newest first).
 
@@ -336,7 +327,8 @@ class BaseNotifier(ABC):
         sorted_listings = sorted(exchange_listings, key=get_listing_date, reverse=True)
         return sorted_listings
 
-    def _create_chunk_header(self, exchange: str, current_part: int, total_chunks: int) -> str:
+    @staticmethod
+    def _create_chunk_header(exchange: str, current_part: int, total_chunks: int) -> str:
         """
         Create a header for a chunk of listings.
 
@@ -376,13 +368,11 @@ class BaseNotifier(ABC):
         # Use the format_message function to format the listing
         formatted_listing = await self.format_message(listing_notification)
 
-        # Extract just the body part (skip title, metadata, and timestamp)
-        body_start = formatted_listing.find("---\n") + 4  # Skip the "---\n"
-        body_end = formatted_listing.find("\n\nMetadata:") if "\n\nMetadata:" in formatted_listing else formatted_listing.find("\n\nTimestamp:")
-        return formatted_listing[body_start:body_end].strip() + "\n\n"
+        return formatted_listing
 
-    def _create_chunk_notification(self, exchange: str, chunk: List[Dict[str, Any]], 
-                                  current_part: int, total_chunks: int, message: str) -> NotificationMessage:
+    @staticmethod
+    def _create_chunk_notification(exchange: str, chunk: List[Dict[str, Any]],
+                                   current_part: int, total_chunks: int, message: str) -> NotificationMessage:
         """
         Create a notification message for a chunk of listings.
 

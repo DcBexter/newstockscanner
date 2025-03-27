@@ -1,7 +1,7 @@
 import { Button } from '@mui/material';
 import { Refresh } from '@mui/icons-material';
 import { api } from '../api/client';
-import { useAppContext } from '../context/AppContext';
+import { useAppContext } from '../context/useAppContext';
 
 interface ScanButtonProps {
   exchangeCode: string;
