@@ -2,5 +2,42 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:recommended"
+  ],
+  "packageRules": [
+    {
+      "matchUpdateTypes": [
+        "patch",
+        "pin",
+        "digest"
+      ],
+      "automerge": true,
+      "labels": [
+        "dependencies",
+        "patch-update",
+        "auto-merge"
+      ]
+    },
+    {
+      "matchUpdateTypes": [
+        "minor"
+      ],
+      "automerge": true,
+      "labels": [
+        "dependencies",
+        "minor-update",
+        "auto-merge"
+      ]
+    },
+    {
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "automerge": true,
+      "labels": [
+        "dependencies",
+        "major-update",
+        "breaking-change"
+      ]
+    }
   ]
 }
