@@ -28,9 +28,17 @@ jobs:
           echo "DEBUG=True" >> .env
           echo "NOTIFICATION_SERVICE_URL=http://notification_service:8001" >> .env.test
           echo "SCRAPER_SERVICE_URL=http://scraper_service:8002" >> .env.test
-          
-          # Run tests using docker-compose
-          docker compose -f docker-compose.test.yml up --build --exit-code-from test_runner
+
+          # Build test_runner image with cache
+          docker buildx build \
+            --cache-from=type=gha,scope=backend-test \
+            --cache-to=type=gha,mode=max,scope=backend-test \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            -t test_runner:latest \
+            -f ./backend/Dockerfile.dev ./backend
+
+          # Run tests using docker-compose with pre-built image
+          docker compose -f docker-compose.test.yml up --exit-code-from test_runner
 
   frontend-lint:
     name: Frontend Linting
@@ -74,8 +82,10 @@ jobs:
           file: ./backend/Dockerfile.prod
           push: false
           tags: stock-scanner-backend:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=backend-prod
+          cache-to: type=gha,mode=max,scope=backend-prod
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
 
       - name: Build frontend image
         uses: docker/build-push-action@v5
@@ -84,8 +94,10 @@ jobs:
           file: ./frontend/Dockerfile.prod
           push: false
           tags: stock-scanner-frontend:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=frontend-prod
+          cache-to: type=gha,mode=max,scope=frontend-prod
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
 
   # Uncomment this job when you're ready to deploy
   # deploy:

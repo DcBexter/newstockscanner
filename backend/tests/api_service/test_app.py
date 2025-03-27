@@ -67,7 +67,7 @@ async def cleanup_connections():
                 task.cancel()
 
 
-@pytest.fixture(scope="function")
+@pytest_asyncio.fixture(scope="function")
 async def mock_db():
     """Fixture to provide a mock database session."""
     mock_session = AsyncMock(spec=AsyncSession)
