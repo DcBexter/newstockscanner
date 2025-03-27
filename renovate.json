@@ -39,5 +39,6 @@
         "breaking-change"
       ]
     }
-  ]
+  ],
+  "rebaseWhen": "conflicted"
 }
