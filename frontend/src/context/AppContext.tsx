@@ -5,6 +5,19 @@ import * as actions from './actions';
 import { api } from '../api/client';
 import { AppContext, AppContextType } from './AppContextTypes';
 
+// Helper function for logging errors that only runs in development mode
+const devError = (error: unknown, message?: string): void => {
+  if (process.env.NODE_ENV === 'development') {
+    if (message) {
+      // eslint-disable-next-line no-console
+      console.error(message, error);
+    } else {
+      // eslint-disable-next-line no-console
+      console.error(error);
+    }
+  }
+};
+
 // Constants
 const POLLING_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes in milliseconds
 
@@ -18,7 +31,7 @@ const useFetchExchanges = (dispatch: React.Dispatch<AppAction>) => {
         dispatch(actions.setExchanges(exchangesData));
       } catch (err) {
         dispatch(actions.setError('Failed to load exchanges'));
-        console.error(err);
+        devError(err);
       } finally {
         dispatch(actions.setLoadingExchanges(false));
       }
@@ -29,7 +42,7 @@ const useFetchExchanges = (dispatch: React.Dispatch<AppAction>) => {
       const promise = fetchExchanges();
       // Handle any uncaught errors
       promise.catch(err => {
-        console.error('Unhandled promise rejection in fetchExchanges:', err);
+        devError(err, 'Unhandled promise rejection in fetchExchanges:');
       });
     };
 
@@ -61,9 +74,8 @@ const useFetchListings = (state: AppState, dispatch: React.Dispatch<AppAction>) 
     const fetchData = () => {
       const promise = fetchListings();
       // Handle any uncaught errors
-      promise.catch(() => {
-        console.error('Unhandled promise rejection in fetchListings');
-        //console.error(err)
+      promise.catch(err => {
+        devError(err, 'Unhandled promise rejection in fetchListings');
       });
     };
 
@@ -83,7 +95,7 @@ const useFetchStatistics = (state: AppState, dispatch: React.Dispatch<AppAction>
         }
       } catch (err) {
         dispatch(actions.setError('Failed to load statistics'));
-        console.error(err);
+        devError(err);
       } finally {
         dispatch(actions.setLoadingStatistics(false));
       }
@@ -94,7 +106,7 @@ const useFetchStatistics = (state: AppState, dispatch: React.Dispatch<AppAction>
       const promise = fetchStatistics();
       // Handle any uncaught errors
       promise.catch(err => {
-        console.error('Unhandled promise rejection in fetchStatistics:', err);
+        devError(err, 'Unhandled promise rejection in fetchStatistics:');
       });
     };
 
@@ -128,7 +140,7 @@ const useListingPolling = (state: AppState, dispatch: React.Dispatch<AppAction>)
         dispatch(actions.setListings(listingsData));
       }
     } catch (err) {
-      console.error('Background polling error:', err);
+      devError(err, 'Background polling error:');
     }
   }, [state, dispatch]);
 
@@ -145,7 +157,7 @@ const useListingPolling = (state: AppState, dispatch: React.Dispatch<AppAction>)
         const promise = fetchListingsForNotification();
         // Handle any uncaught errors
         promise.catch(err => {
-          console.error('Unhandled promise rejection in fetchListingsForNotification:', err);
+          devError(err, 'Unhandled promise rejection in fetchListingsForNotification:');
         });
       }
     }, POLLING_INTERVAL_MS);

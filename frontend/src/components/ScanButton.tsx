@@ -3,6 +3,14 @@ import { Refresh } from '@mui/icons-material';
 import { api } from '../api/client';
 import { useAppContext } from '../context/AppContext';
 
+// Helper function for logging errors that only runs in development mode
+const devError = (error: unknown): void => {
+  if (process.env.NODE_ENV === 'development') {
+    // eslint-disable-next-line no-console
+    console.error(error);
+  }
+};
+
 interface ScanButtonProps {
   exchangeCode: string;
   isSelected: boolean;
@@ -51,7 +59,7 @@ export default function ScanButton({ exchangeCode, isSelected }: ScanButtonProps
       dispatch(actions.setStatistics(statsData));
     } catch (err) {
       dispatch(actions.setError(`Failed to trigger ${exchangeCode} scan`));
-      console.error(err);
+      devError(err);
     } finally {
       dispatch(actions.setScanning(false));
     }
