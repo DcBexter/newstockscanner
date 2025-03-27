@@ -1,42 +1,41 @@
 repos:
--   repo: https://github.com/pre-commit/pre-commit-hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.4.0
     hooks:
-    -   id: trailing-whitespace
-    -   id: end-of-file-fixer
-    -   id: check-yaml
-    -   id: check-added-large-files
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
 
--   repo: https://github.com/psf/black
+  - repo: https://github.com/psf/black
     rev: 23.3.0
     hooks:
-    -   id: black
+      - id: black
 
--   repo: https://github.com/pycqa/isort
+  - repo: https://github.com/pycqa/isort
     rev: 5.12.0
     hooks:
-    -   id: isort
+      - id: isort
 
--   repo: https://github.com/pre-commit/mirrors-eslint
-    rev: v8.38.0
+  - repo: https://github.com/pre-commit/mirrors-eslint
+    rev: v9.23.0
     hooks:
-    -   id: eslint
-        files: \.(js|ts|tsx)$
+      - id: eslint
+        files: frontend/.*\.(js|ts|tsx)$
         types: [file]
+        args: [--config=frontend/eslint.config.js]
         additional_dependencies:
-        -   eslint@8.38.0
-        -   eslint-plugin-react@7.32.2
-        -   eslint-plugin-react-hooks@4.6.0
-        -   eslint-plugin-jsx-a11y@6.7.1
-        -   eslint-plugin-prettier@4.2.1
-        -   eslint-config-prettier@8.8.0
-        -   eslint-plugin-simple-import-sort@10.0.0
-        -   @typescript-eslint/eslint-plugin@5.59.0
-        -   @typescript-eslint/parser@5.59.0
-        -   prettier@2.8.7
+          - 'eslint@9.23.0'
+          - '@eslint/js@9.23.0'
+          - '@eslint/eslintrc@3.0.0'
+          - 'typescript-eslint@8.28.0'
+          - 'eslint-plugin-react@7.37.4'
+          - 'eslint-plugin-react-hooks@5.2.0'
+          - 'eslint-plugin-react-refresh@0.4.19'
+          - 'globals@16.0.0'
 
--   repo: https://github.com/pre-commit/mirrors-prettier
+  - repo: https://github.com/pre-commit/mirrors-prettier
     rev: v3.0.0-alpha.9-for-vscode
     hooks:
-    -   id: prettier
+      - id: prettier
         types_or: [javascript, jsx, ts, tsx, json, css, scss, yaml]
