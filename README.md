@@ -124,3 +124,7 @@ The tests will run in the Docker container and the results will be displayed in 
 - [x] Docker configuration updated and moved to appropriate directories
 - [x] Development and production environments configured
 - [ ] Application running successfully
+
+## Code Quality
+
+We are committed to maintaining high code quality standards in this project. Please refer to the [Clean Code Implementation Plan](CLEAN_CODE_PLAN.md) for details on our approach to improving code quality and the guidelines to follow when contributing to this project.

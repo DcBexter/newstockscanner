@@ -6,7 +6,7 @@ import ExchangeFilter from './ExchangeFilter';
 import MonthPagination from './MonthPagination';
 import ScanButton from './ScanButton';
 import NotificationSection from './NotificationSection';
-import { useAppContext } from '../context/AppContext';
+import { useAppContext } from '../context/useAppContext';
 import { findCommonExchanges, isExchangeSelected } from '../utils/exchangeUtils';
 import { EXCHANGE_CODES } from '../constants/exchanges';
 

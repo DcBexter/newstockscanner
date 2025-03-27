@@ -238,7 +238,8 @@ class BaseScraper(ABC):
                 await self._session.close()
             self._session = None
 
-    def _get_cache_key(self, url: str) -> str:
+    @staticmethod
+    def _get_cache_key(url: str) -> str:
         """Generate a cache key for a URL."""
         return hashlib.md5(url.encode()).hexdigest()
 
@@ -472,7 +473,7 @@ class BaseScraper(ABC):
         """
         pass
 
-    async def get_last_scrape_time(self, source_id: str) -> Optional[datetime]:
+    def get_last_scrape_time(self, source_id: str) -> Optional[datetime]:
         """Get the last time this source was scraped.
 
         Args:
@@ -484,14 +485,14 @@ class BaseScraper(ABC):
         """
         return self.last_scrape_time.get(source_id)
 
-    def set_last_scrape_time(self, source_id: str, time: datetime = None) -> None:
+    def set_last_scrape_time(self, source_id: str, timestamp: datetime = None) -> None:
         """Set the last time this source was scraped.
 
         Args:
             source_id (str): Identifier for the data source (e.g., "nasdaq", "hkex")
-            time (datetime, optional): The time to set. Defaults to current time.
+            timestamp (datetime, optional): The time to set. Defaults to current time.
         """
-        self.last_scrape_time[source_id] = time or datetime.now()
+        self.last_scrape_time[source_id] = timestamp or datetime.now()
 
     def get_incremental_date_range(self, source_id: str) -> tuple[Optional[datetime], datetime]:
         """Get the date range for incremental scraping.

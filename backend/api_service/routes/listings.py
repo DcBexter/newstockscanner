@@ -7,8 +7,10 @@ and creating new listings. It uses the ListingService to interact with
 the database.
 """
 
+import logging
 from datetime import datetime
-from typing import Optional, List, Tuple
+from functools import wraps
+from typing import Optional, List, Tuple, Callable, Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,8 +20,42 @@ from backend.core.models import Listing, ListingCreate, PaginatedListings
 from backend.database.session import get_db
 from backend.database.models import StockListing
 
+logger = logging.getLogger(__name__)
+
 # Constants
 MAX_PAGINATION_LIMIT = 1000  # Maximum number of records that can be returned in a single request
+
+# Error handling decorator
+def handle_route_errors(operation_name: str):
+    """
+    Decorator to handle common errors in route handlers.
+
+    Args:
+        operation_name (str): Name of the operation for logging purposes
+
+    Returns:
+        Callable: Decorated function with error handling
+    """
+    def decorator(func: Callable) -> Callable:
+        @wraps(func)
+        async def wrapper(*args, **kwargs) -> Any:
+            try:
+                return await func(*args, **kwargs)
+            except HTTPException:
+                # Re-raise HTTP exceptions that were already raised
+                raise
+            except ValueError as e:
+                # Handle validation errors
+                raise HTTPException(status_code=400, detail=f"Validation error: {str(e)}")
+            except Exception as e:
+                # Log unexpected errors and return a generic message
+                logger.error(f"Unexpected error in {operation_name}: {str(e)}", exc_info=True)
+                raise HTTPException(
+                    status_code=500, 
+                    detail=f"An unexpected error occurred while {operation_name}"
+                )
+        return wrapper
+    return decorator
 
 # Utility functions
 def parse_and_validate_dates(start_date: Optional[str], end_date: Optional[str]) -> Tuple[Optional[datetime], Optional[datetime]]:
@@ -114,12 +150,71 @@ def convert_db_listings_to_models(db_listings: List[StockListing]) -> List[Listi
     """
     return [convert_db_listing_to_model(listing) for listing in db_listings]
 
+async def get_listings_by_date_range(
+    service: ListingService,
+    exchange_code: Optional[str],
+    status: Optional[str],
+    start_date: datetime,
+    end_date: datetime,
+    skip: int,
+    limit: int
+) -> Tuple[List[StockListing], int]:
+    """
+    Get listings filtered by date range.
+
+    Args:
+        service (ListingService): The listing service
+        exchange_code (Optional[str]): Filter by exchange code
+        status (Optional[str]): Filter by listing status
+        start_date (datetime): Start date for filtering
+        end_date (datetime): End date for filtering
+        skip (int): Number of records to skip
+        limit (int): Maximum number of records to return
+
+    Returns:
+        Tuple[List[StockListing], int]: The listings and total count
+    """
+    db_listings = await service.get_by_date_range(
+        exchange_code, status, start_date, end_date, skip, limit
+    )
+    total = await service.get_by_date_range_count(
+        exchange_code, status, start_date, end_date
+    )
+    return db_listings, total
+
+async def get_listings_by_days(
+    service: ListingService,
+    exchange_code: Optional[str],
+    status: Optional[str],
+    days: int,
+    skip: int,
+    limit: int
+) -> Tuple[List[StockListing], int]:
+    """
+    Get listings filtered by number of days.
+
+    Args:
+        service (ListingService): The listing service
+        exchange_code (Optional[str]): Filter by exchange code
+        status (Optional[str]): Filter by listing status
+        days (int): Get listings from the last N days
+        skip (int): Number of records to skip
+        limit (int): Maximum number of records to return
+
+    Returns:
+        Tuple[List[StockListing], int]: The listings and total count
+    """
+    db_listings = await service.get_filtered(exchange_code, status, days, skip, limit)
+    total = await service.get_filtered_count(exchange_code, status, days)
+    return db_listings, total
+
 router = APIRouter(
     prefix="/listings",
     tags=["listings"],
 )
 
 @router.get("/", response_model=PaginatedListings)
+@handle_route_errors("retrieving listings")
 async def get_listings(
     exchange_code: Optional[str] = None,
     status: Optional[str] = None,
@@ -156,48 +251,36 @@ async def get_listings(
                       or if there's an error retrieving listings from the database.
     """
     service = ListingService(db)
-    try:
-        # Parse and validate dates
-        parsed_start_date, parsed_end_date = parse_and_validate_dates(start_date, end_date)
 
-        # Validate pagination parameters
-        validate_pagination_params(skip, limit)
+    # Parse and validate dates
+    parsed_start_date, parsed_end_date = parse_and_validate_dates(start_date, end_date)
 
-        # Get database models and total count - use date range if provided, otherwise use days
-        if parsed_start_date and parsed_end_date:
-            db_listings = await service.get_by_date_range(
-                exchange_code, status, parsed_start_date, parsed_end_date, skip, limit
-            )
-            total = await service.get_by_date_range_count(
-                exchange_code, status, parsed_start_date, parsed_end_date
-            )
-        else:
-            db_listings = await service.get_filtered(exchange_code, status, days, skip, limit)
-            total = await service.get_filtered_count(exchange_code, status, days)
+    # Validate pagination parameters
+    validate_pagination_params(skip, limit)
 
-        # Convert database models to Pydantic models to avoid detached session issues
-        items = convert_db_listings_to_models(db_listings)
-
-        # Return paginated response
-        return PaginatedListings(
-            items=items,
-            total=total,
-            skip=skip,
-            limit=limit
+    # Get database models and total count - use date range if provided, otherwise use days
+    if parsed_start_date and parsed_end_date:
+        db_listings, total = await get_listings_by_date_range(
+            service, exchange_code, status, parsed_start_date, parsed_end_date, skip, limit
         )
-    except HTTPException:
-        # Re-raise HTTP exceptions that were already raised by utility functions
-        raise
-    except ValueError as e:
-        # Handle validation errors
-        raise HTTPException(status_code=400, detail=f"Validation error: {str(e)}")
-    except Exception as e:
-        # Log unexpected errors and return a generic message
-        import logging
-        logging.error(f"Unexpected error in get_listings: {str(e)}")
-        raise HTTPException(status_code=500, detail="An unexpected error occurred while retrieving listings")
+    else:
+        db_listings, total = await get_listings_by_days(
+            service, exchange_code, status, days, skip, limit
+        )
+
+    # Convert database models to Pydantic models to avoid detached session issues
+    items = convert_db_listings_to_models(db_listings)
+
+    # Return paginated response
+    return PaginatedListings(
+        items=items,
+        total=total,
+        skip=skip,
+        limit=limit
+    )
 
 @router.get("/{symbol}", response_model=Listing)
+@handle_route_errors("retrieving listing by symbol")
 async def get_listing(symbol: str, db: AsyncSession = Depends(get_db)):
     """
     Get listing by symbol.
@@ -224,6 +307,7 @@ async def get_listing(symbol: str, db: AsyncSession = Depends(get_db)):
     return convert_db_listing_to_model(listing)
 
 @router.post("/", response_model=Listing)
+@handle_route_errors("creating listing")
 async def create_listing(listing: ListingCreate, db: AsyncSession = Depends(get_db)):
     """
     Create a new listing.
@@ -244,20 +328,9 @@ async def create_listing(listing: ListingCreate, db: AsyncSession = Depends(get_
                       such as if the exchange with the given code doesn't exist.
     """
     service = ListingService(db)
-    try:
-        # Create in database
-        db_listing = await service.create(listing)
 
-        # Convert to Pydantic model to avoid detached session issues
-        return convert_db_listing_to_model(db_listing)
-    except HTTPException:
-        # Re-raise HTTP exceptions
-        raise
-    except ValueError as e:
-        # Handle validation errors
-        raise HTTPException(status_code=400, detail=f"Validation error: {str(e)}")
-    except Exception as e:
-        # Log unexpected errors and return a generic message
-        import logging
-        logging.error(f"Unexpected error in create_listing: {str(e)}")
-        raise HTTPException(status_code=500, detail="An unexpected error occurred while creating the listing")
+    # Create in database
+    db_listing = await service.create(listing)
+
+    # Convert to Pydantic model to avoid detached session issues
+    return convert_db_listing_to_model(db_listing)

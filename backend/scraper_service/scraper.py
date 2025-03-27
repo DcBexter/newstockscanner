@@ -12,6 +12,8 @@ from typing import List, Dict, Any, Optional
 import logging
 import os
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from backend.api_service.services import ListingService
 from backend.config.log_config import setup_logging
 from backend.core.interfaces import DatabaseServiceInterface, NotificationServiceInterface, DatabaseHelperInterface, ScraperFactoryInterface
@@ -93,6 +95,111 @@ class StockScanner:
         # allows for future resource cleanup if needed
         pass
 
+    async def _create_and_setup_scraper(self, name: str) -> Any:
+        """
+        Create and set up a scraper for the specified exchange.
+
+        Args:
+            name (str): The name of the exchange to create a scraper for.
+
+        Returns:
+            Any: The created scraper instance.
+
+        Raises:
+            Exception: If there was an error creating the scraper.
+        """
+        return self.scraper_factory.get_scraper(name)
+
+    @staticmethod
+    async def _execute_scraping_strategy(scraper: Any, name: str) -> Any:
+        """
+        Execute the appropriate scraping strategy (incremental or regular).
+
+        Args:
+            scraper (Any): The scraper instance to use.
+            name (str): The name of the exchange being scraped.
+
+        Returns:
+            Any: The result of the scraping operation.
+        """
+        # Get date range for incremental scraping
+        incremental_scraping = os.getenv('INCREMENTAL_SCRAPING_ENABLED', 'false').lower() == 'true'
+        if incremental_scraping:
+            start_date, end_date = scraper.get_incremental_date_range(name)
+            logger.info(f"Using incremental scraping for {name} from {start_date} to {end_date}")
+
+            # Pass date range to scraper if it supports it
+            if hasattr(scraper, 'scrape_with_date_range'):
+                return await scraper.scrape_with_date_range(start_date, end_date)
+            else:
+                # Fall back to regular scraping
+                return await scraper.scrape()
+        else:
+            # Regular scraping
+            return await scraper.scrape()
+
+    @staticmethod
+    async def _process_scraping_result(result: Any, name: str) -> List[Dict[str, Any]]:
+        """
+        Process the result of a scraping operation.
+
+        Args:
+            result (Any): The result of the scraping operation.
+            name (str): The name of the exchange that was scraped.
+
+        Returns:
+            List[Dict[str, Any]]: A list of dictionaries containing the scraped listings.
+        """
+        if not result or not result.success:
+            return []
+
+        listings = [listing.model_dump() for listing in result.data]
+        logger.info(f"Found {len(listings)} listings from {name}")
+        return listings
+
+    async def _scrape_single_exchange(self, name: str) -> List[Dict[str, Any]]:
+        """
+        Scrape a single exchange with retry logic.
+
+        Args:
+            name (str): The name of the exchange to scrape.
+
+        Returns:
+            List[Dict[str, Any]]: A list of dictionaries containing the scraped listings.
+        """
+        for attempt in range(self.MAX_RETRIES):
+            try:
+                logger.info(f"Running {name} scraper (attempt {attempt + 1}/{self.MAX_RETRIES})...")
+
+                # Create a new scraper instance within the async context
+                try:
+                    scraper = await self._create_and_setup_scraper(name)
+                    async with scraper as scraper:
+                        # Execute the appropriate scraping strategy
+                        result = await self._execute_scraping_strategy(scraper, name)
+
+                        # Update last scrape time if successful
+                        if result and result.success:
+                            scraper.set_last_scrape_time(name)
+
+                        # Process the result
+                        return await self._process_scraping_result(result, name)
+
+                except Exception as session_err:
+                    logger.error(f"Error managing session for {name}: {str(session_err)}")
+                    if attempt < self.MAX_RETRIES - 1:
+                        logger.warning(f"Session error for {name}. Retrying in {self.RETRY_DELAY} seconds...")
+                        await asyncio.sleep(self.RETRY_DELAY)
+                        continue
+                    break
+
+            except Exception as e:
+                logger.error(f"Error scraping {name}: {str(e)}")
+                if attempt < self.MAX_RETRIES - 1:
+                    await asyncio.sleep(self.RETRY_DELAY)
+
+        return []
+
     async def scan_listings(self, exchange_filter=None) -> List[Dict[str, Any]]:
         """
         Scan for new listings with retries across all scrapers.
@@ -113,63 +220,8 @@ class StockScanner:
 
         # Run scrapers sequentially to ensure proper logging
         for name in exchanges_to_scan:
-            for attempt in range(self.MAX_RETRIES):
-                try:
-                    logger.info(f"Running {name} scraper (attempt {attempt + 1}/{self.MAX_RETRIES})...")
-
-                    # Create a new scraper instance within the async context
-                    try:
-                        scraper = self.scraper_factory.get_scraper(name)
-                        async with scraper as scraper:
-                            # Get date range for incremental scraping
-                            incremental_scraping = os.getenv('INCREMENTAL_SCRAPING_ENABLED', 'false').lower() == 'true'
-                            if incremental_scraping:
-                                start_date, end_date = scraper.get_incremental_date_range(name)
-                                logger.info(f"Using incremental scraping for {name} from {start_date} to {end_date}")
-
-                                # Pass date range to scraper if it supports it
-                                if hasattr(scraper, 'scrape_with_date_range'):
-                                    result = await scraper.scrape_with_date_range(start_date, end_date)
-                                else:
-                                    # Fall back to regular scraping
-                                    result = await scraper.scrape()
-                            else:
-                                # Regular scraping
-                                result = await scraper.scrape()
-
-                            # Update last scrape time if successful
-                            if result and result.success:
-                                await scraper.set_last_scrape_time(name)
-                    except Exception as session_err:
-                        logger.error(f"Error managing session for {name}: {str(session_err)}")
-                        if attempt < self.MAX_RETRIES - 1:
-                            logger.warning(f"Session error for {name}. Retrying in {self.RETRY_DELAY} seconds...")
-                            await asyncio.sleep(self.RETRY_DELAY)
-                            continue
-                        break
-
-                    # Process result if valid
-                    if not result:
-                        if attempt < self.MAX_RETRIES - 1:
-                            await asyncio.sleep(self.RETRY_DELAY)
-                            continue
-                        break
-
-                    if result.success:
-                        listings = [listing.model_dump() for listing in result.data]
-                        logger.info(f"Found {len(listings)} listings from {name}")
-                        all_listings.extend(listings)
-                        break
-                    elif attempt < self.MAX_RETRIES - 1:
-                        logger.warning(f"Failed to scan {name}: {result.message}. Retrying...")
-                        await asyncio.sleep(self.RETRY_DELAY)
-                    else:
-                        logger.error(f"Failed to scan {name} after {self.MAX_RETRIES} attempts")
-
-                except Exception as e:
-                    logger.error(f"Error scraping {name}: {str(e)}")
-                    if attempt < self.MAX_RETRIES - 1:
-                        await asyncio.sleep(self.RETRY_DELAY)
+            listings = await self._scrape_single_exchange(name)
+            all_listings.extend(listings)
 
         logger.info(f"Total listings found across all scrapers: {len(all_listings)}")
         return all_listings
@@ -270,6 +322,99 @@ class StockScanner:
             "unnotified_sent": unnotified
         }
 
+    @staticmethod
+    async def _get_unnotified_listings(service: ListingService) -> List[Any]:
+        """
+        Get unnotified listings from the database.
+
+        Args:
+            service (ListingService): The listing service to use.
+
+        Returns:
+            List[Any]: A list of unnotified listings, or an empty list if none were found or an error occurred.
+        """
+        try:
+            unnotified_listings = await service.get_unnotified_listings()
+
+            if not unnotified_listings:
+                logger.info("No unnotified listings found")
+                return []
+
+            logger.info(f"Found {len(unnotified_listings)} unnotified listings from previous runs")
+            return unnotified_listings
+        except Exception as exc:
+            logger.error(f"Failed to get unnotified listings: {str(exc)}")
+            return []
+
+    @staticmethod
+    def _convert_listings_to_dicts(unnotified_listings: List[Any]) -> List[Dict[str, Any]]:
+        """
+        Convert listing objects to dictionaries for the notification service.
+
+        Args:
+            unnotified_listings (List[Any]): A list of listing objects.
+
+        Returns:
+            List[Dict[str, Any]]: A list of dictionaries containing the listing data.
+        """
+        return [{
+            "id": listing.id,
+            "name": listing.name,
+            "symbol": listing.symbol,
+            "listing_date": listing.listing_date,
+            "lot_size": listing.lot_size,
+            "status": listing.status,
+            "exchange_code": listing.exchange.code,
+            "url": listing.url,
+            "security_type": listing.security_type,
+            "listing_detail_url": listing.listing_detail_url
+        } for listing in unnotified_listings]
+
+    @staticmethod
+    async def _mark_listings_as_notified(service: ListingService, unnotified_listings: List[Any]) -> None:
+        """
+        Mark listings as notified in the database.
+
+        Args:
+            service (ListingService): The listing service to use.
+            unnotified_listings (List[Any]): A list of listing objects to mark as notified.
+        """
+        for listing in unnotified_listings:
+            await service.mark_as_notified(listing.id)
+
+        logger.info(f"Successfully marked {len(unnotified_listings)} listings as notified")
+
+    async def _process_unnotified_listings(self, db: AsyncSession) -> int:
+        """
+        Process unnotified listings: get them, send notifications, and mark them as notified.
+
+        Args:
+            db (AsyncSession): The database session to use.
+
+        Returns:
+            int: The number of unnotified listings that were successfully notified.
+        """
+        service = ListingService(db)
+
+        # Get unnotified listings
+        unnotified_listings = await self._get_unnotified_listings(service)
+        if not unnotified_listings:
+            return 0
+
+        # Convert to dictionaries for notification service
+        listings_to_notify = self._convert_listings_to_dicts(unnotified_listings)
+
+        # Send notifications
+        if await self.send_notifications(listings_to_notify):
+            # Mark all as notified
+            await self._mark_listings_as_notified(service, unnotified_listings)
+
+            logger.info(f"Successfully sent notifications for {len(unnotified_listings)} unnotified listings")
+            return len(unnotified_listings)
+        else:
+            logger.warning("Failed to send notifications for unnotified listings")
+            return 0
+
     async def check_and_notify_unnotified(self) -> int:
         """
         Check for unnotified listings and send notifications.
@@ -282,49 +427,7 @@ class StockScanner:
                  Returns 0 if no unnotified listings were found or if notifications failed.
         """
         try:
-            async def get_and_process_unnotified(db):
-                service = ListingService(db)
-
-                try:
-                    unnotified_listings = await service.get_unnotified_listings()
-                except Exception as exc:
-                    logger.error(f"Failed to get unnotified listings: {str(exc)}")
-                    return 0
-
-                if not unnotified_listings:
-                    logger.info("No unnotified listings found")
-                    return 0
-
-                logger.info(f"Found {len(unnotified_listings)} unnotified listings from previous runs")
-
-                # Convert to dictionaries for notification service
-                listings_to_notify = [{
-                    "id": listing.id,
-                    "name": listing.name,
-                    "symbol": listing.symbol,
-                    "listing_date": listing.listing_date,
-                    "lot_size": listing.lot_size,
-                    "status": listing.status,
-                    "exchange_code": listing.exchange.code,
-                    "url": listing.url,
-                    "security_type": listing.security_type,
-                    "listing_detail_url": listing.listing_detail_url
-                } for listing in unnotified_listings]
-
-                # Send notifications
-                if await self.send_notifications(listings_to_notify):
-                    # Mark all as notified
-                    for listing in unnotified_listings:
-                        await service.mark_as_notified(listing.id)
-
-                    logger.info(f"Successfully sent notifications for {len(unnotified_listings)} unnotified listings")
-                    return len(unnotified_listings)
-                else:
-                    logger.warning("Failed to send notifications for unnotified listings")
-                    return 0
-
-            return await self.db_helper.execute_db_operation(get_and_process_unnotified)
-
+            return await self.db_helper.execute_db_operation(self._process_unnotified_listings)
         except Exception as e:
             logger.error(f"Error checking unnotified listings: {str(e)}")
             return 0
