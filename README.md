@@ -119,7 +119,7 @@ To run the tests:
 cd backend && pytest --cov --cov-branch --cov-report=xml  # Run directly with pytest
 ```
 
-The test results and coverage report will be displayed in the console.
+The test results and coverage report will be displayed on the console.
 
 ## Progress Tracking
 

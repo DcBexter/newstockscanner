@@ -260,7 +260,20 @@ class TestNasdaqScraper:
         # Verify the API was called
         nasdaq_scraper._make_request.assert_called_with(nasdaq_scraper.api_url, headers=nasdaq_scraper.api_headers, timeout=60)
 
-        # Verify the filtering works
-        # Note: In a real test, we would check the actual filtering logic,
-        # but here we're just verifying the method doesn't crash
-        assert nasdaq_scraper._make_request.call_count > 0
+        # Verify the filtering logic works correctly
+        upcoming_result = await nasdaq_scraper.get_upcoming_ipos()
+        assert upcoming_result.success is True
+        assert any(listing.symbol == "TEST2" for listing in upcoming_result.data)
+
+        priced_result = await nasdaq_scraper.get_priced_ipos()
+        assert priced_result.success is True
+        assert any(listing.symbol == "TEST1" for listing in priced_result.data)
+
+        nasdaq_result = await nasdaq_scraper.get_nasdaq_listings()
+        assert nasdaq_result.success is True
+        assert any(listing.symbol == "TEST1" for listing in nasdaq_result.data)
+        assert any(listing.symbol == "TEST3" for listing in nasdaq_result.data)
+
+        nyse_result = await nasdaq_scraper.get_nyse_listings()
+        assert nyse_result.success is True
+        assert any(listing.symbol == "TEST2" for listing in nyse_result.data)
