@@ -1,18 +1,23 @@
-import type { AppContextType } from './AppContextTypes';
-import type { AppAction, AppState } from './types';
-import React, { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
-import { api } from '../api/client';
-import * as actions from './actions';
-import { AppContext } from './AppContextTypes';
-import { initialState, reducer } from './reducer';
+import type { AppContextType } from "./AppContextTypes";
+import type { AppAction, AppState } from "./types";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+} from "react";
+import { api } from "../api/client";
+import * as actions from "./actions";
+import { AppContext } from "./AppContextTypes";
+import { initialState, reducer } from "./reducer";
 
 // Helper function for logging errors that only runs in development mode
 function devError(error: unknown, message?: string): void {
   if (import.meta.env.DEV) {
-    if (message !== undefined && message !== null && message !== '') {
+    if (message !== undefined && message !== null && message !== "") {
       console.error(message, error);
-    }
-    else {
+    } else {
       console.error(error);
     }
   }
@@ -29,12 +34,10 @@ function useFetchExchanges(dispatch: React.Dispatch<AppAction>) {
         dispatch(actions.setLoadingExchanges(true));
         const exchangesData = await api.getExchanges();
         dispatch(actions.setExchanges(exchangesData));
-      }
-      catch (err) {
-        dispatch(actions.setError('Failed to load exchanges'));
+      } catch (err) {
+        dispatch(actions.setError("Failed to load exchanges"));
         devError(err);
-      }
-      finally {
+      } finally {
         dispatch(actions.setLoadingExchanges(false));
       }
     };
@@ -44,7 +47,7 @@ function useFetchExchanges(dispatch: React.Dispatch<AppAction>) {
       const promise = fetchExchanges();
       // Handle any uncaught errors
       promise.catch((err) => {
-        devError(err, 'Unhandled promise rejection in fetchExchanges:');
+        devError(err, "Unhandled promise rejection in fetchExchanges:");
       });
     };
 
@@ -52,7 +55,10 @@ function useFetchExchanges(dispatch: React.Dispatch<AppAction>) {
   }, [dispatch]);
 }
 
-function useFetchListings(state: AppState, dispatch: React.Dispatch<AppAction>) {
+function useFetchListings(
+  state: AppState,
+  dispatch: React.Dispatch<AppAction>,
+) {
   useEffect(() => {
     const fetchListings = async () => {
       dispatch(actions.setLoadingListings(true));
@@ -70,12 +76,10 @@ function useFetchListings(state: AppState, dispatch: React.Dispatch<AppAction>) 
 
         // Reset notification state when filters change
         dispatch(actions.setNewListings(false, 0));
-      }
-      catch (err) {
-        dispatch(actions.setError('Failed to load listings'));
+      } catch (err) {
+        dispatch(actions.setError("Failed to load listings"));
         devError(err);
-      }
-      finally {
+      } finally {
         dispatch(actions.setLoadingListings(false));
       }
     };
@@ -85,7 +89,7 @@ function useFetchListings(state: AppState, dispatch: React.Dispatch<AppAction>) 
       const promise = fetchListings();
       // Handle any uncaught errors
       promise.catch((err) => {
-        devError(err, 'Unhandled promise rejection in fetchListings');
+        devError(err, "Unhandled promise rejection in fetchListings");
       });
     };
 
@@ -100,7 +104,10 @@ function useFetchListings(state: AppState, dispatch: React.Dispatch<AppAction>) 
   ]);
 }
 
-function useFetchStatistics(state: AppState, dispatch: React.Dispatch<AppAction>) {
+function useFetchStatistics(
+  state: AppState,
+  dispatch: React.Dispatch<AppAction>,
+) {
   useEffect(() => {
     const fetchStatistics = async () => {
       try {
@@ -110,12 +117,10 @@ function useFetchStatistics(state: AppState, dispatch: React.Dispatch<AppAction>
           const statsData = await api.getStatistics(state.days);
           dispatch(actions.setStatistics(statsData));
         }
-      }
-      catch (err) {
-        dispatch(actions.setError('Failed to load statistics'));
+      } catch (err) {
+        dispatch(actions.setError("Failed to load statistics"));
         devError(err);
-      }
-      finally {
+      } finally {
         dispatch(actions.setLoadingStatistics(false));
       }
     };
@@ -125,7 +130,7 @@ function useFetchStatistics(state: AppState, dispatch: React.Dispatch<AppAction>
       const promise = fetchStatistics();
       // Handle any uncaught errors
       promise.catch((err) => {
-        devError(err, 'Unhandled promise rejection in fetchStatistics:');
+        devError(err, "Unhandled promise rejection in fetchStatistics:");
       });
     };
 
@@ -133,12 +138,22 @@ function useFetchStatistics(state: AppState, dispatch: React.Dispatch<AppAction>
   }, [state.days, state.isPaginationMode, dispatch]);
 }
 
-function useListingPolling(state: AppState, dispatch: React.Dispatch<AppAction>) {
+function useListingPolling(
+  state: AppState,
+  dispatch: React.Dispatch<AppAction>,
+) {
   const pollingIntervalRef = useRef<number | null>(null);
 
   const fetchListingsForNotification = useCallback(async () => {
     // Destructure the state properties we need to use
-    const { days, startDate, endDate, isPaginationMode, selectedExchange, previousListingsCount } = state;
+    const {
+      days,
+      startDate,
+      endDate,
+      isPaginationMode,
+      selectedExchange,
+      previousListingsCount,
+    } = state;
 
     try {
       const params = createListingParams({
@@ -157,46 +172,53 @@ function useListingPolling(state: AppState, dispatch: React.Dispatch<AppAction>)
         dispatch(actions.setNewListings(true, newCount));
 
         // Show browser notification if allowed
-        if (Notification.permission === 'granted') {
+        if (Notification.permission === "granted") {
           // Use void to indicate intentional non-use of the notification object
-          void new Notification('New Financial Listings', {
-            body: `${newCount} new listing${newCount > 1 ? 's' : ''} detected!`,
-            icon: '/logo.png',
+          void new Notification("New Financial Listings", {
+            body: `${newCount} new listing${newCount > 1 ? "s" : ""} detected!`,
+            icon: "/logo.png",
           });
         }
 
         // Update the listings without setting loading state
         dispatch(actions.setListings(listingsData));
       }
+    } catch (err) {
+      devError(err, "Background polling error:");
     }
-    catch (err) {
-      devError(err, 'Background polling error:');
-    }
-  }, [
-    dispatch,
-    state,
-  ]);
+  }, [dispatch, state]);
 
   useEffect(() => {
     // Setup auto-polling for new listings
-    if (pollingIntervalRef.current !== null && pollingIntervalRef.current !== undefined && pollingIntervalRef.current !== 0) {
+    if (
+      pollingIntervalRef.current !== null &&
+      pollingIntervalRef.current !== undefined &&
+      pollingIntervalRef.current !== 0
+    ) {
       window.clearInterval(pollingIntervalRef.current);
     }
 
     pollingIntervalRef.current = window.setInterval(() => {
       // Only poll if the user has granted notification permission
-      if (Notification.permission === 'granted') {
+      if (Notification.permission === "granted") {
         // Handle the promise returned by fetchListingsForNotification
         const promise = fetchListingsForNotification();
         // Handle any uncaught errors
         promise.catch((err) => {
-          devError(err, 'Unhandled promise rejection in fetchListingsForNotification:');
+          devError(
+            err,
+            "Unhandled promise rejection in fetchListingsForNotification:",
+          );
         });
       }
     }, POLLING_INTERVAL_MS);
 
     return () => {
-      if (pollingIntervalRef.current !== null && pollingIntervalRef.current !== undefined && pollingIntervalRef.current !== 0) {
+      if (
+        pollingIntervalRef.current !== null &&
+        pollingIntervalRef.current !== undefined &&
+        pollingIntervalRef.current !== 0
+      ) {
         window.clearInterval(pollingIntervalRef.current);
         pollingIntervalRef.current = null;
       }
@@ -226,13 +248,18 @@ function createListingParams({
   const params: Record<string, string | number> = {};
 
   // Use either date range or days depending on mode
-  if (isPaginationMode
-    && startDate !== undefined && startDate !== null && startDate !== ''
-    && endDate !== undefined && endDate !== null && endDate !== '') {
+  if (
+    isPaginationMode &&
+    startDate !== undefined &&
+    startDate !== null &&
+    startDate !== "" &&
+    endDate !== undefined &&
+    endDate !== null &&
+    endDate !== ""
+  ) {
     params.start_date = startDate;
     params.end_date = endDate;
-  }
-  else {
+  } else {
     params.days = days;
   }
 
@@ -258,11 +285,14 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   useListingPolling(state, dispatch);
 
   // Create memoized context value to prevent unnecessary re-renders
-  const contextValue = useMemo<AppContextType>(() => ({
-    state,
-    dispatch,
-    actions,
-  }), [state]);
+  const contextValue = useMemo<AppContextType>(
+    () => ({
+      state,
+      dispatch,
+      actions,
+    }),
+    [state],
+  );
 
   return <AppContext value={contextValue}>{children}</AppContext>;
 };

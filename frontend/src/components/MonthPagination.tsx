@@ -1,8 +1,22 @@
-import type { SelectChangeEvent } from '@mui/material';
-import { CalendarMonth, ChevronLeft, ChevronRight, Today } from '@mui/icons-material';
-import { Box, Button, FormControl, IconButton, InputLabel, MenuItem, Select, useTheme } from '@mui/material';
-import dayjs from 'dayjs';
-import { useCallback, useEffect, useState } from 'react';
+import type { SelectChangeEvent } from "@mui/material";
+import {
+  CalendarMonth,
+  ChevronLeft,
+  ChevronRight,
+  Today,
+} from "@mui/icons-material";
+import {
+  Box,
+  Button,
+  FormControl,
+  IconButton,
+  InputLabel,
+  MenuItem,
+  Select,
+  useTheme,
+} from "@mui/material";
+import dayjs from "dayjs";
+import { useCallback, useEffect, useState } from "react";
 
 interface MonthPaginationProps {
   onMonthChange: (startDate: string, endDate: string) => void;
@@ -23,8 +37,8 @@ export default function MonthPagination({
   // Helper function to call onMonthChange with properly formatted dates
   const updateDateRange = useCallback(
     (month: dayjs.Dayjs) => {
-      const startDate = month.startOf('month').format('YYYY-MM-DD');
-      const endDate = month.endOf('month').format('YYYY-MM-DD');
+      const startDate = month.startOf("month").format("YYYY-MM-DD");
+      const endDate = month.endOf("month").format("YYYY-MM-DD");
       onMonthChange(startDate, endDate);
     },
     [onMonthChange],
@@ -40,7 +54,7 @@ export default function MonthPagination({
   // Go to previous month
   const handlePrevMonth = () => {
     // Create a new dayjs instance to avoid mutation issues
-    const prevMonth = dayjs(currentMonth).subtract(1, 'month');
+    const prevMonth = dayjs(currentMonth).subtract(1, "month");
 
     // Always update the date range directly when using month navigation
     updateDateRange(prevMonth);
@@ -52,13 +66,13 @@ export default function MonthPagination({
   // Go to next month (don't allow future months)
   const handleNextMonth = () => {
     // Create a new dayjs instance to avoid mutation issues
-    const nextMonth = dayjs(currentMonth).add(1, 'month');
+    const nextMonth = dayjs(currentMonth).add(1, "month");
     const now = dayjs();
 
     // Compare year and month to prevent future date selection
     if (
-      nextMonth.year() < now.year()
-      || (nextMonth.year() === now.year() && nextMonth.month() <= now.month())
+      nextMonth.year() < now.year() ||
+      (nextMonth.year() === now.year() && nextMonth.month() <= now.month())
     ) {
       // Always update the date range directly when using month navigation
       updateDateRange(nextMonth);
@@ -87,29 +101,28 @@ export default function MonthPagination({
     if (days > 0) {
       // Switch to days mode
       onSwitchToDays(days);
-    }
-    else if (days === 0) {
+    } else if (days === 0) {
       // Switch to current month mode
       handleCurrentMonth();
     }
   };
 
   // Check if next month button should be disabled
-  const isNextMonthDisabled
-    = currentMonth.month() === dayjs().month() && currentMonth.year() === dayjs().year();
+  const isNextMonthDisabled =
+    currentMonth.month() === dayjs().month() &&
+    currentMonth.year() === dayjs().year();
 
   // Get the time range text to display
   const getTimeRangeText = () => {
     if (!isPaginationMode && selectedDays > 0) {
       return `Last ${selectedDays} Days`;
-    }
-    else {
-      return currentMonth.format('MMMM YYYY');
+    } else {
+      return currentMonth.format("MMMM YYYY");
     }
   };
 
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+    <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
       {/* Time range selector (combines both days and month options) */}
       <FormControl sx={{ minWidth: 200 }}>
         <InputLabel id="time-range-select-label">Time Range</InputLabel>
@@ -119,40 +132,82 @@ export default function MonthPagination({
           value={isPaginationMode ? 0 : selectedDays}
           onChange={handleTimeRangeChange}
           label="Time Range"
-          sx={{ height: '56px' }}
+          sx={{ height: "56px" }}
         >
           <MenuItem value={0}>
-            <Box sx={{ display: 'inline-flex', position: 'relative', top: '2px', mr: 1 }}>
+            <Box
+              sx={{
+                display: "inline-flex",
+                position: "relative",
+                top: "2px",
+                mr: 1,
+              }}
+            >
               <CalendarMonth fontSize="small" />
             </Box>
             Monthly View
           </MenuItem>
           <MenuItem value={7}>
-            <Box sx={{ display: 'inline-flex', position: 'relative', top: '2px', mr: 1 }}>
+            <Box
+              sx={{
+                display: "inline-flex",
+                position: "relative",
+                top: "2px",
+                mr: 1,
+              }}
+            >
               <Today fontSize="small" />
             </Box>
             Last 7 Days
           </MenuItem>
           <MenuItem value={14}>
-            <Box sx={{ display: 'inline-flex', position: 'relative', top: '2px', mr: 1 }}>
+            <Box
+              sx={{
+                display: "inline-flex",
+                position: "relative",
+                top: "2px",
+                mr: 1,
+              }}
+            >
               <Today fontSize="small" />
             </Box>
             Last 14 Days
           </MenuItem>
           <MenuItem value={30}>
-            <Box sx={{ display: 'inline-flex', position: 'relative', top: '2px', mr: 1 }}>
+            <Box
+              sx={{
+                display: "inline-flex",
+                position: "relative",
+                top: "2px",
+                mr: 1,
+              }}
+            >
               <Today fontSize="small" />
             </Box>
             Last 30 Days
           </MenuItem>
           <MenuItem value={60}>
-            <Box sx={{ display: 'inline-flex', position: 'relative', top: '2px', mr: 1 }}>
+            <Box
+              sx={{
+                display: "inline-flex",
+                position: "relative",
+                top: "2px",
+                mr: 1,
+              }}
+            >
               <Today fontSize="small" />
             </Box>
             Last 60 Days
           </MenuItem>
           <MenuItem value={90}>
-            <Box sx={{ display: 'inline-flex', position: 'relative', top: '2px', mr: 1 }}>
+            <Box
+              sx={{
+                display: "inline-flex",
+                position: "relative",
+                top: "2px",
+                mr: 1,
+              }}
+            >
               <Today fontSize="small" />
             </Box>
             Last 90 Days
@@ -163,32 +218,34 @@ export default function MonthPagination({
       {/* Month navigation controls - always active */}
       <Box
         sx={{
-          display: 'inline-flex',
-          alignItems: 'center',
+          display: "inline-flex",
+          alignItems: "center",
           border: `1px solid ${
-            theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.23)' : 'rgba(0, 0, 0, 0.23)'
+            theme.palette.mode === "dark"
+              ? "rgba(255, 255, 255, 0.23)"
+              : "rgba(0, 0, 0, 0.23)"
           }`,
-          borderRadius: '4px',
-          boxSizing: 'border-box',
-          height: '56px',
+          borderRadius: "4px",
+          boxSizing: "border-box",
+          height: "56px",
           padding: 0,
-          overflow: 'hidden',
-          backgroundColor: 'transparent',
-          position: 'relative',
-          minHeight: '56px',
+          overflow: "hidden",
+          backgroundColor: "transparent",
+          position: "relative",
+          minHeight: "56px",
         }}
       >
         <IconButton
           onClick={handlePrevMonth}
           sx={{
-            'borderRadius': 0,
-            'height': '56px',
-            'width': '40px',
-            'padding': 0,
-            '&:hover': {
-              backgroundColor: 'rgba(0, 0, 0, 0.04)',
+            borderRadius: 0,
+            height: "56px",
+            width: "40px",
+            padding: 0,
+            "&:hover": {
+              backgroundColor: "rgba(0, 0, 0, 0.04)",
             },
-            'margin': 0,
+            margin: 0,
           }}
         >
           <ChevronLeft fontSize="small" />
@@ -199,23 +256,27 @@ export default function MonthPagination({
           disableRipple
           onClick={handleCurrentMonth}
           sx={{
-            'borderLeft': `1px solid ${
-              theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.23)' : 'rgba(0, 0, 0, 0.23)'
+            borderLeft: `1px solid ${
+              theme.palette.mode === "dark"
+                ? "rgba(255, 255, 255, 0.23)"
+                : "rgba(0, 0, 0, 0.23)"
             }`,
-            'borderRight': `1px solid ${
-              theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.23)' : 'rgba(0, 0, 0, 0.23)'
+            borderRight: `1px solid ${
+              theme.palette.mode === "dark"
+                ? "rgba(255, 255, 255, 0.23)"
+                : "rgba(0, 0, 0, 0.23)"
             }`,
-            'borderRadius': 0,
-            'height': '56px',
-            'padding': '0 16px',
-            'minWidth': '140px',
-            'fontWeight': 'bold',
-            'color': theme.palette.mode === 'dark' ? '#1db954' : '#2e7d32',
-            '&:hover': {
-              backgroundColor: 'rgba(0, 0, 0, 0.04)',
+            borderRadius: 0,
+            height: "56px",
+            padding: "0 16px",
+            minWidth: "140px",
+            fontWeight: "bold",
+            color: theme.palette.mode === "dark" ? "#1db954" : "#2e7d32",
+            "&:hover": {
+              backgroundColor: "rgba(0, 0, 0, 0.04)",
             },
-            'textTransform': 'none',
-            'fontSize': '1rem',
+            textTransform: "none",
+            fontSize: "1rem",
           }}
         >
           {getTimeRangeText()}
@@ -225,14 +286,14 @@ export default function MonthPagination({
           onClick={handleNextMonth}
           disabled={isNextMonthDisabled}
           sx={{
-            'borderRadius': 0,
-            'height': '56px',
-            'width': '40px',
-            'padding': 0,
-            '&:hover': {
-              backgroundColor: 'rgba(0, 0, 0, 0.04)',
+            borderRadius: 0,
+            height: "56px",
+            width: "40px",
+            padding: 0,
+            "&:hover": {
+              backgroundColor: "rgba(0, 0, 0, 0.04)",
             },
-            'margin': 0,
+            margin: 0,
           }}
         >
           <ChevronRight fontSize="small" />

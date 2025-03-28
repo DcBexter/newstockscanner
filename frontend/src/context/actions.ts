@@ -1,6 +1,6 @@
-import type { Exchange, Listing, Statistics } from '../api/client';
-import type { AppAction } from './types';
-import { ActionType } from './types';
+import type { Exchange, Listing, Statistics } from "../api/client";
+import type { AppAction } from "./types";
+import { ActionType } from "./types";
 
 // Data actions
 export function setListings(listings: Listing[]): AppAction {
@@ -103,7 +103,10 @@ export function clearError(): AppAction {
 }
 
 // Notification actions
-export function setNewListings(hasNewListings: boolean, newListingsCount: number): AppAction {
+export function setNewListings(
+  hasNewListings: boolean,
+  newListingsCount: number,
+): AppAction {
   return {
     type: ActionType.SET_NEW_LISTINGS,
     payload: { hasNewListings, newListingsCount },

@@ -19,7 +19,8 @@ from backend.database.models import StockListing
 from backend.database.session import get_db
 
 # Constants
-MAX_PAGINATION_LIMIT = 1000  # Maximum number of records that can be returned in a single request
+# Maximum number of records that can be returned in a single request
+MAX_PAGINATION_LIMIT = 1000
 
 
 # Utility functions

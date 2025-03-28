@@ -1,5 +1,5 @@
-import type { AppAction, AppState } from './types';
-import { ActionType } from './types';
+import type { AppAction, AppState } from "./types";
+import { ActionType } from "./types";
 
 // Initial state
 export const initialState: AppState = {
@@ -9,7 +9,7 @@ export const initialState: AppState = {
   statistics: null,
 
   // Filters
-  selectedExchange: '',
+  selectedExchange: "",
   days: 30,
   startDate: null,
   endDate: null,

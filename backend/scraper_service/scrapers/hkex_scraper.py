@@ -128,7 +128,8 @@ class HKEXScraper(BaseScraper):
             # Minimum lot size
             lot_size_col = cols[3]
             lot_size_text = lot_size_col.text.strip()
-            lot_size = self._parse_lot_size(lot_size_text) or 1000  # Default to 1000 if parsing fails
+            # Default to 1000 if parsing fails
+            lot_size = self._parse_lot_size(lot_size_text) or 1000
 
             # Determine if this is a rights issue or new listing
             issue_type_col = cols[4]

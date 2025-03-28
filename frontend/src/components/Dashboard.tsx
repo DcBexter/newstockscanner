@@ -1,23 +1,44 @@
-import type { PaletteMode } from '@mui/material';
-import { DarkMode, LightMode, Visibility, VisibilityOff } from '@mui/icons-material';
-import { Box, Button, Container, IconButton, Paper, Stack, Tooltip, Typography, useTheme } from '@mui/material';
-import { EXCHANGE_CODES } from '../constants/exchanges';
-import { useAppContext } from '../context/useAppContext';
-import { findCommonExchanges, isExchangeSelected } from '../utils/exchangeUtils';
-import DateRangeFilter from './DateRangeFilter';
-import ExchangeFilter from './ExchangeFilter';
-import ListingsTable from './ListingsTable';
-import MonthPagination from './MonthPagination';
-import NotificationSection from './NotificationSection';
-import ScanButton from './ScanButton';
-import StatisticsChart from './StatisticsChart';
+import type { PaletteMode } from "@mui/material";
+import {
+  DarkMode,
+  LightMode,
+  Visibility,
+  VisibilityOff,
+} from "@mui/icons-material";
+import {
+  Box,
+  Button,
+  Container,
+  IconButton,
+  Paper,
+  Stack,
+  Tooltip,
+  Typography,
+  useTheme,
+} from "@mui/material";
+import { EXCHANGE_CODES } from "../constants/exchanges";
+import { useAppContext } from "../context/useAppContext";
+import {
+  findCommonExchanges,
+  isExchangeSelected,
+} from "../utils/exchangeUtils";
+import DateRangeFilter from "./DateRangeFilter";
+import ExchangeFilter from "./ExchangeFilter";
+import ListingsTable from "./ListingsTable";
+import MonthPagination from "./MonthPagination";
+import NotificationSection from "./NotificationSection";
+import ScanButton from "./ScanButton";
+import StatisticsChart from "./StatisticsChart";
 
 interface DashboardProps {
   toggleColorMode: () => void;
   currentTheme: PaletteMode;
 }
 
-export default function Dashboard({ toggleColorMode, currentTheme }: DashboardProps) {
+export default function Dashboard({
+  toggleColorMode,
+  currentTheme,
+}: DashboardProps) {
   const { state, dispatch, actions } = useAppContext();
   const theme = useTheme();
 
@@ -47,7 +68,8 @@ export default function Dashboard({ toggleColorMode, currentTheme }: DashboardPr
   };
 
   // Find common exchanges using utility function
-  const { hkexExchange, nasdaqExchange, nyseExchange } = findCommonExchanges(exchanges);
+  const { hkexExchange, nasdaqExchange, nyseExchange } =
+    findCommonExchanges(exchanges);
 
   // Check if common exchanges are selected using utility function
   const isHkexSelected = isExchangeSelected(selectedExchange, hkexExchange);
@@ -58,7 +80,7 @@ export default function Dashboard({ toggleColorMode, currentTheme }: DashboardPr
 
   const paperStyle = {
     p: 3,
-    height: '100%',
+    height: "100%",
     boxShadow: 3,
   };
 
@@ -66,49 +88,69 @@ export default function Dashboard({ toggleColorMode, currentTheme }: DashboardPr
     <Container maxWidth={false} sx={{ mt: 4, mb: 4 }}>
       <Box
         sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
+          display: "flex",
+          justifyContent: "space-between",
           mb: 3,
-          alignItems: 'center',
+          alignItems: "center",
           pb: 2,
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
           <img
             src="/logo.png"
             alt="New Listings Monitor Logo"
             style={{
-              height: '50px',
-              width: 'auto',
-              padding: '3px',
+              height: "50px",
+              width: "auto",
+              padding: "3px",
               background:
-                theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.03)',
-              borderRadius: '4px',
+                theme.palette.mode === "dark"
+                  ? "rgba(255,255,255,0.1)"
+                  : "rgba(0,0,0,0.03)",
+              borderRadius: "4px",
             }}
           />
           <Typography variant="h4" component="h1" fontWeight="bold">
             Financial Listings Monitor
           </Typography>
         </Box>
-        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+        <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
           <NotificationSection />
 
-          <Tooltip title={`Switch to ${currentTheme === 'dark' ? 'light' : 'dark'} mode`}>
+          <Tooltip
+            title={`Switch to ${currentTheme === "dark" ? "light" : "dark"} mode`}
+          >
             <IconButton onClick={toggleColorMode} color="primary">
-              {currentTheme === 'dark' ? <LightMode /> : <DarkMode />}
+              {currentTheme === "dark" ? <LightMode /> : <DarkMode />}
             </IconButton>
           </Tooltip>
 
-          <ScanButton exchangeCode={EXCHANGE_CODES.HKEX} isSelected={isHkexSelected} />
-          <ScanButton exchangeCode={EXCHANGE_CODES.NASDAQ} isSelected={isNasdaqSelected} />
-          <ScanButton exchangeCode={EXCHANGE_CODES.NYSE} isSelected={isNyseSelected} />
+          <ScanButton
+            exchangeCode={EXCHANGE_CODES.HKEX}
+            isSelected={isHkexSelected}
+          />
+          <ScanButton
+            exchangeCode={EXCHANGE_CODES.NASDAQ}
+            isSelected={isNasdaqSelected}
+          />
+          <ScanButton
+            exchangeCode={EXCHANGE_CODES.NYSE}
+            isSelected={isNyseSelected}
+          />
         </Box>
       </Box>
 
       {/* Notification handling moved to NotificationSection component */}
 
-      {error !== undefined && error !== null && error !== '' && (
-        <Paper sx={{ p: 2, mb: 3, bgcolor: 'error.light', color: 'error.contrastText' }}>
+      {error !== undefined && error !== null && error !== "" && (
+        <Paper
+          sx={{
+            p: 2,
+            mb: 3,
+            bgcolor: "error.light",
+            color: "error.contrastText",
+          }}
+        >
           <Typography fontWeight="medium">{error}</Typography>
         </Paper>
       )}
@@ -119,23 +161,25 @@ export default function Dashboard({ toggleColorMode, currentTheme }: DashboardPr
           <Paper sx={{ p: 2, boxShadow: 2 }}>
             <Box
               sx={{
-                display: 'flex',
-                flexWrap: 'wrap',
+                display: "flex",
+                flexWrap: "wrap",
                 gap: 3,
-                alignItems: 'flex-start',
-                justifyContent: 'flex-start',
+                alignItems: "flex-start",
+                justifyContent: "flex-start",
               }}
             >
               <ExchangeFilter
                 exchanges={exchanges}
                 value={selectedExchange}
-                onChange={value => dispatch(actions.setSelectedExchange(value))}
+                onChange={(value) =>
+                  dispatch(actions.setSelectedExchange(value))
+                }
               />
 
               {!isPaginationMode && (
                 <DateRangeFilter
                   value={days}
-                  onChange={value => dispatch(actions.setDays(value))}
+                  onChange={(value) => dispatch(actions.setDays(value))}
                 />
               )}
 
@@ -149,10 +193,10 @@ export default function Dashboard({ toggleColorMode, currentTheme }: DashboardPr
                 variant="outlined"
                 color="primary"
                 onClick={() => dispatch(actions.toggleStatistics())}
-                sx={{ height: '56px' }}
+                sx={{ height: "56px" }}
                 startIcon={showStatistics ? <VisibilityOff /> : <Visibility />}
               >
-                {showStatistics ? 'Hide Statistics' : 'Show Statistics'}
+                {showStatistics ? "Hide Statistics" : "Show Statistics"}
               </Button>
             </Box>
           </Paper>
@@ -160,20 +204,29 @@ export default function Dashboard({ toggleColorMode, currentTheme }: DashboardPr
 
         {/* Statistics Section */}
         {showStatistics && (
-          <Stack direction={{ xs: 'column', md: 'row' }} spacing={3}>
+          <Stack direction={{ xs: "column", md: "row" }} spacing={3}>
             {/* Stats */}
-            <Box sx={{ width: { xs: '100%', md: '25%' } }}>
+            <Box sx={{ width: { xs: "100%", md: "25%" } }}>
               <Paper sx={paperStyle}>
-                <Typography variant="h6" gutterBottom color="primary" fontWeight="bold">
+                <Typography
+                  variant="h6"
+                  gutterBottom
+                  color="primary"
+                  fontWeight="bold"
+                >
                   Listings Statistics by Exchange
                 </Typography>
                 <Box>
-                  {statistics?.exchange_stats?.map(stat => (
+                  {statistics?.exchange_stats?.map((stat) => (
                     <Box key={stat.code} sx={{ mb: 2 }}>
                       <Typography variant="subtitle1" fontWeight="medium">
                         {stat.name}
                       </Typography>
-                      <Typography variant="h4" color="primary" fontWeight="bold">
+                      <Typography
+                        variant="h4"
+                        color="primary"
+                        fontWeight="bold"
+                      >
                         {stat.total_listings}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
@@ -186,9 +239,14 @@ export default function Dashboard({ toggleColorMode, currentTheme }: DashboardPr
             </Box>
 
             {/* Chart */}
-            <Box sx={{ width: { xs: '100%', md: '75%' } }}>
+            <Box sx={{ width: { xs: "100%", md: "75%" } }}>
               <Paper sx={paperStyle}>
-                <Typography variant="h6" gutterBottom color="primary" fontWeight="bold">
+                <Typography
+                  variant="h6"
+                  gutterBottom
+                  color="primary"
+                  fontWeight="bold"
+                >
                   Daily Listing Activity Trend
                 </Typography>
                 <StatisticsChart data={statistics?.daily_stats || []} />
@@ -201,7 +259,12 @@ export default function Dashboard({ toggleColorMode, currentTheme }: DashboardPr
         <Box>
           <Paper sx={{ p: 3, boxShadow: 3 }}>
             <Box
-              sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                mb: 2,
+              }}
             >
               <Typography variant="h6" color="primary" fontWeight="bold">
                 {isPaginationMode
@@ -210,9 +273,7 @@ export default function Dashboard({ toggleColorMode, currentTheme }: DashboardPr
               </Typography>
 
               <Typography variant="subtitle2" color="text.secondary">
-                {listings.length}
-                {' '}
-                listings found
+                {listings.length} listings found
               </Typography>
             </Box>
             <ListingsTable data={listings} isLoading={isLoadingListings} />

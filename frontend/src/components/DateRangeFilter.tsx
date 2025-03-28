@@ -1,5 +1,5 @@
-import { FormControl, InputLabel, MenuItem, Select } from '@mui/material';
-import { SIZES } from '../theme';
+import { FormControl, InputLabel, MenuItem, Select } from "@mui/material";
+import { SIZES } from "../theme";
 
 /**
  * Props for the DateRangeFilter component
@@ -15,11 +15,11 @@ interface DateRangeFilterProps {
  * Predefined date range options for the dropdown
  */
 const ranges = [
-  { value: 7, label: 'Last 7 days' },
-  { value: 30, label: 'Last 30 days' },
-  { value: 90, label: 'Last 90 days' },
-  { value: 180, label: 'Last 180 days' },
-  { value: 365, label: 'Last year' },
+  { value: 7, label: "Last 7 days" },
+  { value: 30, label: "Last 30 days" },
+  { value: 90, label: "Last 90 days" },
+  { value: 180, label: "Last 180 days" },
+  { value: 365, label: "Last year" },
 ];
 
 /**
@@ -33,14 +33,21 @@ const ranges = [
  * @param props.onChange - Callback function triggered when the user selects a different date range
  * @returns A FormControl component with a Select dropdown for date ranges
  */
-export default function DateRangeFilter({ value, onChange }: DateRangeFilterProps) {
+export default function DateRangeFilter({
+  value,
+  onChange,
+}: DateRangeFilterProps) {
   // Convert the numeric value to a human-readable label for the aria-label attribute
   // Falls back to 'Custom' if the value doesn't match any predefined range
-  const foundRange = ranges.find(range => range.value === value);
-  const currentRangeLabel = foundRange !== undefined && foundRange !== null
-    && foundRange.label !== undefined && foundRange.label !== null && foundRange.label !== ''
-    ? foundRange.label
-    : 'Custom';
+  const foundRange = ranges.find((range) => range.value === value);
+  const currentRangeLabel =
+    foundRange !== undefined &&
+    foundRange !== null &&
+    foundRange.label !== undefined &&
+    foundRange.label !== null &&
+    foundRange.label !== ""
+      ? foundRange.label
+      : "Custom";
 
   return (
     <FormControl sx={{ minWidth: SIZES.minWidth.formControl }}>
@@ -48,11 +55,11 @@ export default function DateRangeFilter({ value, onChange }: DateRangeFilterProp
       <Select
         value={value}
         label="Time Range"
-        onChange={event => onChange(Number(event.target.value))}
+        onChange={(event) => onChange(Number(event.target.value))}
         // Use aria-label with the current range label for accessibility
         aria-label={`Selected time range: ${currentRangeLabel}`}
       >
-        {ranges.map(range => (
+        {ranges.map((range) => (
           <MenuItem key={range.value} value={range.value}>
             {range.label}
           </MenuItem>

@@ -56,7 +56,8 @@ class StatsService:
                 "statuses": summary_stats["statuses"],
                 "security_types": summary_stats["security_types"],
                 "daily_stats": daily_counts,  # Renamed from daily_counts to daily_stats
-                "exchange_stats": exchange_stats,  # This is now a direct array matching frontend expectations
+                # This is now a direct array matching frontend expectations
+                "exchange_stats": exchange_stats,
             }
 
             # Cache the result for 5 minutes (300 seconds)
@@ -143,7 +144,8 @@ class StatsService:
             exchange_stats = []
             for code, name, count in result:
                 exchange_stats.append(
-                    {"code": code, "name": name, "total_listings": count}  # Changed from "count" to "total_listings" to match frontend
+                    # Changed from "count" to "total_listings" to match frontend
+                    {"code": code, "name": name, "total_listings": count}
                 )
 
             return exchange_stats

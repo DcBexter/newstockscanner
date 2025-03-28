@@ -1,6 +1,6 @@
-import type { Exchange } from '../api/client';
-import { FormControl, InputLabel, MenuItem, Select } from '@mui/material';
-import { SIZES } from '../theme';
+import type { Exchange } from "../api/client";
+import { FormControl, InputLabel, MenuItem, Select } from "@mui/material";
+import { SIZES } from "../theme";
 
 /**
  * Props for the ExchangeFilter component
@@ -26,9 +26,13 @@ interface ExchangeFilterProps {
  * @param props.onChange - Callback function triggered when the user selects a different exchange
  * @returns A FormControl component with a Select dropdown for exchanges
  */
-export default function ExchangeFilter({ exchanges, value, onChange }: ExchangeFilterProps) {
+export default function ExchangeFilter({
+  exchanges,
+  value,
+  onChange,
+}: ExchangeFilterProps) {
   // Track if "All Exchanges" is selected to provide appropriate aria-label for accessibility
-  const isAllExchanges = value === '';
+  const isAllExchanges = value === "";
 
   return (
     <FormControl sx={{ minWidth: SIZES.minWidth.formControl }}>
@@ -36,12 +40,16 @@ export default function ExchangeFilter({ exchanges, value, onChange }: ExchangeF
       <Select
         value={value}
         label="Exchange"
-        onChange={event => onChange(event.target.value)}
+        onChange={(event) => onChange(event.target.value)}
         // Use aria-label with information about the current selection
-        aria-label={isAllExchanges ? 'All exchanges selected' : 'Specific exchange selected'}
+        aria-label={
+          isAllExchanges
+            ? "All exchanges selected"
+            : "Specific exchange selected"
+        }
       >
         <MenuItem value="">All Exchanges</MenuItem>
-        {exchanges.map(exchange => (
+        {exchanges.map((exchange) => (
           <MenuItem key={exchange.code} value={exchange.code}>
             {exchange.name}
           </MenuItem>

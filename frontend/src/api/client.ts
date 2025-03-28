@@ -1,5 +1,5 @@
-import axios from 'axios';
-import { API_ENDPOINTS, API_URL, CACHE_SETTINGS } from '../config/api.config';
+import axios from "axios";
+import { API_ENDPOINTS, API_URL, CACHE_SETTINGS } from "../config/api.config";
 
 // Helper function for logging that only runs in development mode
 function devLog(message: string): void {
@@ -33,16 +33,18 @@ const cache: Record<string, CacheEntry<unknown>> = {};
 const CACHE_TTL = CACHE_SETTINGS.TTL;
 
 // Helper to get cache key
-function getCacheKey(endpoint: string, params?: Record<string, unknown>): string {
-  const paramsString = params ? JSON.stringify(params) : '';
+function getCacheKey(
+  endpoint: string,
+  params?: Record<string, unknown>,
+): string {
+  const paramsString = params ? JSON.stringify(params) : "";
   return `${endpoint}:${paramsString}`;
 }
 
 // Helper to check if cache is valid
 function isCacheValid(cacheKey: string): boolean {
   const entry = cache[cacheKey];
-  if (entry === undefined || entry === null)
-    return false;
+  if (entry === undefined || entry === null) return false;
 
   const now = Date.now();
   return now - entry.timestamp < CACHE_TTL;
@@ -99,14 +101,17 @@ export const api = {
 
     // Check cache first
     if (isCacheValid(cacheKey)) {
-      devLog('Using cached listings data');
+      devLog("Using cached listings data");
       return cache[cacheKey].data as Listing[];
     }
 
     // If not in cache or expired, make the API call
-    const { data } = await axios.get<PaginatedListings>(`${API_URL}/${API_ENDPOINTS.LISTINGS}/`, {
-      params,
-    });
+    const { data } = await axios.get<PaginatedListings>(
+      `${API_URL}/${API_ENDPOINTS.LISTINGS}/`,
+      {
+        params,
+      },
+    );
 
     // Store in cache
     cache[cacheKey] = {
@@ -123,12 +128,14 @@ export const api = {
 
     // Check cache first
     if (isCacheValid(cacheKey)) {
-      devLog('Using cached exchanges data');
+      devLog("Using cached exchanges data");
       return cache[cacheKey].data as Exchange[];
     }
 
     // If not in cache or expired, make the API call
-    const { data } = await axios.get<Exchange[]>(`${API_URL}/${API_ENDPOINTS.EXCHANGES}/`);
+    const { data } = await axios.get<Exchange[]>(
+      `${API_URL}/${API_ENDPOINTS.EXCHANGES}/`,
+    );
 
     // Store in cache
     cache[cacheKey] = {
@@ -144,14 +151,17 @@ export const api = {
 
     // Check cache first
     if (isCacheValid(cacheKey)) {
-      devLog('Using cached statistics data');
+      devLog("Using cached statistics data");
       return cache[cacheKey].data as Statistics;
     }
 
     // If not in cache or expired, make the API call
-    const { data } = await axios.get<Statistics>(`${API_URL}/${API_ENDPOINTS.STATISTICS}/`, {
-      params: { days },
-    });
+    const { data } = await axios.get<Statistics>(
+      `${API_URL}/${API_ENDPOINTS.STATISTICS}/`,
+      {
+        params: { days },
+      },
+    );
 
     // Store in cache
     cache[cacheKey] = {
@@ -165,9 +175,16 @@ export const api = {
 
   triggerScrape: async (exchange?: string): Promise<unknown> => {
     // Explicitly type the response to avoid unsafe assignment
-    const response: { data: unknown; } = await axios.post(`${API_URL}/${API_ENDPOINTS.SCRAPE}/`, null, {
-      params: exchange !== undefined && exchange !== null && exchange !== '' ? { exchange } : undefined,
-    });
+    const response: { data: unknown } = await axios.post(
+      `${API_URL}/${API_ENDPOINTS.SCRAPE}/`,
+      null,
+      {
+        params:
+          exchange !== undefined && exchange !== null && exchange !== ""
+            ? { exchange }
+            : undefined,
+      },
+    );
     return response.data;
   },
 };

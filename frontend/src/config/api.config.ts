@@ -3,7 +3,7 @@
  */
 
 // Base API URL
-export const API_URL = '/api/v1';
+export const API_URL = "/api/v1";
 
 // Cache settings
 export const CACHE_SETTINGS = {
@@ -13,10 +13,10 @@ export const CACHE_SETTINGS = {
 
 // API endpoints
 export const API_ENDPOINTS = {
-  LISTINGS: 'listings',
-  EXCHANGES: 'exchanges',
-  STATISTICS: 'statistics',
-  SCRAPE: 'scrape',
+  LISTINGS: "listings",
+  EXCHANGES: "exchanges",
+  STATISTICS: "statistics",
+  SCRAPE: "scrape",
 };
 
 // Request timeouts

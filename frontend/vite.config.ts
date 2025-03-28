@@ -1,5 +1,5 @@
-import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vite';
+import react from "@vitejs/plugin-react";
+import { defineConfig } from "vite";
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -11,8 +11,8 @@ export default defineConfig({
       interval: 1000, // Poll every second
     },
     proxy: {
-      '/api': {
-        target: 'http://api_service:8000',
+      "/api": {
+        target: "http://api_service:8000",
         changeOrigin: true,
       },
     },

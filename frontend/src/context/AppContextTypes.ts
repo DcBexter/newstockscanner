@@ -1,6 +1,6 @@
-import type * as actions from './actions';
-import type { AppAction, AppState } from './types';
-import { createContext } from 'react';
+import type * as actions from "./actions";
+import type { AppAction, AppState } from "./types";
+import { createContext } from "react";
 
 // Create context type
 export interface AppContextType {
