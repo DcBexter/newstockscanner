@@ -1,9 +1,6 @@
 version = 1
 
 [[analyzers]]
-name = "test-coverage"
-
-[[analyzers]]
 name = "shell"
 
 [[analyzers]]
@@ -38,9 +35,6 @@ dockerfile_paths = [
 
 [[transformers]]
 name = "prettier"
-
-[[transformers]]
-name = "autopep8"
 
 [[transformers]]
 name = "black"
