@@ -72,7 +72,8 @@ except ImportError:
 class RequestIDMiddleware(BaseHTTPMiddleware):
     """Middleware to set a unique request ID for each request."""
 
-    async def dispatch(self, request: Request, call_next):
+    @staticmethod
+    async def dispatch(request: Request, call_next):
         # Get request ID from header or generate a new one
         request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
 

@@ -92,7 +92,8 @@ class NotificationService:
         # Fallback notification methods (could be expanded)
         self.fallback_enabled = os.getenv("ENABLE_FALLBACK_NOTIFICATIONS", "true").lower() == "true"
 
-    async def _log_to_file(self, listings: List[Dict[str, Any]]) -> bool:
+    @staticmethod
+    async def _log_to_file(listings: List[Dict[str, Any]]) -> bool:
         """Fallback method: Log notifications to a file when service is unavailable."""
         try:
             log_dir = os.getenv("NOTIFICATION_FALLBACK_DIR", "./fallback_notifications")

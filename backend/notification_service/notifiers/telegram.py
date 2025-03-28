@@ -121,7 +121,8 @@ class TelegramNotifier(BaseNotifier):
             self._session._timeout = ClientTimeout(total=self.REQUEST_TIMEOUT)
         await self._verify_bot()
 
-    def _mask_token(self, token: str) -> str:
+    @staticmethod
+    def _mask_token(token: str) -> str:
         """
         Mask a token for secure logging.
 

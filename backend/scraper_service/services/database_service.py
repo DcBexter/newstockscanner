@@ -80,7 +80,8 @@ class DatabaseService:
         self.exchange_service_factory = exchange_service_factory or (lambda db: ExchangeService(db))
         self.listing_service_factory = listing_service_factory or (lambda db: ListingService(db))
 
-    def _get_exchange_creation_data(self, exchange_code: str) -> Dict[str, Any]:
+    @staticmethod
+    def _get_exchange_creation_data(exchange_code: str) -> Dict[str, Any]:
         """Return the data needed to create an exchange based on its code."""
         return get_exchange_data(exchange_code)
 

@@ -232,7 +232,8 @@ class BaseScraper(ABC):
                 await self._session.close()
             self._session = None
 
-    def _get_cache_key(self, url: str) -> str:
+    @staticmethod
+    def _get_cache_key(url: str) -> str:
         """Generate a cache key for a URL."""
         return hashlib.md5(url.encode()).hexdigest()
 

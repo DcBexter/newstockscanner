@@ -189,7 +189,8 @@ class Metrics:
                     raise
         return self._summaries[name]
 
-    def generate_latest(self) -> bytes:
+    @staticmethod
+    def generate_latest() -> bytes:
         """
         Generate the latest metrics in Prometheus format.
 
@@ -211,7 +212,8 @@ class MetricsMiddleware(BaseHTTPMiddleware):
     requests, request duration, and request status.
     """
 
-    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+    @staticmethod
+    async def dispatch(request: Request, call_next: Callable) -> Response:
         """
         Process an incoming request and record metrics.
 

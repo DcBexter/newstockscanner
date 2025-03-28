@@ -30,8 +30,8 @@ class ListingService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
+    @staticmethod
     def _build_base_query(
-        self,
         select_obj,
         exchange_code: Optional[str] = None,
         status: Optional[str] = None,
@@ -327,7 +327,8 @@ class ListingService:
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
 
-    def _create_listing_model(self, listing: ListingCreate, exchange_id: int) -> StockListing:
+    @staticmethod
+    def _create_listing_model(listing: ListingCreate, exchange_id: int) -> StockListing:
         """
         Create a StockListing model from a ListingCreate model.
 
