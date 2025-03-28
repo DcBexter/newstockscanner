@@ -1,4 +1,5 @@
 import { FormControl, InputLabel, MenuItem, Select } from '@mui/material';
+import { useCallback } from 'react';
 import { SIZES } from '../theme';
 
 /**
@@ -42,13 +43,18 @@ export default function DateRangeFilter({ value, onChange }: DateRangeFilterProp
     ? foundRange.label
     : 'Custom';
 
+  // Use useCallback to memoize the onChange handler
+  const handleChange = useCallback((event: React.ChangeEvent<{ value: unknown; }>) => {
+    onChange(Number(event.target.value));
+  }, [onChange]);
+
   return (
     <FormControl sx={{ minWidth: SIZES.minWidth.formControl }}>
       <InputLabel>Time Range</InputLabel>
       <Select
         value={value}
         label="Time Range"
-        onChange={event => onChange(Number(event.target.value))}
+        onChange={handleChange}
         // Use aria-label with the current range label for accessibility
         aria-label={`Selected time range: ${currentRangeLabel}`}
       >

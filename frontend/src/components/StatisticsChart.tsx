@@ -1,5 +1,6 @@
 import { Box, useTheme } from '@mui/material';
 import dayjs from 'dayjs';
+import { useCallback } from 'react';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 interface StatisticsChartProps {
@@ -11,6 +12,15 @@ interface StatisticsChartProps {
 
 export function StatisticsChart({ data }: StatisticsChartProps) {
   const theme = useTheme();
+
+  // Use useCallback to memoize the formatter functions
+  const formatLabel = useCallback((date: string) => {
+    return dayjs(date).format('YYYY-MM-DD');
+  }, []);
+
+  const formatTooltip = useCallback((value: number) => {
+    return [value, 'Listings'] as [number, string];
+  }, []);
 
   return (
     <Box
@@ -37,8 +47,8 @@ export function StatisticsChart({ data }: StatisticsChartProps) {
           />
           <YAxis stroke={theme.palette.text.secondary} />
           <Tooltip
-            labelFormatter={(date: string) => dayjs(date).format('YYYY-MM-DD')}
-            formatter={value => [value, 'Listings']}
+            labelFormatter={formatLabel}
+            formatter={formatTooltip}
             contentStyle={{
               backgroundColor: theme.palette.background.paper,
               borderColor: theme.palette.divider,

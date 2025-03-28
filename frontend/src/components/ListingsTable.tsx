@@ -22,7 +22,7 @@ import {
 } from '@mui/material';
 import dayjs from 'dayjs';
 import localizedFormat from 'dayjs/plugin/localizedFormat';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 // Initialize dayjs plugins
 dayjs.extend(localizedFormat);
@@ -42,6 +42,11 @@ export default function ListingsTable({ data, isLoading }: ListingsTableProps) {
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [searchTerm, setSearchTerm] = useState('');
   const theme = useTheme();
+
+  // Use useCallback to memoize the onChange handler
+  const handleSearchChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(event.target.value);
+  }, []);
 
   // Memoize filtered data based on searchTerm and data
   const filteredData = useMemo(() => {
@@ -126,7 +131,7 @@ export default function ListingsTable({ data, isLoading }: ListingsTableProps) {
           size="small"
           placeholder="Search by name, symbol, exchange, or type..."
           value={searchTerm}
-          onChange={event => setSearchTerm(event.target.value)}
+          onChange={handleSearchChange}
           slotProps={{
             input: {
               startAdornment: (

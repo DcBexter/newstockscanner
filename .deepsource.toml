@@ -34,9 +34,6 @@ dockerfile_paths = [
 ]
 
 [[transformers]]
-name = "prettier"
-
-[[transformers]]
 name = "black"
 
 [[transformers]]

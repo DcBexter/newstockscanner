@@ -1,5 +1,6 @@
 import type { Exchange } from '../api/client';
 import { FormControl, InputLabel, MenuItem, Select } from '@mui/material';
+import { useCallback } from 'react';
 import { SIZES } from '../theme';
 
 /**
@@ -30,13 +31,18 @@ export default function ExchangeFilter({ exchanges, value, onChange }: ExchangeF
   // Track if "All Exchanges" is selected to provide appropriate aria-label for accessibility
   const isAllExchanges = value === '';
 
+  // Use useCallback to memoize the onChange handler
+  const handleChange = useCallback((event: React.ChangeEvent<{ value: unknown; }>) => {
+    onChange(event.target.value as string);
+  }, [onChange]);
+
   return (
     <FormControl sx={{ minWidth: SIZES.minWidth.formControl }}>
       <InputLabel>Exchange</InputLabel>
       <Select
         value={value}
         label="Exchange"
-        onChange={event => onChange(event.target.value)}
+        onChange={handleChange}
         // Use aria-label with information about the current selection
         aria-label={isAllExchanges ? 'All exchanges selected' : 'Specific exchange selected'}
       >

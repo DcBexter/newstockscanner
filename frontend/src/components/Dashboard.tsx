@@ -1,6 +1,7 @@
 import type { PaletteMode } from '@mui/material';
 import { DarkMode, LightMode, Visibility, VisibilityOff } from '@mui/icons-material';
 import { Box, Button, Container, IconButton, Paper, Stack, Tooltip, Typography, useTheme } from '@mui/material';
+import { useCallback } from 'react';
 import { EXCHANGE_CODES } from '../constants/exchanges';
 import { useAppContext } from '../context/useAppContext';
 import { findCommonExchanges, isExchangeSelected } from '../utils/exchangeUtils';
@@ -20,6 +21,15 @@ interface DashboardProps {
 export default function Dashboard({ toggleColorMode, currentTheme }: DashboardProps) {
   const { state, dispatch, actions } = useAppContext();
   const theme = useTheme();
+
+  // Use useCallback to memoize the onChange handlers
+  const handleExchangeChange = useCallback((value: string) => {
+    dispatch(actions.setSelectedExchange(value));
+  }, [dispatch, actions]);
+
+  const handleDaysChange = useCallback((value: number) => {
+    dispatch(actions.setDays(value));
+  }, [dispatch, actions]);
 
   // Destructure state for easier access
   const {
@@ -129,13 +139,13 @@ export default function Dashboard({ toggleColorMode, currentTheme }: DashboardPr
               <ExchangeFilter
                 exchanges={exchanges}
                 value={selectedExchange}
-                onChange={value => dispatch(actions.setSelectedExchange(value))}
+                onChange={handleExchangeChange}
               />
 
               {!isPaginationMode && (
                 <DateRangeFilter
                   value={days}
-                  onChange={value => dispatch(actions.setDays(value))}
+                  onChange={handleDaysChange}
                 />
               )}
 
