@@ -29,7 +29,7 @@ jobs:
       - name: Run black
         run: |
           cd backend
-          black --check .
+          black --check --config=pyproject.toml .
 
       - name: Run isort
         run: |
