@@ -60,7 +60,8 @@ class TestDatabaseHelper:
         mock_session = AsyncMock(spec=AsyncSession)
         mock_session.rollback = AsyncMock()
         mock_session.__aenter__ = AsyncMock(return_value=mock_session)
-        mock_session.__aexit__ = AsyncMock(return_value=False)  # Return False to propagate exceptions
+        # Return False to propagate exceptions
+        mock_session.__aexit__ = AsyncMock(return_value=False)
 
         # Create a mock session factory that returns the session
         class MockSessionFactory:

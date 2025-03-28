@@ -137,7 +137,8 @@ class FrankfurtScraper(BaseScraper):
 
             return ListingBase(
                 name=name[:100],  # Truncate name if too long
-                symbol=symbol[:20] if symbol else f"FSE-{name[:5]}",  # Use placeholder if no symbol found
+                # Use placeholder if no symbol found
+                symbol=symbol[:20] if symbol else f"FSE-{name[:5]}",
                 listing_date=listing_date,
                 lot_size=1,  # Default for Frankfurt
                 status="New Listing",

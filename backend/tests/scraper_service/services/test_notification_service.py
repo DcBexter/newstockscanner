@@ -242,7 +242,8 @@ class TestNotificationService:
             # Verify the response was used correctly
             assert mock_response.text.await_count == 3  # Called once for each retry
             assert mock_session.post.call_count == 3  # Should retry 3 times
-            assert notification_service._handle_fallback.await_count == 1  # Should call fallback once
+            # Should call fallback once
+            assert notification_service._handle_fallback.await_count == 1
 
     @pytest.mark.asyncio
     async def test_log_to_file_fallback(self, notification_service, sample_listings_data, tmp_path, monkeypatch):
