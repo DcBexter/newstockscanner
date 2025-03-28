@@ -515,7 +515,7 @@ class NasdaqScraper(BaseScraper):
             self.logger.warning(f"Error creating listing from script item: {str(e)}")
             return None
 
-    async def get_filtered_listings(self, filter_type: str = "all") -> pd.DataFrame:
+    async def get_filtered_listings(self, filter_type: str = "all") -> ScrapingResult:
         """Get listings with optional filtering."""
         try:
             content = await self._make_request(self.api_url, headers=self.api_headers, timeout=60)
@@ -523,7 +523,7 @@ class NasdaqScraper(BaseScraper):
             listings = self.parse_api_data(content)
 
             if not listings:
-                return pd.DataFrame()
+                return ScrapingResult(success=False, message=f"No listings found for filter: {filter_type}", data=[])
 
             df = pd.DataFrame([vars(listing) for listing in listings])
 
@@ -536,24 +536,33 @@ class NasdaqScraper(BaseScraper):
             }
 
             filter_slice = filters.get(filter_type, slice(None))
-            return df[filter_slice].copy()
+            filtered_df = df[filter_slice].copy()
+
+            # Convert filtered DataFrame back to ListingBase objects
+            filtered_listings = []
+            for _, row in filtered_df.iterrows():
+                filtered_listings.append(ListingBase(**row.to_dict()))
+
+            return ScrapingResult(
+                success=True, message=f"Successfully retrieved {len(filtered_listings)} listings with filter: {filter_type}", data=filtered_listings
+            )
         except Exception as e:
             self.logger.error(f"Error in get_filtered_listings: {str(e)}")
-            return pd.DataFrame()
+            return ScrapingResult(success=False, message=f"Error retrieving listings with filter {filter_type}: {str(e)}", data=[])
 
     # Convenience methods
-    async def get_upcoming_ipos(self) -> pd.DataFrame:
+    async def get_upcoming_ipos(self) -> ScrapingResult:
         """Get only upcoming IPOs."""
         return await self.get_filtered_listings("upcoming")
 
-    async def get_priced_ipos(self) -> pd.DataFrame:
+    async def get_priced_ipos(self) -> ScrapingResult:
         """Get only priced IPOs."""
         return await self.get_filtered_listings("priced")
 
-    async def get_nasdaq_listings(self) -> pd.DataFrame:
+    async def get_nasdaq_listings(self) -> ScrapingResult:
         """Get only NASDAQ listings."""
         return await self.get_filtered_listings("nasdaq_only")
 
-    async def get_nyse_listings(self) -> pd.DataFrame:
+    async def get_nyse_listings(self) -> ScrapingResult:
         """Get only NYSE listings."""
         return await self.get_filtered_listings("nyse_only")
