@@ -1,13 +1,22 @@
 # Stock Scanner Application
 
+## Build Status
 [![Build Backend](https://github.com/DcBexter/newstockscanner/actions/workflows/build-backend.yml/badge.svg)](https://github.com/DcBexter/newstockscanner/actions/workflows/build-backend.yml)
 [![Build Frontend](https://github.com/DcBexter/newstockscanner/actions/workflows/build-frontend.yml/badge.svg)](https://github.com/DcBexter/newstockscanner/actions/workflows/build-frontend.yml)
 [![Deploy](https://github.com/DcBexter/newstockscanner/actions/workflows/deploy.yml/badge.svg)](https://github.com/DcBexter/newstockscanner/actions/workflows/deploy.yml)
-[![Backend Linting](https://github.com/DcBexter/newstockscanner/actions/workflows/linting-backend.yml/badge.svg)](https://github.com/DcBexter/newstockscanner/actions/workflows/linting-backend.yml)
-[![Frontend Linting](https://github.com/DcBexter/newstockscanner/actions/workflows/linting-frontend.yml/badge.svg)](https://github.com/DcBexter/newstockscanner/actions/workflows/linting-frontend.yml)
+
+---
+
+## Tests
 [![Backend Tests](https://github.com/DcBexter/newstockscanner/actions/workflows/test-backend.yml/badge.svg)](https://github.com/DcBexter/newstockscanner/actions/workflows/test-backend.yml)
-[![codecov](https://codecov.io/gh/DcBexter/newstockscanner/branch/main/graph/badge.svg)](https://codecov.io/gh/DcBexter/newstockscanner)
-[![DeepSource](https://deepsource.io/gh/DcBexter/newstockscanner.svg/?label=active+issues&show_trend=true)](https://deepsource.io/gh/DcBexter/newstockscanner/?ref=repository-badge)
+
+---
+
+## Code Quality
+
+| Linting | Coverage | Code Analysis |
+| :-----: | :------: | :-----------: |
+| [![Backend Linting](https://github.com/DcBexter/newstockscanner/actions/workflows/linting-backend.yml/badge.svg)](https://github.com/DcBexter/newstockscanner/actions/workflows/linting-backend.yml) [![Frontend Linting](https://github.com/DcBexter/newstockscanner/actions/workflows/linting-frontend.yml/badge.svg)](https://github.com/DcBexter/newstockscanner/actions/workflows/linting-frontend.yml) | [![codecov](https://codecov.io/gh/DcBexter/newstockscanner/branch/main/graph/badge.svg)](https://codecov.io/gh/DcBexter/newstockscanner) | [![DeepSource](https://deepsource.io/gh/DcBexter/newstockscanner.svg/?label=active+issues&show_trend=true)](https://deepsource.io/gh/DcBexter/newstockscanner/?ref=repository-badge) |
 
 ## Project Components
 
