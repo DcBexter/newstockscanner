@@ -36,9 +36,6 @@ dockerfile_paths = [
 ]
 
 [[transformers]]
-name = "standardjs"
-
-[[transformers]]
 name = "prettier"
 
 [[transformers]]
@@ -49,9 +46,3 @@ name = "black"
 
 [[transformers]]
 name = "isort"
-
-[[transformers]]
-name = "yapf"
-
-[[transformers]]
-name = "ruff"
