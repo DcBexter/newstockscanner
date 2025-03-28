@@ -144,7 +144,8 @@ class TestDatabaseService:
         "NYSE": {"id": 2, "name": "NYSE", "code": "NYSE", "url": "https://nyse.com"},
     }
 
-    def _create_listing_model(self, listing_data):
+    @staticmethod
+    def _create_listing_model(listing_data):
         """Helper method to create a ListingCreate model from listing data."""
         return ListingCreate(
             name=listing_data.get("name", ""),

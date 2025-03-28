@@ -93,7 +93,8 @@ class FrankfurtScraper(BaseScraper):
             self.logger.error(error_msg, exc_info=True)
             raise ParsingError(error_msg) from e
 
-    def _is_listing_announcement(self, announcement_elem) -> bool:
+    @staticmethod
+    def _is_listing_announcement(announcement_elem) -> bool:
         """Check if an announcement is about a new listing."""
         with suppress(Exception):
             title_elem = announcement_elem.select_one(".contentCol > h3 > a")
@@ -149,7 +150,8 @@ class FrankfurtScraper(BaseScraper):
             self.logger.warning(f"Error processing announcement data: {str(e)}")
             return None
 
-    def _extract_date(self, announcement_elem) -> datetime:
+    @staticmethod
+    def _extract_date(announcement_elem) -> datetime:
         """Extract and parse date from announcement element."""
         default_date = datetime.now() + timedelta(days=7)
 
@@ -166,7 +168,8 @@ class FrankfurtScraper(BaseScraper):
             # Default to a week from now if parsing fails
             return default_date
 
-    def _extract_name_and_symbol(self, title: str) -> tuple:
+    @staticmethod
+    def _extract_name_and_symbol(title: str) -> tuple:
         """Extract company name and trading symbol from announcement title."""
         name = ""
         symbol = ""

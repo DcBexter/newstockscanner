@@ -154,7 +154,8 @@ class HKEXScraper(BaseScraper):
             self.logger.warning(f"Error parsing listing row: {str(e)}")
             return None
 
-    def _parse_lot_size(self, lot_size_text: str) -> int:
+    @staticmethod
+    def _parse_lot_size(lot_size_text: str) -> int:
         """Parse lot size from text.
 
         Args:
@@ -172,7 +173,8 @@ class HKEXScraper(BaseScraper):
         except (ValueError, TypeError):
             return 1000
 
-    def _generate_symbol(self, company_name: str) -> str:
+    @staticmethod
+    def _generate_symbol(company_name: str) -> str:
         """Generate a symbol from company name.
 
         Args:

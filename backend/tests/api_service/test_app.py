@@ -75,13 +75,15 @@ async def mock_db():
 
 
 class TestAPIService:
-    def test_root_endpoint(self, test_client):
+    @staticmethod
+    def test_root_endpoint(test_client):
         """Test the root endpoint returns the expected response."""
         response = test_client.get("/")
         assert response.status_code == 200
         assert response.json() == {"message": "Stock Scanner API is running"}
 
-    def test_health_check_endpoint(self, test_client, monkeypatch):
+    @staticmethod
+    def test_health_check_endpoint(test_client, monkeypatch):
         """Test the health check endpoint with a mocked database."""
         # Mock the database dependency
         mock_db = AsyncMock()
@@ -109,7 +111,8 @@ class TestAPIService:
         assert response.json()["status"] == "ok"
         assert response.json()["database"] == "connected"
 
-    def test_exception_handling(self, test_client, monkeypatch):
+    @staticmethod
+    def test_exception_handling(test_client, monkeypatch):
         """Test that exceptions are properly handled by the API."""
         # Create a route that raises an exception for testing
         test_router = APIRouter()

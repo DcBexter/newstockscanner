@@ -100,14 +100,16 @@ class MockSession:
 
 # Test the CircuitBreaker class
 class TestCircuitBreaker:
-    def test_initial_state(self):
+    @staticmethod
+    def test_initial_state():
         """Test that the circuit breaker starts in CLOSED state."""
         cb = CircuitBreaker()
         assert cb.state == CircuitBreaker.CLOSED
         assert cb.failure_count == 0
         assert cb.allow_request() is True
 
-    def test_record_failure(self):
+    @staticmethod
+    def test_record_failure():
         """Test that recording failures increments the counter."""
         cb = CircuitBreaker(failure_threshold=3)
         cb.record_failure()
@@ -115,7 +117,8 @@ class TestCircuitBreaker:
         assert cb.failure_count == 1
         assert cb.allow_request() is True
 
-    def test_open_circuit_after_threshold(self):
+    @staticmethod
+    def test_open_circuit_after_threshold():
         """Test that the circuit opens after reaching the failure threshold."""
         cb = CircuitBreaker(failure_threshold=3)
         for _ in range(3):
@@ -123,7 +126,8 @@ class TestCircuitBreaker:
         assert cb.state == CircuitBreaker.OPEN
         assert cb.allow_request() is False
 
-    def test_half_open_after_timeout(self, monkeypatch):
+    @staticmethod
+    def test_half_open_after_timeout(monkeypatch):
         """Test that the circuit transitions to HALF_OPEN after the timeout."""
         cb = CircuitBreaker(failure_threshold=3, recovery_timeout=10)
 
@@ -142,7 +146,8 @@ class TestCircuitBreaker:
         assert cb.allow_request() is True
         assert cb.state == CircuitBreaker.HALF_OPEN
 
-    def test_reset_after_success_in_half_open(self):
+    @staticmethod
+    def test_reset_after_success_in_half_open():
         """Test that the circuit resets after successful calls in HALF_OPEN state."""
         cb = CircuitBreaker(failure_threshold=3, half_open_max_calls=2)
 
@@ -157,7 +162,8 @@ class TestCircuitBreaker:
         assert cb.state == CircuitBreaker.CLOSED
         assert cb.failure_count == 0
 
-    def test_back_to_open_after_failure_in_half_open(self):
+    @staticmethod
+    def test_back_to_open_after_failure_in_half_open():
         """Test that the circuit goes back to OPEN after failure in HALF_OPEN state."""
         cb = CircuitBreaker()
         cb.state = CircuitBreaker.HALF_OPEN
