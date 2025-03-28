@@ -267,7 +267,8 @@ class BaseScraper(ABC):
                 return None
 
             # Check if cache is too old (default: 24 hours)
-            max_age = getattr(self.settings, "SCRAPER_CACHE_MAX_AGE", 86400)  # 24 hours in seconds
+            # 24 hours in seconds
+            max_age = getattr(self.settings, "SCRAPER_CACHE_MAX_AGE", 86400)
             if os.path.getmtime(cache_file) + max_age < time.time():
                 self.logger.debug(f"Cache for {url} is too old")
                 return None
@@ -400,7 +401,8 @@ class BaseScraper(ABC):
                 if attempt == self.settings.MAX_RETRIES - 1:
                     self.circuit_breaker.record_failure()
                     raise HTTPError(status_code=getattr(e, "status", 500), message=f"Failed after {self.settings.MAX_RETRIES} attempts: {str(e)}")
-                await asyncio.sleep(min(2**attempt, 30))  # Exponential backoff with maximum delay
+                # Exponential backoff with maximum delay
+                await asyncio.sleep(min(2**attempt, 30))
 
             except asyncio.TimeoutError:
                 # Timeout errors
@@ -415,7 +417,9 @@ class BaseScraper(ABC):
                 else:
                     self.circuit_breaker.record_failure()
                     raise HTTPError(
-                        status_code=408, message=f"Request to {url} timed out after {self.settings.MAX_RETRIES} attempts"  # Request Timeout
+                        # Request Timeout
+                        status_code=408,
+                        message=f"Request to {url} timed out after {self.settings.MAX_RETRIES} attempts",
                     )
 
             except Exception as e:
