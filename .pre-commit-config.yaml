@@ -29,5 +29,5 @@ repos:
         types: [file]
         args: [--config=frontend/eslint.config.js]
         additional_dependencies:
-          - 'eslint@9.23.0'
-          - '@antfu/eslint-config@4.11.0'
+          - "eslint@9.23.0"
+          - "@antfu/eslint-config@4.11.0"

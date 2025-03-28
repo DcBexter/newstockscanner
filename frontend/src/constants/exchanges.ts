@@ -2,10 +2,10 @@
 
 // Exchange codes
 export const EXCHANGE_CODES = {
-  HKEX: 'HKEX',
-  NASDAQ: 'NASDAQ',
-  NYSE: 'NYSE',
-  FSE: 'FSE',
+  HKEX: "HKEX",
+  NASDAQ: "NASDAQ",
+  NYSE: "NYSE",
+  FSE: "FSE",
 };
 
 // UI-related constants

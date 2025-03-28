@@ -27,6 +27,7 @@ timestamp [service] [request_id] level [module:line] message
 ```
 
 Example:
+
 ```
 2023-06-15T12:34:56.789012 [api_service] [550e8400-e29b-41d4-a716-446655440000] INFO [app:42] Application startup complete
 ```

@@ -1,7 +1,7 @@
-import { Refresh } from '@mui/icons-material';
-import { Button } from '@mui/material';
-import { api } from '../api/client';
-import { useAppContext } from '../context/useAppContext';
+import { Refresh } from "@mui/icons-material";
+import { Button } from "@mui/material";
+import { api } from "../api/client";
+import { useAppContext } from "../context/useAppContext";
 
 // Helper function for logging errors that only runs in development mode
 function devError(error: unknown): void {
@@ -18,20 +18,21 @@ interface ScanButtonProps {
 /**
  * Button component for triggering a scan for a specific exchange
  */
-export default function ScanButton({ exchangeCode, isSelected }: ScanButtonProps) {
+export default function ScanButton({
+  exchangeCode,
+  isSelected,
+}: ScanButtonProps) {
   const { state, dispatch, actions } = useAppContext();
   const { isScanning, selectedExchange, days, previousListingsCount } = state;
 
   // Don't render if the exchange is not selected
-  if (!isSelected)
-    return null;
+  if (!isSelected) return null;
 
   /**
    * Handle the scan button click
    */
   const handleExchangeScan = async () => {
-    if (isScanning)
-      return;
+    if (isScanning) return;
     dispatch(actions.setScanning(true));
     dispatch(actions.clearError());
 
@@ -58,12 +59,10 @@ export default function ScanButton({ exchangeCode, isSelected }: ScanButtonProps
       // Refresh statistics
       const statsData = await api.getStatistics(days);
       dispatch(actions.setStatistics(statsData));
-    }
-    catch (err) {
+    } catch (err) {
       dispatch(actions.setError(`Failed to trigger ${exchangeCode} scan`));
       devError(err);
-    }
-    finally {
+    } finally {
       dispatch(actions.setScanning(false));
     }
   };
@@ -81,7 +80,7 @@ export default function ScanButton({ exchangeCode, isSelected }: ScanButtonProps
       startIcon={<Refresh />}
       size="large"
     >
-      {isScanning ? 'Scanning...' : `SCAN ${exchangeCode}`}
+      {isScanning ? "Scanning..." : `SCAN ${exchangeCode}`}
     </Button>
   );
 }

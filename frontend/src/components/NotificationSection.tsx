@@ -1,7 +1,7 @@
-import { Notifications } from '@mui/icons-material';
-import { Alert, Badge, IconButton, Snackbar, Tooltip } from '@mui/material';
-import { NOTIFICATION_DURATION } from '../constants/exchanges';
-import { useAppContext } from '../context/useAppContext';
+import { Notifications } from "@mui/icons-material";
+import { Alert, Badge, IconButton, Snackbar, Tooltip } from "@mui/material";
+import { NOTIFICATION_DURATION } from "../constants/exchanges";
+import { useAppContext } from "../context/useAppContext";
 
 // Helper function for logging that only runs in development mode
 function devLog(message: string): void {
@@ -36,7 +36,10 @@ export default function NotificationSection() {
    * Request notification permission
    */
   const requestNotificationPermission = () => {
-    if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+    if (
+      Notification.permission !== "granted" &&
+      Notification.permission !== "denied"
+    ) {
       Notification.requestPermission()
         .then((permission) => {
           devLog(`Notification permission ${permission}`);
@@ -52,9 +55,13 @@ export default function NotificationSection() {
       {/* Notification Icons */}
       {hasNewListings && (
         <Tooltip
-          title={`${newListingsCount} new listing${newListingsCount > 1 ? 's' : ''} detected`}
+          title={`${newListingsCount} new listing${newListingsCount > 1 ? "s" : ""} detected`}
         >
-          <Badge badgeContent={newListingsCount} color="error" overlap="circular">
+          <Badge
+            badgeContent={newListingsCount}
+            color="error"
+            overlap="circular"
+          >
             <IconButton color="primary" onClick={acknowledgeNewListings}>
               <Notifications />
             </IconButton>
@@ -62,33 +69,30 @@ export default function NotificationSection() {
         </Tooltip>
       )}
 
-      {Notification.permission !== 'granted' && Notification.permission !== 'denied' && (
-        <Tooltip title="Enable notifications">
-          <IconButton color="primary" onClick={requestNotificationPermission}>
-            <Notifications />
-          </IconButton>
-        </Tooltip>
-      )}
+      {Notification.permission !== "granted" &&
+        Notification.permission !== "denied" && (
+          <Tooltip title="Enable notifications">
+            <IconButton color="primary" onClick={requestNotificationPermission}>
+              <Notifications />
+            </IconButton>
+          </Tooltip>
+        )}
 
       {/* New Listings Notification */}
       <Snackbar
         open={notificationOpen}
         autoHideDuration={NOTIFICATION_DURATION}
         onClose={handleNotificationClose}
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
       >
         <Alert
           onClose={handleNotificationClose}
           severity="success"
           variant="filled"
-          sx={{ width: '100%' }}
+          sx={{ width: "100%" }}
         >
-          {newListingsCount}
-          {' '}
-          new listing
-          {newListingsCount > 1 ? 's' : ''}
-          {' '}
-          detected!
+          {newListingsCount} new listing
+          {newListingsCount > 1 ? "s" : ""} detected!
         </Alert>
       </Snackbar>
     </>

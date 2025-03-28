@@ -1,7 +1,7 @@
-import type { ErrorInfo, ReactNode } from 'react';
-import { Box, Button, Paper, Typography } from '@mui/material';
-import { Component } from 'react';
-import { COLORS, SPACING } from '../theme';
+import type { ErrorInfo, ReactNode } from "react";
+import { Box, Button, Paper, Typography } from "@mui/material";
+import { Component } from "react";
+import { COLORS, SPACING } from "../theme";
 
 /**
  * Props for the ErrorBoundary component
@@ -77,7 +77,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     // Log the error to the console in development mode
     if (import.meta.env.DEV) {
-      console.error('Error caught by ErrorBoundary:', error, errorInfo);
+      console.error("Error caught by ErrorBoundary:", error, errorInfo);
     }
 
     // Update state with error info
@@ -126,15 +126,28 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
           Something went wrong
         </Typography>
         <Typography variant="body1" component="p" sx={{ mb: 2 }}>
-          An error occurred in this part of the application. Try refreshing the page or contact support if the problem persists.
+          An error occurred in this part of the application. Try refreshing the
+          page or contact support if the problem persists.
         </Typography>
         {import.meta.env.DEV && this.state.error && (
-          <Box sx={{ mt: SPACING.md, p: SPACING.md, backgroundColor: COLORS.grey[200], borderRadius: 1, overflow: 'auto' }}>
+          <Box
+            sx={{
+              mt: SPACING.md,
+              p: SPACING.md,
+              backgroundColor: COLORS.grey[200],
+              borderRadius: 1,
+              overflow: "auto",
+            }}
+          >
             <Typography variant="subtitle2" fontFamily="monospace">
               {this.state.error.toString()}
             </Typography>
             {this.state.errorInfo && (
-              <Typography variant="body2" fontFamily="monospace" sx={{ mt: SPACING.sm, whiteSpace: 'pre-wrap' }}>
+              <Typography
+                variant="body2"
+                fontFamily="monospace"
+                sx={{ mt: SPACING.sm, whiteSpace: "pre-wrap" }}
+              >
                 {this.state.errorInfo.componentStack}
               </Typography>
             )}

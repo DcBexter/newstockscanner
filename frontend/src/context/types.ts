@@ -1,4 +1,4 @@
-import type { Exchange, Listing, Statistics } from '../api/client';
+import type { Exchange, Listing, Statistics } from "../api/client";
 
 // State types
 export interface AppState {
@@ -35,31 +35,31 @@ export interface AppState {
 
 export enum ActionType {
   // Data actions
-  SET_LISTINGS = 'SET_LISTINGS',
-  SET_EXCHANGES = 'SET_EXCHANGES',
-  SET_STATISTICS = 'SET_STATISTICS',
+  SET_LISTINGS = "SET_LISTINGS",
+  SET_EXCHANGES = "SET_EXCHANGES",
+  SET_STATISTICS = "SET_STATISTICS",
 
   // Filter actions
-  SET_SELECTED_EXCHANGE = 'SET_SELECTED_EXCHANGE',
-  SET_DAYS = 'SET_DAYS',
-  SET_DATE_RANGE = 'SET_DATE_RANGE',
-  SET_PAGINATION_MODE = 'SET_PAGINATION_MODE',
+  SET_SELECTED_EXCHANGE = "SET_SELECTED_EXCHANGE",
+  SET_DAYS = "SET_DAYS",
+  SET_DATE_RANGE = "SET_DATE_RANGE",
+  SET_PAGINATION_MODE = "SET_PAGINATION_MODE",
 
   // UI actions
-  SET_LOADING_LISTINGS = 'SET_LOADING_LISTINGS',
-  SET_LOADING_EXCHANGES = 'SET_LOADING_EXCHANGES',
-  SET_LOADING_STATISTICS = 'SET_LOADING_STATISTICS',
-  SET_SCANNING = 'SET_SCANNING',
-  TOGGLE_STATISTICS = 'TOGGLE_STATISTICS',
+  SET_LOADING_LISTINGS = "SET_LOADING_LISTINGS",
+  SET_LOADING_EXCHANGES = "SET_LOADING_EXCHANGES",
+  SET_LOADING_STATISTICS = "SET_LOADING_STATISTICS",
+  SET_SCANNING = "SET_SCANNING",
+  TOGGLE_STATISTICS = "TOGGLE_STATISTICS",
 
   // Error actions
-  SET_ERROR = 'SET_ERROR',
-  CLEAR_ERROR = 'CLEAR_ERROR',
+  SET_ERROR = "SET_ERROR",
+  CLEAR_ERROR = "CLEAR_ERROR",
 
   // Notification actions
-  SET_NEW_LISTINGS = 'SET_NEW_LISTINGS',
-  SET_NOTIFICATION_OPEN = 'SET_NOTIFICATION_OPEN',
-  ACKNOWLEDGE_NEW_LISTINGS = 'ACKNOWLEDGE_NEW_LISTINGS',
+  SET_NEW_LISTINGS = "SET_NEW_LISTINGS",
+  SET_NOTIFICATION_OPEN = "SET_NOTIFICATION_OPEN",
+  ACKNOWLEDGE_NEW_LISTINGS = "ACKNOWLEDGE_NEW_LISTINGS",
 }
 
 // Action interfaces
@@ -90,7 +90,7 @@ export interface SetDaysAction {
 
 export interface SetDateRangeAction {
   type: ActionType.SET_DATE_RANGE;
-  payload: { startDate: string; endDate: string; };
+  payload: { startDate: string; endDate: string };
 }
 
 export interface SetPaginationModeAction {
@@ -133,7 +133,7 @@ export interface ClearErrorAction {
 
 export interface SetNewListingsAction {
   type: ActionType.SET_NEW_LISTINGS;
-  payload: { hasNewListings: boolean; newListingsCount: number; };
+  payload: { hasNewListings: boolean; newListingsCount: number };
 }
 
 export interface SetNotificationOpenAction {
