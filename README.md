@@ -16,7 +16,7 @@
 
 | Linting | Coverage | Code Analysis |
 | :-----: | :------: | :-----------: |
-| [![Backend Linting](https://github.com/DcBexter/newstockscanner/actions/workflows/linting-backend.yml/badge.svg)](https://github.com/DcBexter/newstockscanner/actions/workflows/linting-backend.yml) [![Frontend Linting](https://github.com/DcBexter/newstockscanner/actions/workflows/linting-frontend.yml/badge.svg)](https://github.com/DcBexter/newstockscanner/actions/workflows/linting-frontend.yml) | [![codecov](https://codecov.io/gh/DcBexter/newstockscanner/branch/main/graph/badge.svg)](https://codecov.io/gh/DcBexter/newstockscanner) | [![DeepSource](https://deepsource.io/gh/DcBexter/newstockscanner.svg/?label=active+issues&show_trend=true)](https://deepsource.io/gh/DcBexter/newstockscanner/?ref=repository-badge) |
+| [![Backend Linting](https://github.com/DcBexter/newstockscanner/actions/workflows/linting-backend.yml/badge.svg)](https://github.com/DcBexter/newstockscanner/actions/workflows/linting-backend.yml) [![Frontend Linting](https://github.com/DcBexter/newstockscanner/actions/workflows/linting-frontend.yml/badge.svg)](https://github.com/DcBexter/newstockscanner/actions/workflows/linting-frontend.yml) | [![codecov](https://codecov.io/gh/DcBexter/newstockscanner/graph/badge.svg?token=H66V3KHOGM)](https://codecov.io/gh/DcBexter/newstockscanner) | [![DeepSource](https://deepsource.io/gh/DcBexter/newstockscanner.svg/?label=active+issues&show_trend=true)](https://deepsource.io/gh/DcBexter/newstockscanner/?ref=repository-badge) |
 
 ## Project Components
 
