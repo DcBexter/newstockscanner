@@ -11,7 +11,7 @@ asyncpg==0.30.0
 
 # Scraping
 aiohttp==3.11.17
-beautifulsoup4==4.13.3
+beautifulsoup4==4.13.4
 pandas==2.2.3
 numpy==2.2.4
 
