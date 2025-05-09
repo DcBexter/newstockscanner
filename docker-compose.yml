@@ -1,7 +1,7 @@
 services:
   # Database: PostgreSQL database for storing stock listings
   db:
-    image: postgres:17.4-alpine
+    image: postgres:17.5-alpine
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
