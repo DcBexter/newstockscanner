@@ -22,7 +22,7 @@
     "dayjs": "^1.11.13",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "recharts": "^2.15.1"
+    "recharts": "^3.0.0"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^4.11.0",
