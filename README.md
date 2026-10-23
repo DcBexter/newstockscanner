@@ -142,11 +142,12 @@ The test environment is designed for running automated tests:
 To run the tests:
 
 ```bash
+python -m pip install -r backend/requirements-dev.txt
 ./run-tests.bat  # On Windows
 # or
 ./run-tests.sh   # On Unix-like systems
 # or
-cd backend && pytest --cov --cov-branch --cov-report=xml  # Run directly with pytest
+cd backend && pytest --disable-socket --allow-unix-socket --cov --cov-branch --cov-report=xml
 ```
 
 The test results and coverage report will be displayed on the console.
