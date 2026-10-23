@@ -3,6 +3,7 @@ Tests for the notification service.
 """
 
 import json
+import time
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -275,9 +276,12 @@ class TestNotificationService:
         """Test integration with circuit breaker."""
         # Mock the circuit breaker to be in OPEN state
         notification_service.circuit_breaker.state = CircuitBreaker.OPEN
+        notification_service.circuit_breaker.last_failure_time = time.time()
         notification_service._handle_fallback = AsyncMock(return_value=True)
 
-        result = await notification_service.send_listing_notifications(sample_listings_data)
+        with patch("aiohttp.ClientSession") as client_session:
+            result = await notification_service.send_listing_notifications(sample_listings_data)
+            client_session.assert_not_called()
 
         # Verify fallback was called due to open circuit
         notification_service._handle_fallback.assert_called_once_with(sample_listings_data)

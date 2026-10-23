@@ -8,7 +8,7 @@ repos:
       - id: check-added-large-files
 
   - repo: https://github.com/psf/black
-    rev: 24.3.0
+    rev: 26.10.1
     hooks:
       - id: black
         files: ^backend/
@@ -22,12 +22,14 @@ repos:
         args: [--settings-path=backend/pyproject.toml]
 
   - repo: https://github.com/pre-commit/mirrors-eslint
-    rev: v9.23.0
+    rev: v9.39.5
     hooks:
       - id: eslint
         files: frontend/.*\.[jt]sx?$ # *.js, *.jsx, *.ts and *.tsx in frontend directory
         types: [file]
         args: [--config=frontend/eslint.config.js]
         additional_dependencies:
-          - 'eslint@9.23.0'
-          - '@antfu/eslint-config@4.11.0'
+          - 'eslint@9.39.5'
+          - '@antfu/eslint-config@4.19.0'
+          - 'eslint-plugin-react-hooks@5.2.0'
+          - 'eslint-plugin-react-refresh@0.4.26'

@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.20
 
-FROM python:3.13.5-slim AS builder
+FROM python:3.13.17-slim AS builder
 
 WORKDIR /app
 
@@ -21,7 +21,7 @@ COPY ./requirements.txt .
 RUN pip wheel --no-cache-dir --no-deps --wheel-dir /app/wheels -r requirements.txt
 
 # Final stage
-FROM python:3.13.5-slim
+FROM python:3.13.17-slim
 
 WORKDIR /app
 
@@ -40,12 +40,12 @@ COPY --from=builder /app/wheels /wheels
 RUN pip install --no-cache /wheels/*
 
 # Copy only necessary application code
-COPY ./api_service ./api_service
-COPY ./config ./config
-COPY ./core ./core
-COPY ./database ./database
-COPY ./notification_service ./notification_service
-COPY ./scraper_service ./scraper_service
+COPY ./api_service ./backend/api_service
+COPY ./config ./backend/config
+COPY ./core ./backend/core
+COPY ./database ./backend/database
+COPY ./notification_service ./backend/notification_service
+COPY ./scraper_service ./backend/scraper_service
 COPY ./pyproject.toml .
 
 # Set permissions

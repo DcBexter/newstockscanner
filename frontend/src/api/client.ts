@@ -113,7 +113,7 @@ export const api = {
       data: data.items,
       timestamp: Date.now(),
       params: JSON.stringify(params),
-    } as CacheEntry<Listing[]>;
+    };
 
     return data.items;
   },
@@ -134,7 +134,7 @@ export const api = {
     cache[cacheKey] = {
       data,
       timestamp: Date.now(),
-    } as CacheEntry<Exchange[]>;
+    };
 
     return data;
   },
@@ -158,7 +158,7 @@ export const api = {
       data,
       timestamp: Date.now(),
       params: JSON.stringify({ days }),
-    } as CacheEntry<Statistics>;
+    };
 
     return data;
   },

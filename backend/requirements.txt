@@ -1,32 +1,32 @@
 # Core dependencies
-fastapi==0.116.1
-uvicorn==0.35.0
-pydantic==2.11.7
-pydantic-settings==2.10.1
-python-dotenv==1.1.1
+fastapi==0.162.0
+uvicorn==0.54.0
+pydantic==2.14.1
+pydantic-settings==2.16.1
+python-dotenv==1.2.4
 
 # Database
-sqlalchemy==2.0.49
-asyncpg==0.31.0
+sqlalchemy[asyncio]==2.1.6
+asyncpg==0.32.0
 
 # Scraping
-aiohttp==3.13.5
-beautifulsoup4==4.13.4
+aiohttp==3.14.5
+beautifulsoup4==4.15.0
 pandas==2.3.3
-numpy==2.3.5
+numpy==2.5.4
 
 # Testing
-pytest==8.4.2
-pytest-asyncio==1.1.0
+pytest==9.1.1
+pytest-asyncio==1.4.0
 httpx==0.28.1
 
 # Utilities
 python-dateutil==2.9.0.post0
 pytz==2025.2
 aiosignal==1.4.0
-frozenlist==1.7.0
-multidict==6.6.3
-yarl==1.20.1
+frozenlist==1.8.0
+multidict==6.9.1
+yarl==1.25.1
 
 # Monitoring
-prometheus-client==0.22.1
+prometheus-client==0.26.0

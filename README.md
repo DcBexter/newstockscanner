@@ -8,6 +8,18 @@
 ---
 
 ## Tests
+
+GitHub checks run on every PR, default-branch push and weekly. They cover Python
+tests with outbound sockets blocked, Python/TypeScript lint, frontend build, both
+production Docker builds, npm/pip vulnerability scans, dependency review and
+Renovate configuration. CI uses Python 3.13.17 and Node 22.23.4 without deployment
+secrets. No frontend unit-test suite exists yet.
+
+Renovate maintains dependency PRs and lockfiles. Minor/patch/pin/digest PRs may merge
+after all required checks pass on an up-to-date branch; major updates and security
+PRs need manual review. The deployment workflow is an explicit manual placeholder;
+maintenance does not deploy, scrape live providers or send Telegram messages.
+
 [![Backend Tests](https://github.com/DcBexter/newstockscanner/actions/workflows/test-backend.yml/badge.svg)](https://github.com/DcBexter/newstockscanner/actions/workflows/test-backend.yml)
 
 ---
