@@ -1,6 +1,7 @@
 import type { AppContextType } from './AppContextTypes';
 import type { AppAction, AppState } from './types';
-import React, { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
+import * as React from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
 import { api } from '../api/client';
 import * as actions from './actions';
 import { AppContext } from './AppContextTypes';

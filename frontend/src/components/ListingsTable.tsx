@@ -84,7 +84,7 @@ export default function ListingsTable({ data, isLoading }: ListingsTableProps) {
   // Sort data based on current sort settings
   const sortedData = useMemo(() => {
     if (sortField === undefined || sortField === null || sortField === '')
-      return filteredData !== undefined && filteredData !== null ? filteredData : [];
+      return filteredData ?? [];
 
     // Ensure filteredData is an array before spreading
     const dataToSort = Array.isArray(filteredData) ? filteredData : [];
