@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.20
 
-FROM python:3.13.17-slim AS builder
+FROM python:3.15.1-slim AS builder
 
 WORKDIR /app
 
@@ -21,7 +21,7 @@ COPY ./requirements.txt .
 RUN pip wheel --no-cache-dir --wheel-dir /app/wheels -r requirements.txt
 
 # Final stage
-FROM python:3.13.17-slim
+FROM python:3.15.1-slim
 
 WORKDIR /app
 
