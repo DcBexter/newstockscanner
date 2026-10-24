@@ -17,7 +17,7 @@ export default function MonthPagination({
   isPaginationMode,
 }: MonthPaginationProps) {
   const theme = useTheme();
-  const [currentMonth, setCurrentMonth] = useState(dayjs());
+  const [currentMonth, setCurrentMonth] = useState(() => dayjs());
   const [selectedDays, setSelectedDays] = useState<number>(30);
 
   // Helper function to call onMonthChange with properly formatted dates
@@ -81,7 +81,7 @@ export default function MonthPagination({
 
   // Handle time range selection
   const handleTimeRangeChange = (event: SelectChangeEvent<number>) => {
-    const days = event.target.value as number;
+    const days = event.target.value;
     setSelectedDays(days);
 
     if (days > 0) {

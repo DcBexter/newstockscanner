@@ -8,6 +8,20 @@
 ---
 
 ## Tests
+
+GitHub checks run on every PR, default-branch push and weekly. They cover Python
+tests with outbound sockets blocked, Python/TypeScript lint, frontend build, both
+production Docker builds, npm/pip vulnerability scans, dependency review and
+Renovate configuration. CI uses Python 3.13.17 and Node 22.23.4 without deployment
+secrets. No frontend unit-test suite exists yet.
+
+Renovate maintains dependency PRs and lockfiles. All update types, including major
+and security updates, may merge after all required checks pass on an up-to-date
+branch (maintainer decision, 24 October 2026). Dependabot security PRs are queued
+behind the same required checks by a metadata-only workflow; it never runs PR code.
+The deployment workflow is an explicit manual placeholder;
+maintenance does not deploy, scrape live providers or send Telegram messages.
+
 [![Backend Tests](https://github.com/DcBexter/newstockscanner/actions/workflows/test-backend.yml/badge.svg)](https://github.com/DcBexter/newstockscanner/actions/workflows/test-backend.yml)
 
 ---
@@ -130,11 +144,12 @@ The test environment is designed for running automated tests:
 To run the tests:
 
 ```bash
+python -m pip install -r backend/requirements-dev.txt
 ./run-tests.bat  # On Windows
 # or
 ./run-tests.sh   # On Unix-like systems
 # or
-cd backend && pytest --cov --cov-branch --cov-report=xml  # Run directly with pytest
+cd backend && pytest --disable-socket --allow-unix-socket --cov --cov-branch --cov-report=xml
 ```
 
 The test results and coverage report will be displayed on the console.

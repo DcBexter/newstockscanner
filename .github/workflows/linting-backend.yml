@@ -2,36 +2,30 @@ name: Backend Linting
 
 on:
   push:
-    branches: [ main, master, develop ]
+    branches: [master]
   pull_request:
-    branches: [ main, master, develop ]
+  workflow_dispatch:
+  schedule:
+    - cron: '31 5 * * 1'
+
+permissions:
+  contents: read
 
 jobs:
   linting-backend:
     name: Backend Linting
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: backend
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
-          python-version: '3.13'
-          cache: 'pip'
-          cache-dependency-path: backend/requirements.txt
-
-      - name: Install linting tools
-        run: |
-          python -m pip install --upgrade pip
-          pip install black==24.3.0 isort==5.13.2
-
-      - name: Run black
-        run: |
-          cd backend
-          black --check --config=pyproject.toml .
-
-      - name: Run isort
-        run: |
-          cd backend
-          isort --check-only --profile black .
+          python-version: '3.13.17'
+          cache: pip
+          cache-dependency-path: backend/requirements-lint.txt
+      - run: pip install -r requirements-lint.txt
+      - run: black --check .
+      - run: isort --check-only .

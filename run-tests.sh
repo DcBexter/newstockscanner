@@ -2,5 +2,5 @@
 
 (
 cd backend || exit
-python -m pytest --cov --cov-branch --cov-report=xml
+python -m pytest --disable-socket --allow-unix-socket --cov --cov-branch --cov-report=xml
 )

@@ -145,21 +145,21 @@ export interface AcknowledgeNewListingsAction {
   type: ActionType.ACKNOWLEDGE_NEW_LISTINGS;
 }
 
-export type AppAction =
-  | SetListingsAction
-  | SetExchangesAction
-  | SetStatisticsAction
-  | SetSelectedExchangeAction
-  | SetDaysAction
-  | SetDateRangeAction
-  | SetPaginationModeAction
-  | SetLoadingListingsAction
-  | SetLoadingExchangesAction
-  | SetLoadingStatisticsAction
-  | SetScanningAction
-  | ToggleStatisticsAction
-  | SetErrorAction
-  | ClearErrorAction
-  | SetNewListingsAction
-  | SetNotificationOpenAction
-  | AcknowledgeNewListingsAction;
+export type AppAction
+  = | SetListingsAction
+    | SetExchangesAction
+    | SetStatisticsAction
+    | SetSelectedExchangeAction
+    | SetDaysAction
+    | SetDateRangeAction
+    | SetPaginationModeAction
+    | SetLoadingListingsAction
+    | SetLoadingExchangesAction
+    | SetLoadingStatisticsAction
+    | SetScanningAction
+    | ToggleStatisticsAction
+    | SetErrorAction
+    | ClearErrorAction
+    | SetNewListingsAction
+    | SetNotificationOpenAction
+    | AcknowledgeNewListingsAction;
