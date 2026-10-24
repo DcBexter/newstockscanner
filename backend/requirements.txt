@@ -25,7 +25,7 @@ python-dateutil==2.9.0.post0
 pytz==2025.2
 aiosignal==1.4.0
 frozenlist==1.8.0
-multidict==6.9.1
+multidict==7.2.1
 yarl==1.25.1
 
 # Monitoring
