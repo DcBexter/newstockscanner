@@ -5,6 +5,22 @@
   "automergeType": "pr",
   "platformAutomerge": true,
   "rebaseWhen": "behind-base-branch",
+  "packageRules": [
+    {
+      "description": "Keep ESLint config and its peer plugins compatible across all update types",
+      "matchPackageNames": [
+        "@antfu/eslint-config",
+        "@eslint-react/eslint-plugin",
+        "@eslint/js",
+        "@typescript-eslint/parser",
+        "typescript-eslint",
+        "eslint",
+        "eslint-plugin-react-hooks",
+        "eslint-plugin-react-refresh"
+      ],
+      "groupName": "ESLint toolchain"
+    }
+  ],
   "vulnerabilityAlerts": {"automerge": true},
   "lockFileMaintenance": {"enabled": true, "automerge": true}
 }
