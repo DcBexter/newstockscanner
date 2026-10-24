@@ -17,7 +17,9 @@ secrets. No frontend unit-test suite exists yet.
 
 Renovate maintains dependency PRs and lockfiles. All update types, including major
 and security updates, may merge after all required checks pass on an up-to-date
-branch (maintainer decision, 24 October 2026). The deployment workflow is an explicit manual placeholder;
+branch (maintainer decision, 24 October 2026). Dependabot security PRs are queued
+behind the same required checks by a metadata-only workflow; it never runs PR code.
+The deployment workflow is an explicit manual placeholder;
 maintenance does not deploy, scrape live providers or send Telegram messages.
 
 [![Backend Tests](https://github.com/DcBexter/newstockscanner/actions/workflows/test-backend.yml/badge.svg)](https://github.com/DcBexter/newstockscanner/actions/workflows/test-backend.yml)

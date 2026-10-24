@@ -9,4 +9,7 @@ backend tests; it does not scrape providers, send notifications or deploy servic
 
 Renovate prepares dependency updates. All update types, including major and security
 updates, can merge after the repository's required checks pass on an up-to-date
-branch (maintainer decision, 24 October 2026).
+branch (maintainer decision, 24 October 2026). Dependabot security PRs are likewise
+queued for native automerge, bound to their exact head and the same strict branch
+checks. The queue workflow checks bot author/actor and same repository; it has no
+checkout or PR-code execution.
