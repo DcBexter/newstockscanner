@@ -18,7 +18,14 @@
         "eslint-plugin-react-hooks",
         "eslint-plugin-react-refresh"
       ],
-      "groupName": "ESLint toolchain"
+      "groupName": "ESLint toolchain",
+      "separateMajorMinor": false
+    },
+    {
+      "description": "Update Python with its native pandas and NumPy dependencies",
+      "matchPackageNames": ["python", "pandas", "numpy"],
+      "groupName": "Python data runtime",
+      "separateMajorMinor": false
     }
   ],
   "vulnerabilityAlerts": {"automerge": true},
