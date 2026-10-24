@@ -7,6 +7,12 @@
   "rebaseWhen": "behind-base-branch",
   "packageRules": [
     {
+      "description": "Keep Vite and its React plugin compatible across all update types",
+      "matchPackageNames": ["vite", "@vitejs/plugin-react"],
+      "groupName": "Vite toolchain",
+      "separateMajorMinor": false
+    },
+    {
       "description": "Keep ESLint config and its peer plugins compatible across all update types",
       "matchPackageNames": [
         "@antfu/eslint-config",
