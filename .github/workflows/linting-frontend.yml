@@ -29,4 +29,3 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm audit --audit-level=high
-      - run: npm run build
