@@ -12,7 +12,7 @@ asyncpg==0.32.0
 # Scraping
 aiohttp==3.14.5
 beautifulsoup4==4.15.0
-pandas==2.3.3
+pandas==3.1.0
 numpy==2.5.4
 
 # Testing
