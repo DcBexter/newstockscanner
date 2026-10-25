@@ -21,7 +21,7 @@ pytest-asyncio==1.4.0
 httpx==0.28.1
 
 # Utilities
-python-dateutil==2.9.0.post0
+python-dateutil==3.0.0
 pytz==2025.2
 aiosignal==1.4.0
 frozenlist==1.8.0
