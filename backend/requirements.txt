@@ -22,7 +22,7 @@ httpx==0.28.1
 
 # Utilities
 python-dateutil==3.0.0
-pytz==2026.5
+pytz==2026.6
 aiosignal==1.4.0
 frozenlist==1.8.0
 multidict==7.2.1
